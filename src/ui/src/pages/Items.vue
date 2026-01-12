@@ -1,6 +1,6 @@
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
-import { getItems, removeItem } from '@ui/api/endpoints'
+import { changeItemIndex, getItems, removeItem } from '@ui/api/endpoints'
 import AddItem from '@ui/components/modals/AddItem.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
@@ -24,9 +24,26 @@ async function fetchItems(): Promise<void> {
 
   if (res) {
     allItems.value = res
-    filteredItems.value = [...allItems.value]
+    filteredItems.value = [...allItems.value.sort((a, b) => (a.index > b.index ? 1 : -1))]
     noResultsVisible.value = false
     isLoadingItems.value = false
+  }
+}
+
+const handleChangeItemIndex = async (item: any, step: number = 1): Promise<void> => {
+  const res = await changeItemIndex(item.uuid, step)
+
+  if (res) {
+    showToast(
+      'Pomyślnie zmieniono index przedmiotu ' +
+        item.name +
+        ' z ' +
+        item.index +
+        ' na ' +
+        (item.index + step) +
+        '.'
+    )
+    await fetchItems()
   }
 }
 
@@ -40,11 +57,13 @@ const handleRemoveItem = async (item: any): Promise<void> => {
 }
 
 watch(searchQuery, () => {
-  filteredItems.value = allItems.value.filter(
-    (item: any) =>
-      item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.serviceName.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  filteredItems.value = allItems.value
+    .sort((a, b) => (a.index > b.index ? 1 : -1))
+    .filter(
+      (item: any) =>
+        item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+        item.serviceName.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
 
   if (!filteredItems.value?.length) {
     noResultsVisible.value = true
@@ -109,15 +128,31 @@ onMounted(async () => {
               <tr>
                 <td>
                   <div class="flex items-center gap-3">
-                    <img
-                      :src="
-                        item.src.includes('https://') || item.src.includes('blob')
-                          ? item.src
-                          : `${url}/items/image/${item.uuid}`
-                      "
-                      class="w-[30px] h-[30px]"
-                      @dragstart.prevent="null"
-                    />
+                    <div class="flex flex-col gap-1">
+                      <button
+                        v-if="item.index !== filteredItems[0].index"
+                        class="nav-icon"
+                        @click="handleChangeItemIndex(item, -1)"
+                      >
+                        <i class="fa fa-chevron-up"></i>
+                      </button>
+                      <img
+                        :src="
+                          item.src.includes('https://') || item.src.includes('blob')
+                            ? item.src
+                            : `${url}/items/image/${item.uuid}`
+                        "
+                        class="w-[30px] h-[30px]"
+                        @dragstart.prevent="null"
+                      />
+                      <button
+                        v-if="item.index !== filteredItems[filteredItems.length - 1].index"
+                        class="nav-icon"
+                        @click="handleChangeItemIndex(item, 1)"
+                      >
+                        <i class="fa fa-chevron-down"></i>
+                      </button>
+                    </div>
                     <strong>{{ item.name }}</strong>
                   </div>
                 </td>

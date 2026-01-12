@@ -23,7 +23,8 @@ const state = reactive({
   item: '',
   rank: '',
   count: 1,
-  days: 30
+  days: 30,
+  promotion: 0
 })
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -112,6 +113,7 @@ const openModal = async (item: any, type: 'add' | 'edit' = 'add'): Promise<void>
     state.photo = item.src
     photoFile.value = item.src
     state.price = item.price
+    state.promotion = item.promotion
     state.type = getTypeByServiceName(item.serviceName)
 
     if (state.type === 'rank')
@@ -237,6 +239,7 @@ const handleCancel = (): void => {
   state.rank = ''
   state.days = 30
   state.count = 1
+  state.promotion = 0
   preview.value = ''
   photoFile.value = null
   modalVisible.value = false
@@ -303,9 +306,7 @@ defineExpose({
             </div>
             <div class="flex flex-col w-full">
               <label class="input-label mb-1">Nazwa</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                Nazwa przedmiotu wyświetlana na stronie.
-              </small>
+              <small class="mb-1 text-[var(--text-secondary)]"> Wyświetlana na stronie </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
@@ -328,9 +329,7 @@ defineExpose({
 
             <div class="flex flex-col w-full">
               <label class="input-label mb-1">Cena</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                Podaj cene przedmiotu. Minimalnie 1
-              </small>
+              <small class="mb-1 text-[var(--text-secondary)]"> Cena przedmiotu </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
@@ -340,7 +339,7 @@ defineExpose({
                     :min="0.01"
                     :max="10000"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
+                    placeholder="Podaj cenę"
                     :class="{ invalid: v$.price.$error }"
                     aria-required="true"
                     required
@@ -350,6 +349,28 @@ defineExpose({
                 <div class="error-message" :class="{ show: v$.price.$error }">
                   {{ v$.price.$errors[0]?.$message }}
                 </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col w-full">
+              <label class="input-label mb-1">Promocja</label>
+              <small class="mb-1 text-[var(--text-secondary)]"> Podaj przecenę (w zł) </small>
+              <div class="form-group h-full">
+                <div class="input-wrapper flex">
+                  <input
+                    id="login-email"
+                    v-model="state.promotion"
+                    type="number"
+                    :min="0.01"
+                    :max="10000"
+                    class="form-input !pl-[1rem]"
+                    placeholder="Podaj liczbę"
+                    aria-required="true"
+                    required
+                  />
+                  <div class="input-line"></div>
+                </div>
+                <div class="error-message"></div>
               </div>
             </div>
 

@@ -161,6 +161,14 @@ export const removeItem = async (uuid: number): Promise<any> => {
   return res.data
 }
 
+export const changeItemIndex = async (uuid: string, step: number): Promise<any> => {
+  const res = await api.put(`/items/${uuid}/index`, {
+    step
+  })
+
+  return res.data
+}
+
 export const getEvents = async (): Promise<any[]> => {
   const res = await api.get('/events')
 
