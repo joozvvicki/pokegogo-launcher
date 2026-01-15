@@ -174,6 +174,16 @@ const getPlayerID = (player: IUser): string => {
   return '(Brak)'
 }
 
+const isAdmin = computed(() => {
+  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
+    userStore.user?.role ?? UserRole.USER
+  )
+})
+
+const onlyForAdmin = (player: IUser): boolean => {
+  return isAdmin.value && ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
+}
+
 const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
 
 const hasFriendRequestFromMe = (player: IUser): boolean =>
@@ -274,6 +284,10 @@ const handleRemoveFriend = async (playerToRemove: IUser): Promise<void> => {
   }
 }
 
+const handleCopy = async (text: string): Promise<void> => {
+  await navigator.clipboard.writeText(text)
+}
+
 const handleEscape = (e: KeyboardEvent): void => {
   if (e.key === 'Escape') {
     closeModal()
@@ -321,14 +335,7 @@ const handleEscape = (e: KeyboardEvent): void => {
               <div class="nav-icon" @click="closeModal">
                 <i class="fa fa-times"></i>
               </div>
-              <div
-                v-if="
-                  [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-                    userStore.user?.role ?? UserRole.USER
-                  ) && ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
-                "
-                class="flex flex-col gap-2"
-              >
+              <div v-if="onlyForAdmin(player)" class="flex flex-col gap-2">
                 <button
                   v-if="!player?.isBanned"
                   class="nav-icon"
@@ -418,6 +425,26 @@ const handleEscape = (e: KeyboardEvent): void => {
             "
             class="flex gap-2 my-2"
           ></div>
+          <div
+            v-if="player.machineId"
+            :style="`
+                    background: var(--bg-card);
+                    color: var(--text-muted);
+                    font-size: 0.6rem;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    margin-top: 4px;
+                    height: 1.2rem;
+                    font-weight: 800;
+                    flex-shrink: 0 !important;
+                    max-width: max-content !important;
+                    cursor: pointer;
+                    `"
+            class="mx-auto"
+            @click="handleCopy(player.machineId)"
+          >
+            {{ player?.machineId }}
+          </div>
         </div>
 
         <template v-if="player.friendRequests">
