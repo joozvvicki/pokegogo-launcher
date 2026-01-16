@@ -27,7 +27,6 @@ const emits = defineEmits<{
 
 const isPermanentBan = computed(() => banMode.value === 'permanent')
 
-// walidacja – przy permbanie nie wymagamy daty, ale zawsze wymagamy powodu
 const isBanDisabled = computed(() => {
   if (actionType.value !== 'ban') return false
 
@@ -37,7 +36,6 @@ const isBanDisabled = computed(() => {
     return !hasReason
   }
 
-  // dla zwykłych banów wymagamy i powodu, i daty
   return !hasReason || !banTime.value
 })
 
@@ -75,7 +73,6 @@ const banUser = async (): Promise<void> => {
   if (!isPermanentBan.value && banTime.value) {
     payload.banEndDate = banTime.value
   }
-  // przy permbanie NIE dodajemy banEndDate => backend zrobi perma
 
   const res = await banPlayer(payload)
 
@@ -84,8 +81,8 @@ const banUser = async (): Promise<void> => {
     modalVisible.value = false
     showToast(
       isPermanentBan.value
-        ? 'Pomyślnie nadano permanentnego bana użytkownikowi'
-        : 'Pomyślnie zbanowano użytkownika',
+        ? 'Pomyślnie nadano permanentnego bana użytkownikowi ' + playerData.value.nickname
+        : 'Pomyślnie zbanowano użytkownika ' + playerData.value.nickname,
       'error'
     )
   }
@@ -103,7 +100,7 @@ const unbanUser = async (): Promise<void> => {
 
   if (res) {
     await emits('refreshData')
-    showToast('Pomyślnie odbanowano użytkownika')
+    showToast('Pomyślnie odbanowano użytkownika ' + playerData.value.nickname)
     handleCancel()
   }
 }
