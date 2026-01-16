@@ -260,6 +260,10 @@ const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
   }
 }
 
+const isMod = computed(() =>
+  [UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
+)
+
 const handleRemoveFriend = async (playerToRemove: IUser): Promise<void> => {
   try {
     const res = await removeFriend(playerToRemove.nickname)
@@ -417,18 +421,19 @@ const handleEscape = (e: KeyboardEvent): void => {
             <i class="fas fa-user-friends"></i>
             Wysłano zaproszenie do znajomych
           </div>
-          <div
-            v-if="
-              userStore.user &&
-              !player.isBanned &&
-              getPlayerID(player) !== getPlayerID(userStore.user)
-            "
-            class="flex gap-2 my-2"
-          ></div>
-          <div class="flex gap-2 justify-center">
+          <template v-if="isMod">
             <div
-              v-if="player.lastLoginAt"
-              :style="`
+              v-if="
+                userStore.user &&
+                !player.isBanned &&
+                getPlayerID(player) !== getPlayerID(userStore.user)
+              "
+              class="flex gap-2 my-2"
+            ></div>
+            <div class="flex gap-2 justify-center">
+              <div
+                v-if="player.lastLoginAt"
+                :style="`
                     background: var(--bg-card);
                     font-size: 0.6rem;
                     padding: 2px 6px;
@@ -439,13 +444,13 @@ const handleEscape = (e: KeyboardEvent): void => {
                     flex-shrink: 0 !important;
                     cursor: pointer;
                     `"
-              class="mx-auto"
-            >
-              Ost. logowanie: {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
-            </div>
-            <div
-              v-if="player.createdAt"
-              :style="`
+                class="mx-auto"
+              >
+                Ost. logowanie: {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
+              </div>
+              <div
+                v-if="player.createdAt"
+                :style="`
                     background: var(--bg-card);
                     font-size: 0.6rem;
                     padding: 2px 6px;
@@ -456,15 +461,15 @@ const handleEscape = (e: KeyboardEvent): void => {
                     flex-shrink: 0 !important;
                     cursor: pointer;
                     `"
-              class="mx-auto"
-            >
-              Zarejestrowano:
-              {{ format(player.createdAt, 'dd.MM.yyyy, HH:mm') }}
+                class="mx-auto"
+              >
+                Zarejestrowano:
+                {{ format(player.createdAt, 'dd.MM.yyyy, HH:mm') }}
+              </div>
             </div>
-          </div>
-          <div
-            v-if="player.machineId"
-            :style="`
+            <div
+              v-if="player.machineId"
+              :style="`
                     background: var(--bg-card);
                     font-size: 0.6rem;
                     padding: 2px 6px;
@@ -476,11 +481,30 @@ const handleEscape = (e: KeyboardEvent): void => {
                     max-width: max-content !important;
                     cursor: pointer;
                     `"
-            class="mx-auto"
-            @click="handleCopy(player.machineId)"
-          >
-            {{ player?.machineId }}
-          </div>
+              class="mx-auto"
+              @click="handleCopy(player.machineId)"
+            >
+              {{ player?.machineId }}
+            </div>
+            <div
+              v-else
+              :style="`
+                    background: var(--bg-card);
+                    font-size: 0.6rem;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    margin-top: 4px;
+                    height: 1.2rem;
+                    font-weight: 800;
+                    flex-shrink: 0 !important;
+                    max-width: max-content !important;
+                    cursor: pointer;
+                    `"
+              class="mx-auto"
+            >
+              Brak HWID
+            </div>
+          </template>
         </div>
 
         <template v-if="player.friendRequests">
@@ -584,24 +608,26 @@ const handleEscape = (e: KeyboardEvent): void => {
                 </div>
                 {{ friend.nickname }}
               </div>
-              <div
-                v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname"
-                class="flex gap-1"
-              >
-                <button
-                  class="nav-icon"
-                  @click="
-                    () => {
-                      chatsStore.addActiveChat(friend)
-                      closeModal()
-                    }
-                  "
-                >
-                  <i class="fa fa-comment"></i>
+              <div class="flex gap-1">
+                <button class="nav-icon" @click.stop="userStore.updateSelectedProfile(friend)">
+                  <i :class="'fas fa-user'" />
                 </button>
-                <button class="nav-icon !text-red-400" @click="handleRemoveFriend(friend)">
-                  <i :class="'fas fa-user-minus'" />
-                </button>
+                <template v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname">
+                  <button
+                    class="nav-icon"
+                    @click="
+                      () => {
+                        chatsStore.addActiveChat(friend)
+                        closeModal()
+                      }
+                    "
+                  >
+                    <i class="fa fa-comment"></i>
+                  </button>
+                  <button class="nav-icon !text-red-400" @click="handleRemoveFriend(friend)">
+                    <i :class="'fas fa-user-minus'" />
+                  </button>
+                </template>
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+// BanModal.vue
 <script lang="ts" setup>
 import { banPlayer, unbanPlayer } from '@ui/api/endpoints'
 import { IUser } from '@ui/env'
@@ -5,14 +6,18 @@ import useUserStore from '@ui/stores/user-store'
 import { UserRole } from '@ui/types/app'
 import { defaultDatePickerTime, showToast } from '@ui/utils'
 import DatePicker from 'primevue/datepicker'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+
+type BanType = 'nickname' | 'hwid'
+type BanMode = 'temporary' | 'permanent'
 
 const modalVisible = ref(false)
 const banReasonInput = ref('')
-const banType = ref('nickname')
+const banType = ref<BanType>('nickname')
+const banMode = ref<BanMode>('temporary')
 const banTime = ref<Date | null>(null)
 const playerData = ref<IUser>()
-const actionType = ref<string>('')
+const actionType = ref<'ban' | 'unban'>('ban')
 
 const userStore = useUserStore()
 
@@ -20,28 +25,69 @@ const emits = defineEmits<{
   (e: 'refreshData'): Promise<void> | void
 }>()
 
+const isPermanentBan = computed(() => banMode.value === 'permanent')
+
+// walidacja – przy permbanie nie wymagamy daty, ale zawsze wymagamy powodu
+const isBanDisabled = computed(() => {
+  if (actionType.value !== 'ban') return false
+
+  const hasReason = !!banReasonInput.value.trim()
+
+  if (isPermanentBan.value) {
+    return !hasReason
+  }
+
+  // dla zwykłych banów wymagamy i powodu, i daty
+  return !hasReason || !banTime.value
+})
+
 const openModal = async (player: IUser, type: 'unban' | 'ban' = 'ban'): Promise<void> => {
   modalVisible.value = true
   playerData.value = player
   actionType.value = type
+
+  // reset stanu przy każdym otwarciu
+  banReasonInput.value = ''
+  banType.value = 'nickname'
+  banMode.value = 'temporary'
+  banTime.value = null
 }
 
 const banUser = async (): Promise<void> => {
   if (!playerData.value) return
 
-  const res = await banPlayer({
+  const payload: {
+    nickname: string
+    machineId?: string
+    macAddress?: string
+    type: BanType
+    banEndDate?: Date
+    reason: string
+  } = {
     nickname: playerData.value.nickname,
     machineId: playerData.value.machineId,
     macAddress: playerData.value.macAddress,
     type: banType.value,
-    banEndDate: banTime.value as Date,
-    reason: banReasonInput.value
-  })
+    reason: banReasonInput.value.trim()
+  }
+
+  // przy banie czasowym wysyłamy banEndDate
+  if (!isPermanentBan.value && banTime.value) {
+    payload.banEndDate = banTime.value
+  }
+  // przy permbanie NIE dodajemy banEndDate => backend zrobi perma
+
+  const res = await banPlayer(payload)
 
   if (res) {
     await emits('refreshData')
     modalVisible.value = false
-    showToast('Pomyślnie zbanowano użytkownika ', 'error')
+    showToast(
+      isPermanentBan.value
+        ? 'Pomyślnie nadano permanentnego bana użytkownikowi'
+        : 'Pomyślnie zbanowano użytkownika',
+      'error'
+    )
   }
 }
 
@@ -66,6 +112,7 @@ const handleCancel = (): void => {
   banReasonInput.value = ''
   banTime.value = null
   banType.value = 'nickname'
+  banMode.value = 'temporary'
   modalVisible.value = false
 }
 
@@ -94,7 +141,8 @@ defineExpose({
         </div>
         <div class="modal-content flex-col">
           <template v-if="actionType === 'ban'">
-            <div v-if="userStore.user" class="flex gap-2">
+            <!-- typ bana (po czym ban) -->
+            <div v-if="userStore.user" class="flex gap-2 mb-2">
               <button
                 v-if="
                   [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
@@ -115,8 +163,28 @@ defineExpose({
                 Nick
               </button>
             </div>
-            <div class="flex gap-2 flex-col">
-              <label for="banReason" class="input-label">Czas zakończenia bana</label>
+
+            <!-- tryb bana: czasowy vs permanentny -->
+            <div class="flex gap-2 mb-3">
+              <button
+                class="toggle-option !py-[0.25rem]"
+                :class="{ active: banMode === 'temporary' }"
+                @click="banMode = 'temporary'"
+              >
+                Czasowy
+              </button>
+              <button
+                class="toggle-option !py-[0.25rem]"
+                :class="{ active: banMode === 'permanent' }"
+                @click="banMode = 'permanent'"
+              >
+                Permban
+              </button>
+            </div>
+
+            <!-- data tylko jeśli ban NIE jest permanentny -->
+            <div v-if="!isPermanentBan" class="flex gap-2 flex-col mb-2">
+              <label for="banEnd" class="input-label">Czas zakończenia bana</label>
               <DatePicker
                 v-model="banTime"
                 placeholder="Wybierz datę"
@@ -131,8 +199,13 @@ defineExpose({
                 inline
               />
             </div>
-            <label for="banReason" class="input-label">Powód bana</label>
+
+            <label for="banReason" class="input-label">
+              Powód bana
+              <span class="text-xs text-red-400">*</span>
+            </label>
             <textarea
+              id="banReason"
               v-model="banReasonInput"
               placeholder="Wpisz powód bana"
               rows="4"
@@ -144,7 +217,7 @@ defineExpose({
           <button
             type="button"
             class="btn-primary"
-            :disabled="actionType === 'ban' && !banReasonInput"
+            :disabled="isBanDisabled"
             aria-label="Zbanuj gracza"
             @click="actionType === 'ban' ? banUser() : unbanUser()"
           >
@@ -220,22 +293,6 @@ defineExpose({
 .input-label {
   font-weight: 600;
   font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.input-field,
-.textarea-field {
-  background: rgba(30, 35, 45, 0.85);
-  border-radius: 0.5rem;
-  border: none;
-  color: white;
-  padding: 0.5rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.input-field::placeholder,
-.textarea-field::placeholder {
   color: var(--text-secondary);
 }
 
