@@ -299,14 +299,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div
-          v-if="
-            [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.HELPER].includes(
-              userStore.user?.role ?? UserRole.USER
-            )
-          "
-          class="my-0 flex flex-row items-center justify-between"
-        >
+        <div class="my-0 flex flex-row items-center justify-between">
           <div class="text-[var(--text-secondary)]">Motyw</div>
 
           <div class="flex gap-2 my-4">

@@ -4,7 +4,7 @@
 import { IUser } from '@ui/env'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
-import { differenceInMilliseconds, intervalToDuration, parseISO } from 'date-fns'
+import { differenceInMilliseconds, format, intervalToDuration, parseISO } from 'date-fns'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
@@ -425,11 +425,47 @@ const handleEscape = (e: KeyboardEvent): void => {
             "
             class="flex gap-2 my-2"
           ></div>
+          <div class="flex gap-2 justify-center">
+            <div
+              v-if="player.lastLoginAt"
+              :style="`
+                    background: var(--bg-card);
+                    font-size: 0.6rem;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    margin-top: 4px;
+                    height: 1.2rem;
+                    font-weight: 800;
+                    flex-shrink: 0 !important;
+                    cursor: pointer;
+                    `"
+              class="mx-auto"
+            >
+              Ost. logowanie: {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
+            </div>
+            <div
+              v-if="player.createdAt"
+              :style="`
+                    background: var(--bg-card);
+                    font-size: 0.6rem;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    margin-top: 4px;
+                    height: 1.2rem;
+                    font-weight: 800;
+                    flex-shrink: 0 !important;
+                    cursor: pointer;
+                    `"
+              class="mx-auto"
+            >
+              Zarejestrowano:
+              {{ format(player.createdAt, 'dd.MM.yyyy, HH:mm') }}
+            </div>
+          </div>
           <div
             v-if="player.machineId"
             :style="`
                     background: var(--bg-card);
-                    color: var(--text-muted);
                     font-size: 0.6rem;
                     padding: 2px 6px;
                     border-radius: 4px;

@@ -12,7 +12,7 @@ import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
 import { showToast } from '@ui/utils'
 import { nextTick } from 'process'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 
 const props = defineProps<{
   filteredPlayers: IUser[]
@@ -31,6 +31,8 @@ const emit = defineEmits<{
 
 const generalStore = useGeneralStore()
 const userStore = useUserStore()
+
+const showInstruction = ref(false)
 
 const searchQuery = ref<string>(generalStore.searchQuery ?? '')
 const observerTarget = ref<HTMLElement | null>(null)
@@ -109,6 +111,10 @@ const handleOpenUserProfile = (player: IUser): void => {
   userStore.updateSelectedProfile(player)
 }
 
+const isMod = computed(() =>
+  [UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
+)
+
 const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
 
 const hasFriendRequestFromMe = (player: IUser): boolean =>
@@ -185,16 +191,36 @@ onUnmounted(() => {
 
 <template>
   <div class="users-container h-full flex">
-    <div class="flex flex-col w-full">
-      <div class="search-input-wrapper mb-2">
-        <i class="fas fa-search search-icon !text-[0.9rem] ml-3"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-          :placeholder="`Wyszukaj gracza po nicku${[UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER) ? ', UUID/MCID, Machine ID lub Mac adresie lub słowach kluczowych: banned, premium, nohwid, online, role:rola' : ''}...`"
-          @input="handleSearchInput"
-        />
+    <div class="relative flex flex-col w-full">
+      <div class="flex gap-2">
+        <div class="search-input-wrapper mb-2">
+          <i class="fas fa-search search-icon !text-[0.9rem] ml-3"></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
+            :placeholder="`Wyszukaj gracza...`"
+            @input="handleSearchInput"
+          />
+        </div>
+        <button v-if="isMod" class="nav-icon" @click="showInstruction = !showInstruction">
+          <i class="fas fa-info"></i>
+        </button>
+        <div
+          v-if="showInstruction"
+          class="absolute top-10 z-100 right-2 w-1/4 p-4 rounded-xl border border-[var(--primary)] backdrop-blur-3xl bg-[var(--bg-dark)]"
+        >
+          <h1 class="text-[var(--primary)] text-[1rem]">Słowa kluczowe</h1>
+          <p><b>q:hwid</b> - wyświetla graczy, którzy mają HWID</p>
+          <p><b>q:nohwid</b> - wyświetla graczy, którzy NIE mają HWID</p>
+          <p>
+            <b>q:hwid>x</b> - wyświetla graczy, którzy mają takie samo HWID i więcej niz x kont.
+            Mozliwe sa operatory: &gt;, &lt; i =
+          </p>
+          <p><b>hwid:[hwid]</b> - wyświetla graczy, którzy mają określone [hwid]</p>
+          <p><b>q:banned</b> - wyświetla graczy zbanowanych</p>
+          <p><b>q:online</b> - wyświetla graczy, którzy są aktualnie aktywni</p>
+        </div>
       </div>
 
       <div class="h-[calc(100vh-54.5px)] overflow-y-auto scroll-container">
