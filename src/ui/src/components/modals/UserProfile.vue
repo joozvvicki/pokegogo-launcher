@@ -319,7 +319,7 @@ const handleEscape = (e: KeyboardEvent): void => {
                 <span
                   :style="`
                       background: var(--primary);
-                      color: white;
+                      color: var(--text-primary);
                       font-size: 0.6rem;
                       padding: 2px 6px;
                       border-radius: 4px;
@@ -368,7 +368,7 @@ const handleEscape = (e: KeyboardEvent): void => {
           :style="`
                       background: var(--primary);
                       font-size: 0.6rem;
-                      color: white;
+                      color: var(--text-primary);
                       padding: 2px 6px;
                       border-radius: 4px;
                       font-weight: 800;
@@ -656,14 +656,14 @@ const handleEscape = (e: KeyboardEvent): void => {
   top: 54.5px;
   left: 0;
   height: calc(100vh - 54.5px);
-  color: white;
+  color: var(--text-primary);
   display: flex;
   align-items: end;
   z-index: 500;
 }
 
 .error-message {
-  background: white;
+  background: var(--text-primary);
   backdrop-filter: blur(10px);
 }
 

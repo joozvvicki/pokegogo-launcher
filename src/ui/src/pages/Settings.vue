@@ -9,6 +9,7 @@ import { calculateValueFromPercentage, checkUpdate, MIN_RAM, showToast } from '@
 import useVuelidate from '@vuelidate/core'
 import { helpers, required, sameAs } from '@vuelidate/validators'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import CustomTheme from '@ui/components/modals/CustomTheme.vue'
 
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
@@ -178,6 +179,25 @@ const changeGameMode = async (newMode: string): Promise<void> => {
   saveSettings()
 }
 
+const themeEditorModalRef = ref()
+
+const openThemeEditor = () => {
+  themeEditorModalRef.value?.open()
+}
+
+// Funkcja obsługująca zapisanie customowego motywu
+const handleCustomTheme = (customConfig: any) => {
+  // Możesz tutaj dodać logikę zapisu do localStorage lub bazy
+  Object.entries(customConfig).forEach(([key, value]: [string, any]) => {
+    if (value)
+      document.documentElement.style.setProperty(
+        `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`,
+        value
+      )
+  })
+  showToast('Zastosowano własny motyw!', 'success')
+}
+
 onUnmounted(() => {
   generalStore.saveSettings()
 })
@@ -310,6 +330,12 @@ onUnmounted(() => {
               @click="setNewTheme(theme.name)"
             >
               <i class="fa fa-home" :style="{ color: theme.primary }" />
+            </button>
+            <button
+              class="nav-icon !w-[2rem] !h-[2rem] !text-[1rem] border-dashed border-2 border-[var(--primary)]"
+              @click="openThemeEditor"
+            >
+              <i class="fa fa-plus" />
             </button>
           </div>
         </div>
@@ -566,5 +592,6 @@ onUnmounted(() => {
       </div>
     </div>
     <VerifyFilesModal ref="verifyFilesModalRef" />
+    <CustomTheme ref="themeEditorModalRef" @apply="handleCustomTheme" />
   </div>
 </template>

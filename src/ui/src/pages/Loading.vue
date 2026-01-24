@@ -39,7 +39,7 @@ const secondFloatingBlock = computed(() => {
 onMounted(() => {
   generalStore.loadSettings()
 
-  applyTheme(generalStore.getTheme())
+  applyTheme(generalStore.getTheme() === 'custom' ? 'custom' : generalStore.getTheme())
 
   const runLoadingFlow = async (): Promise<void> => {
     try {

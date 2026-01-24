@@ -24,7 +24,10 @@ const useGeneralStore = defineStore('general', () => {
     autoUpdate: true,
     updateChannel: 'beta',
     isSidebarCollapsed: false,
-    gameMode: 'Pokemons'
+    gameMode: 'Pokemons',
+    customTheme: localStorage.getItem('customTheme')
+      ? JSON.parse(localStorage.getItem('customTheme') || '')
+      : null
   }
 
   const savedSettings = localStorage.getItem('launcherSettings')
@@ -125,6 +128,12 @@ const useGeneralStore = defineStore('general', () => {
     settings.showNotifications = show
   }
 
+  const setCustomTheme = (theme: Record<string, string>): void => {
+    setTheme('custom')
+    settings.customTheme = theme
+    localStorage.setItem('customTheme', JSON.stringify(theme))
+  }
+
   return {
     searchQuery,
     mcInstance,
@@ -147,7 +156,8 @@ const useGeneralStore = defineStore('general', () => {
     setHideToTray,
     setShowNotifications,
     getTheme,
-    setTheme
+    setTheme,
+    setCustomTheme
   }
 })
 

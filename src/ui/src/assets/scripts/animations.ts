@@ -44,7 +44,9 @@ function createBackgroundParticles(): void {
   for (let i = 0; i < 50; i += 1) {
     const particle = document.createElement('div')
     particle.textContent =
-      themes.find((theme) => generalStore.getTheme() === theme.name)?.firstFloating ?? '❄️'
+      generalStore.settings.customTheme?.firstFloating ??
+      themes.find((theme) => generalStore.getTheme() === theme.name)?.firstFloating ??
+      '❄️'
     particle.style.position = 'absolute'
     particle.style.color = 'white'
     particle.style.fontSize = `${10 + Math.random() * 15}px`
@@ -57,6 +59,14 @@ function createBackgroundParticles(): void {
 
     particlesContainer.appendChild(particle)
   }
+
+  watch(
+    () => generalStore.settings.customTheme,
+    () => {
+      particlesContainer.innerHTML = ''
+      createBackgroundParticles()
+    }
+  )
 
   watch(
     () => generalStore.getTheme(),

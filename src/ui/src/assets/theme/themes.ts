@@ -140,8 +140,8 @@ export const kuromi = {
   playerLogout: '#3A475C',
 
   // Effects & Utilities
-  gradientPrimary: 'linear-gradient(135deg, #e9278165 0%, #e92781 100%)',
-  gradientBanned: 'linear-gradient(135deg, #e92781 0%, #e9278165 100%)',
+  gradientPrimary: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
+  gradientBanned: 'linear-gradient(135deg, var(--primary) 0%, var(--primary) 100%)',
   shadowGlow: '0 0 20px rgba(255, 255, 255, 0.6)', // Silna biała poświata szronu
   shadowCard: '0 20px 40px rgba(0, 0, 0, 0.5)',
   gradientOverlay: `radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(#e92781 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%)`,
@@ -235,7 +235,12 @@ export const main = {
   secondFloating: '🎄'
 }
 
-export const themes = [main, hellokitty, kuromi]
+export const themes = [
+  main,
+  hellokitty,
+  kuromi,
+  localStorage.getItem('customTheme') ? JSON.parse(localStorage.getItem('customTheme') || '') : null
+].filter(Boolean)
 
 export function applyTheme(newTheme: string): void {
   const theme = themes.find((t) => t.name.toLowerCase() === newTheme?.toLowerCase()) || main

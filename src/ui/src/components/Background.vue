@@ -9,21 +9,24 @@ import { computed } from 'vue'
 const generalStore = useGeneralStore()
 
 const bgImage = computed(() => {
-  return (
-    themes.find((theme) => theme.name === generalStore.getTheme())?.backgroundImage ?? background
-  )
+  return generalStore.getTheme() === 'custom'
+    ? generalStore.settings.customTheme?.backgroundImage
+    : (themes.find((theme) => theme.name === generalStore.getTheme())?.backgroundImage ??
+        background)
 })
 
 const firstFloatingBlock = computed(() => {
-  return (
-    themes.find((theme) => theme.name === generalStore.getTheme())?.firstFloating ?? firstFloating
-  )
+  return generalStore.getTheme() === 'custom'
+    ? generalStore.settings.customTheme?.firstFloating
+    : (themes.find((theme) => theme.name === generalStore.getTheme())?.firstFloating ??
+        firstFloating)
 })
 
 const secondFloatingBlock = computed(() => {
-  return (
-    themes.find((theme) => theme.name === generalStore.getTheme())?.secondFloating ?? secondFloating
-  )
+  return generalStore.getTheme() === 'custom'
+    ? generalStore.settings.customTheme?.secondFloating
+    : (themes.find((theme) => theme.name === generalStore.getTheme())?.secondFloating ??
+        secondFloating)
 })
 </script>
 
