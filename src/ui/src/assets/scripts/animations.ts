@@ -60,6 +60,23 @@ function createBackgroundParticles(): void {
     particlesContainer.appendChild(particle)
   }
 
+  document.addEventListener('visibilitychange', () => {
+    const particles = document.querySelectorAll<HTMLElement>('.particles div')
+
+    if (document.hidden) {
+      particles.forEach((p) => (p.style.animationPlayState = 'paused'))
+    } else {
+      particles.forEach((p) => (p.style.animationPlayState = 'running'))
+    }
+  })
+
+  window.electron.ipcRenderer.on('window-focus-changed', (_, isFocused) => {
+    const particles = document.querySelectorAll<HTMLElement>('.particles div')
+    particles.forEach((p) => {
+      p.style.animationPlayState = isFocused ? 'running' : 'paused'
+    })
+  })
+
   watch(
     () => generalStore.settings.customTheme,
     () => {

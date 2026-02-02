@@ -40,6 +40,14 @@ const createMainWindow = (): BrowserWindow => {
     if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
   })
 
+  mainWindow.on('blur', () => {
+    mainWindow.webContents.send('window-focus-changed', false)
+  })
+
+  mainWindow.on('focus', () => {
+    mainWindow.webContents.send('window-focus-changed', true)
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }

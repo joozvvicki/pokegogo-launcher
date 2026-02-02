@@ -3,6 +3,7 @@ import { getAutoUpdater } from './electron-updater'
 import { ipcMain, Notification, type BrowserWindow } from 'electron'
 import update from '../../../resources/update.png?asset'
 import Logger from 'electron-log'
+import { platform } from 'os'
 
 export const useAppUpdater = (win: BrowserWindow): AppUpdater => {
   let notified = false
@@ -11,6 +12,8 @@ export const useAppUpdater = (win: BrowserWindow): AppUpdater => {
   ipcMain.handle(
     'update:check',
     async (_event, channel?: string, showNotifications: boolean = true): Promise<boolean> => {
+      if (platform() === 'darwin') return false
+
       if (channel) {
         autoUpdater.channel = channel
         Logger.log(`Current update channel: ${autoUpdater.channel}`)
