@@ -507,7 +507,7 @@ const handleEscape = (e: KeyboardEvent): void => {
           </template>
         </div>
 
-        <template v-if="player.friendRequests">
+        <template v-if="player.friendRequests && userStore.user?.nickname === player.nickname">
           <div
             v-for="friend in friendRequests"
             :key="friend.uuid"
