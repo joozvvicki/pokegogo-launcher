@@ -4,9 +4,31 @@ import useGeneralStore from '@ui/stores/general-store'
 import firstFloating from '@ui/assets/img/firstFloating.png'
 import secondFloating from '@ui/assets/img/secondFloating.png'
 import background from '@ui/assets/img/choinka.png'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const generalStore = useGeneralStore()
+
+// start zgodny z aktualnym stanem zakładki
+const isTabActive = ref(!document.hidden)
+
+const handleVisibilityChange = (): void => {
+  isTabActive.value = !document.hidden
+  console.log(
+    'visibilitychange, document.hidden =',
+    document.hidden,
+    'isTabActive =',
+    isTabActive.value
+  )
+}
+
+onMounted(() => {
+  console.log('onMounted, document.hidden =', document.hidden, 'isTabActive =', isTabActive.value)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
 const bgImage = computed(() => {
   return generalStore.getTheme() === 'custom'
@@ -44,7 +66,7 @@ const secondFloatingBlock = computed(() => {
   <div class="vignette"></div>
   <div class="background">
     <div class="bg-gradient"></div>
-    <div class="floating-blocks">
+    <div class="floating-blocks" :class="{ 'floating-paused': !isTabActive }">
       <div class="block-1" @dragstart.prevent="null">
         {{ firstFloatingBlock }}
       </div>

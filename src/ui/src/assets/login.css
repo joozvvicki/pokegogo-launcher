@@ -96,6 +96,15 @@ body {
   opacity: 0.1;
 }
 
+.floating-blocks.floating-paused .block-1,
+.floating-blocks.floating-paused .block-2,
+.floating-blocks.floating-paused .block-3,
+.floating-blocks.floating-paused .ghost-1,
+.floating-blocks.floating-paused .ghost-2,
+.floating-blocks.floating-paused .ghost-3 {
+  animation-play-state: paused !important;
+}
+
 @keyframes sway {
   0% {
     transform: translateX(0);
