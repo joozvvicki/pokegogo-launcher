@@ -239,16 +239,18 @@ export const themes = [
   main,
   hellokitty,
   kuromi,
-  localStorage.getItem('customTheme') ? JSON.parse(localStorage.getItem('customTheme') || '') : null
+  localStorage.getItem('customTheme')
+    ? JSON.parse(localStorage.getItem('customTheme') as string)
+    : null
 ].filter(Boolean)
 
 export function applyTheme(newTheme: string): void {
   const theme = themes.find((t) => t.name.toLowerCase() === newTheme?.toLowerCase()) || main
 
   const root = document.documentElement
-  Object.entries(theme).forEach(([key, value]: [string, string | null]) => {
+  Object.entries(theme).forEach(([key, value]: [string, unknown]) => {
     if (value === null) return
-    root.style.setProperty(`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value)
+    root.style.setProperty(`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value as string)
   })
 
   updatePreset({
