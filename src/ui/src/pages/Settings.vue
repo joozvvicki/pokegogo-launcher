@@ -376,7 +376,7 @@ onUnmounted(() => {
 
       <!-- Right Column: Account Settings -->
       <div class="settings-column">
-        <div class="g-card h-full">
+        <div class="g-card">
           <div class="g-card-header">
             <div class="flex items-center gap-4">
               <div class="g-icon-box">
@@ -488,7 +488,7 @@ onUnmounted(() => {
   width: 100%;
   height: calc(100vh - 60px);
   margin: 0;
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
   overflow-y: auto;
 }
 
@@ -498,8 +498,6 @@ onUnmounted(() => {
   gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  height: 100%;
-  padding-bottom: 2rem;
 }
 
 .settings-column {

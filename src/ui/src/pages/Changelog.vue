@@ -133,73 +133,77 @@ onMounted(async () => {
       </div>
 
       <div v-else class="timeline-container custom-scrollbar">
-        <div class="timeline-line"></div>
+        <div class="timeline-content">
+          <div class="timeline-line"></div>
 
-        <div v-for="entry in filteredChangelog" :key="entry.uuid" class="timeline-entry">
-          <div class="entry-marker">
-            <div class="dot"></div>
-          </div>
-
-          <div class="entry-card">
-            <div class="card-header">
-              <div class="header-left">
-                <span class="version-badge">{{ entry.version }}</span>
-                <h3 class="entry-title">{{ entry.name }}</h3>
-              </div>
-
-              <div class="header-right">
-                <div class="date-badge">
-                  <i class="far fa-calendar-alt"></i>
-                  {{ entry.startDate ? format(parseISO(entry.startDate), 'dd MMM yyyy') : '' }}
-                </div>
-
-                <div v-if="hasAdmin" class="card-actions">
-                  <button
-                    class="icon-btn edit"
-                    @click="addChangelogModalRef?.openModal(entry, 'edit')"
-                  >
-                    <i class="fas fa-pencil-alt"></i>
-                  </button>
-                  <button class="icon-btn delete" @click="handleRemoveChangelog(entry)">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </div>
+          <div v-for="entry in filteredChangelog" :key="entry.uuid" class="timeline-entry">
+            <div class="entry-marker">
+              <div class="dot"></div>
             </div>
 
-            <div class="changes-list">
-              <div v-if="getChangesByType(entry, 'new').length > 0" class="change-group">
-                <h4 class="group-title text-green-400">
-                  <i class="fas fa-plus-circle"></i> {{ t('changelog.changeTypes.new', 'Nowości') }}
-                </h4>
-                <ul>
-                  <li v-for="(change, i) in getChangesByType(entry, 'new')" :key="i">
-                    {{ change.desc }}
-                  </li>
-                </ul>
+            <div class="entry-card">
+              <div class="card-header">
+                <div class="header-left">
+                  <span class="version-badge">{{ entry.version }}</span>
+                  <h3 class="entry-title">{{ entry.name }}</h3>
+                </div>
+
+                <div class="header-right">
+                  <div class="date-badge">
+                    <i class="far fa-calendar-alt"></i>
+                    {{ entry.startDate ? format(parseISO(entry.startDate), 'dd MMM yyyy') : '' }}
+                  </div>
+
+                  <div v-if="hasAdmin" class="card-actions">
+                    <button
+                      class="icon-btn edit"
+                      @click="addChangelogModalRef?.openModal(entry, 'edit')"
+                    >
+                      <i class="fas fa-pencil-alt"></i>
+                    </button>
+                    <button class="icon-btn delete" @click="handleRemoveChangelog(entry)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div v-if="getChangesByType(entry, 'improve').length > 0" class="change-group">
-                <h4 class="group-title text-blue-400">
-                  <i class="fas fa-rocket"></i>
-                  {{ t('changelog.changeTypes.improve', 'Ulepszenia') }}
-                </h4>
-                <ul>
-                  <li v-for="(change, i) in getChangesByType(entry, 'improve')" :key="i">
-                    {{ change.desc }}
-                  </li>
-                </ul>
-              </div>
+              <div class="changes-list">
+                <div v-if="getChangesByType(entry, 'new').length > 0" class="change-group">
+                  <h4 class="group-title text-green-400">
+                    <i class="fas fa-plus-circle"></i>
+                    {{ t('changelog.changeTypes.new', 'Nowości') }}
+                  </h4>
+                  <ul>
+                    <li v-for="(change, i) in getChangesByType(entry, 'new')" :key="i">
+                      {{ change.desc }}
+                    </li>
+                  </ul>
+                </div>
 
-              <div v-if="getChangesByType(entry, 'fix').length > 0" class="change-group">
-                <h4 class="group-title text-red-400">
-                  <i class="fas fa-bug"></i> {{ t('changelog.changeTypes.fix', 'Poprawki') }}
-                </h4>
-                <ul>
-                  <li v-for="(change, i) in getChangesByType(entry, 'fix')" :key="i">
-                    {{ change.desc }}
-                  </li>
-                </ul>
+                <div v-if="getChangesByType(entry, 'improve').length > 0" class="change-group">
+                  <h4 class="group-title text-blue-400">
+                    <i class="fas fa-rocket"></i>
+                    {{ t('changelog.changeTypes.improve', 'Ulepszenia') }}
+                  </h4>
+                  <ul>
+                    <li v-for="(change, i) in getChangesByType(entry, 'improve')" :key="i">
+                      {{ change.desc }}
+                    </li>
+                  </ul>
+                </div>
+
+                <div v-if="getChangesByType(entry, 'fix').length > 0" class="change-group">
+                  <h4 class="group-title text-red-400">
+                    <i class="fas fa-bug"></i>
+                    {{ t('changelog.changeTypes.fix', 'Poprawki') }}
+                  </h4>
+                  <ul>
+                    <li v-for="(change, i) in getChangesByType(entry, 'fix')" :key="i">
+                      {{ change.desc }}
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -346,11 +350,16 @@ onMounted(async () => {
   position: relative;
 }
 
+.timeline-content {
+  position: relative;
+  min-height: 100%;
+}
+
 .timeline-line {
   position: absolute;
-  top: 2rem;
-  bottom: 2rem;
-  left: 29px; /* Środek kropki (padding 2rem + 10px half dot - border fix) */
+  top: calc(1.5rem + 10px);
+  bottom: 0;
+  left: 9px;
   width: 2px;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -365,7 +374,7 @@ onMounted(async () => {
 .entry-marker {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 1.5rem;
   display: flex;
   align-items: center;
 }

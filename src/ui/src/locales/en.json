@@ -43,7 +43,11 @@
     "loginButton": "Log in",
     "microsoftLogin": "Log in via Microsoft",
     "noAccount": "Don't have an account?",
-    "register": "Register"
+    "register": "Register",
+    "toasts": {
+      "error": "An error occurred during login.",
+      "microsoftError": "An error occurred during Microsoft login."
+    }
   },
   "register": {
     "title": "PokemonGoGo Registration",
@@ -487,6 +491,16 @@
     "required": "This field is required",
     "emailInvalid": "Invalid email address",
     "passwordMismatch": "Passwords must match"
+  },
+  "toasts": {
+    "skinFetchError": "Failed to load skin from URL (HTTP Error/404):",
+    "canvasInitError": "Canvas context initialization error.",
+    "machineIdBanned": "Machine ID is banned.",
+    "machineIdNotBanned": "Machine ID is not banned.",
+    "updateCheck": "Checking for updates..",
+    "updateAvailable": "Update available.",
+    "updateUpToDate": "App is up-to-date.",
+    "updateError": "Error during update. Try again later."
   },
   "header": {
     "changeLanguage": "Change Language"

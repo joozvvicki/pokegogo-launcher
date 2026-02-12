@@ -71,7 +71,7 @@ const handleInstallUpdate = async (): Promise<void> => {
   try {
     await window.electron?.ipcRenderer?.invoke('update:start')
   } catch (err) {
-    showToast('Wystąpił błąd podczas aktualizacji. Spróbuj ponownie później.', 'error')
+    showToast(t('toasts.updateError'), 'error')
     LOGGER.log(err as string)
   } finally {
     isInstallingUpdate.value = false
@@ -137,7 +137,7 @@ onUnmounted(() => {
         <Transition name="fade-slide">
           <div v-if="isAdminMenuOpen" class="admin-dropdown">
             <button class="dropdown-item" @click="router.push('/app/users')">
-              <i class="fas fa-users-crown"></i>
+              <i class="fas fa-users"></i>
               <span>{{ t('router.users') }}</span>
             </button>
             <button class="dropdown-item" @click="router.push('/app/ftp')">
@@ -149,7 +149,7 @@ onUnmounted(() => {
               <span>{{ t('router.items') }}</span>
             </button>
             <button class="dropdown-item" @click="router.push('/app/events')">
-              <i class="fas fa-calendar-star"></i>
+              <i class="fas fa-calendar-alt"></i>
               <span>{{ t('router.events') }}</span>
             </button>
           </div>

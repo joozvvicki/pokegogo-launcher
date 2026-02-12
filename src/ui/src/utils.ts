@@ -6,6 +6,8 @@ import useUserStore from './stores/user-store'
 import { checkMachineID } from './api/endpoints'
 import { IUser } from './env'
 
+import i18n from './i18n'
+
 const apiURL = import.meta.env.RENDERER_VITE_API_URL
 
 const TOAST_DURATION = 3000
@@ -13,14 +15,16 @@ const TOAST_DURATION = 3000
 export const checkUpdate = async (): Promise<void> => {
   const generalStore = useGeneralStore()
 
-  LOGGER.with('Updater').log('Checking for update..')
+  LOGGER.with('Updater').log(i18n.global.t('toasts.updateCheck'))
   const res = await window.electron?.ipcRenderer?.invoke(
     'update:check',
     generalStore.settings.updateChannel,
     generalStore.settings.showNotifications
   )
 
-  LOGGER.with('Updater').success(res ? 'Update available.' : 'App is up-to-date.')
+  LOGGER.with('Updater').success(
+    res ? i18n.global.t('toasts.updateAvailable') : i18n.global.t('toasts.updateUpToDate')
+  )
   generalStore.setUpdateAvailable(res)
 }
 
@@ -80,8 +84,12 @@ export const showToast = (message: string, type = 'success'): void => {
 
   const icon = type === 'success' ? 'check-circle' : 'exclamation-circle'
   toast.innerHTML = `
-        <i class="fas fa-${icon} text-xl" style="color: ${type === 'success' ? 'var(--primary)' : '#ef4444'}"></i>
-        <span>${message}</span>
+        <i class="fas fa-${icon} text-xl toast-icon" style="color: ${
+          type === 'success' ? 'var(--primary)' : '#ef4444'
+        }"></i>
+        <div class="toast-body">
+            <span>${message}</span>
+        </div>
     `
 
   toastContainer.appendChild(toast)
@@ -232,7 +240,7 @@ export function extractHead(skinUrl: string, size: number = 100): Promise<string
     img.crossOrigin = 'anonymous'
 
     img.onerror = () => {
-      reject(new Error(`Nie udało się załadować skina z URL (HTTP Error/404): ${skinUrl}`))
+      reject(new Error(`${i18n.global.t('toasts.skinFetchError')} ${skinUrl}`))
     }
 
     img.onload = () => {
@@ -240,7 +248,7 @@ export function extractHead(skinUrl: string, size: number = 100): Promise<string
       const ctx = canvas.getContext('2d')
 
       if (!ctx) {
-        return reject(new Error('Błąd inicjalizacji Canvas context.'))
+        return reject(new Error(i18n.global.t('toasts.canvasInitError')))
       }
 
       canvas.width = size
@@ -261,7 +269,9 @@ export const isMachineIDBanned = async (): Promise<void> => {
 
   const res = await checkMachineID(generalStore.settings.machineId)
 
-  LOGGER.log(res ? 'Machine ID is banned.' : 'Machine ID is not banned.')
+  LOGGER.log(
+    res ? i18n.global.t('toasts.machineIdBanned') : i18n.global.t('toasts.machineIdNotBanned')
+  )
 
   userStore.hwidBanned = res
 }

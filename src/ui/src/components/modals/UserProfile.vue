@@ -415,7 +415,7 @@ const handleEscape = (e: KeyboardEvent): void => {
         </div>
 
         <!-- Friends list -->
-        <div class="flex flex-col gap-1 overflow-y-auto">
+        <div class="flex flex-col gap-1 overflow-y-auto overflow-x-hidden pr-1">
           <!-- Skeletons: friends -->
           <div v-if="isFriendsLoading" class="flex flex-col gap-1">
             <div v-for="n in 5" :key="n" class="skeleton-row px-4 py-2 rounded-xl">
@@ -823,6 +823,8 @@ const handleEscape = (e: KeyboardEvent): void => {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .avatar-wrapper {
@@ -872,6 +874,8 @@ const handleEscape = (e: KeyboardEvent): void => {
 .friend-details {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  flex: 1;
 }
 
 .friend-name {
@@ -879,6 +883,9 @@ const handleEscape = (e: KeyboardEvent): void => {
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .friend-role {

@@ -43,7 +43,11 @@
     "loginButton": "Zaloguj się",
     "microsoftLogin": "Zaloguj przez Microsoft",
     "noAccount": "Nie masz konta?",
-    "register": "Zarejestruj się"
+    "register": "Zarejestruj się",
+    "toasts": {
+      "error": "Wystąpił błąd podczas logowania.",
+      "microsoftError": "Wystąpił błąd podczas logowania przez Microsoft."
+    }
   },
   "register": {
     "title": "Rejestracja PokemonGoGo",
@@ -487,6 +491,16 @@
     "required": "To pole jest wymagane",
     "emailInvalid": "Nieprawidłowy adres email",
     "passwordMismatch": "Hasła muszą być identyczne"
+  },
+  "toasts": {
+    "skinFetchError": "Nie udało się załadować skina z URL (HTTP Error/404):",
+    "canvasInitError": "Błąd inicjalizacji Canvas context.",
+    "machineIdBanned": "Machine ID jest zbanowane.",
+    "machineIdNotBanned": "Machine ID nie jest zbanowane.",
+    "updateCheck": "Sprawdzanie aktualizacji..",
+    "updateAvailable": "Dostępna aktualizacja.",
+    "updateUpToDate": "Aplikacja jest aktualna.",
+    "updateError": "Wystąpił błąd podczas aktualizacji. Spróbuj ponownie później."
   },
   "header": {
     "changeLanguage": "Zmień język"
