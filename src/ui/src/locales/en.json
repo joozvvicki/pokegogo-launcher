@@ -1,0 +1,39 @@
+{
+  "settings": {
+    "title": "Game Settings",
+    "gameMode": "Game Mode",
+    "resolution": "Resolution",
+    "ram": "RAM Memory",
+    "displayMode": "Display Mode",
+    "window": "Window",
+    "fullscreen": "Fullscreen",
+    "launcherSettings": "Launcher Settings",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "hideToTray": "Hide to tray",
+    "autoUpdate": "Auto updates",
+    "updateChannel": "Update Channel",
+    "accountSettings": "Account Settings",
+    "changeEmail": "Change Email",
+    "changePassword": "Change Password",
+    "oldPassword": "Old Password",
+    "newPassword": "New Password",
+    "repeatPassword": "Repeat Password",
+    "save": "Save",
+    "reset": "Reset",
+    "verifyFiles": "Verify Files",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "successSave": "Settings saved.",
+    "successReset": "Default settings restored.",
+    "successPasswordChange": "Password changed successfully.",
+    "errorPasswordChange": "Failed to change password.",
+    "successEmailChange": "Email changed successfully.",
+    "errorEmailChange": "Failed to change email."
+  },
+  "general": {
+    "required": "This field is required",
+    "emailInvalid": "Invalid email address",
+    "passwordMismatch": "Passwords must match"
+  }
+}

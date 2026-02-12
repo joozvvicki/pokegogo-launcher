@@ -151,7 +151,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       if (!mcOpened)
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
 
-      if (typeof data === 'string' && data.includes('Initializing Client')) {
+      if (typeof data === 'string' && data.includes('[LibGui] Initializing Client...')) {
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
         mcOpened = true
         if (plt !== 'darwin') window.hide()

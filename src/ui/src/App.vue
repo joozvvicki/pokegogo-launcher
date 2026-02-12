@@ -21,7 +21,11 @@ window.electron?.ipcRenderer?.on('change:max-ram', (_, ram: string) => {
 onMounted(() => {
   generalStore.loadSettings()
 
-  applyTheme(localStorage.getItem('customTheme') ? 'custom' : generalStore.getTheme())
+  applyTheme(
+    localStorage.getItem('customTheme') && generalStore.settings.theme === 'custom'
+      ? 'custom'
+      : generalStore.getTheme()
+  )
 })
 </script>
 

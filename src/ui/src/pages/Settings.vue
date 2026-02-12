@@ -10,7 +10,9 @@ import useVuelidate from '@vuelidate/core'
 import { helpers, required, sameAs } from '@vuelidate/validators'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import CustomTheme from '@ui/components/modals/CustomTheme.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t, locale } = useI18n()
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
 
@@ -26,15 +28,15 @@ const state = reactive({
 
 const rules = computed(() => ({
   old: {
-    required: helpers.withMessage('To pole jest wymagane', required)
+    required: helpers.withMessage(t('general.required'), required)
   },
   new: {
-    required: helpers.withMessage('To pole jest wymagane', required),
-    sameAs: helpers.withMessage('Hasła muszą być identyczne', sameAs(state.repeatNew))
+    required: helpers.withMessage(t('general.required'), required),
+    sameAs: helpers.withMessage(t('general.passwordMismatch'), sameAs(state.repeatNew))
   },
   repeatNew: {
-    required: helpers.withMessage('To pole jest wymagane', required),
-    sameAs: helpers.withMessage('Hasła muszą być identyczne', sameAs(state.new))
+    required: helpers.withMessage(t('general.required'), required),
+    sameAs: helpers.withMessage(t('general.passwordMismatch'), sameAs(state.new))
   }
 }))
 
@@ -42,8 +44,8 @@ const v$ = useVuelidate(rules, state)
 const emailV$ = useVuelidate(
   {
     email: {
-      required: helpers.withMessage('To pole jest wymagane', required),
-      email: helpers.withMessage('Nieprawidłowy adres email', (value: string) => {
+      required: helpers.withMessage(t('general.required'), required),
+      email: helpers.withMessage(t('general.emailInvalid'), (value: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(value)
       })
@@ -96,12 +98,12 @@ onMounted(async () => {
 
 const saveSettings = (): void => {
   generalStore.saveSettings()
-  showToast('Zapisano ustawienia.')
+  showToast(t('settings.successSave'))
 }
 
 const resetSettings = (): void => {
   generalStore.resetSettings()
-  showToast('Przywrócono domyślne ustawienia', 'success')
+  showToast(t('settings.successReset'), 'success')
 }
 
 const handleChangePassword = async (): Promise<void> => {
@@ -112,14 +114,14 @@ const handleChangePassword = async (): Promise<void> => {
     const res = await changePassword(userStore.user?.nickname, state.old, state.new)
 
     if (res) {
-      showToast('Pomyślnie zmieniono hasło', 'success')
+      showToast(t('settings.successPasswordChange'), 'success')
       state.old = ''
       state.new = ''
       state.repeatNew = ''
       v$.value.$reset()
     }
   } catch {
-    showToast('Nie udało się zmienić hasła', 'error')
+    showToast(t('settings.errorPasswordChange'), 'error')
     return
   }
 }
@@ -139,12 +141,12 @@ const handleChangeEmail = async (): Promise<void> => {
     const res = await changeEmail(userStore.user?.nickname, state.email)
 
     if (res) {
-      showToast('Pomyślnie zmieniono email', 'success')
+      showToast(t('settings.successEmailChange'), 'success')
       emailV$.value.$reset()
       await userStore.logout()
     }
   } catch {
-    showToast('Nie udało się zmienić email', 'error')
+    showToast(t('settings.errorEmailChange'), 'error')
     return
   }
 }
@@ -177,6 +179,11 @@ const changeGameMode = async (newMode: string): Promise<void> => {
   generalStore.settings.gameMode = newMode
 
   saveSettings()
+}
+
+const changeLanguage = (lang: string): void => {
+  generalStore.setLanguage(lang)
+  locale.value = lang
 }
 
 const themeEditorModalRef = ref()
@@ -212,33 +219,34 @@ onUnmounted(() => {
             <div class="nav-icon">
               <i class="fas fa-cog"></i>
             </div>
-            <h2>Ustawienia gry</h2>
+            <h2>{{ t('settings.title') }}</h2>
             <span class="applogo-badge">{{ generalStore.appVersion?.split('-')[0] }}</span>
           </div>
         </div>
 
-        <div class="setting-group">
-          <label>Tryb gry</label>
-          <div class="toggle-group">
+        <div class="my-0 flex flex-row items-center justify-between mb-4">
+          <div class="text-[var(--text-secondary)] w-full">{{ t('settings.displayMode') }}</div>
+
+          <div class="flex items-center gap-2 w-full">
             <button
               class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.gameMode === 'Pokemons' }"
-              @click="changeGameMode('Pokemons')"
+              :class="{ active: generalStore.settings.displayMode === 'Okno' }"
+              @click="generalStore.settings.displayMode = 'Okno'"
             >
-              Pokemony
+              {{ t('settings.window') }}
             </button>
             <button
               class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.gameMode === 'MiniGames' }"
-              @click="changeGameMode('MiniGames')"
+              :class="{ active: generalStore.settings.displayMode === 'Pełny ekran' }"
+              @click="generalStore.settings.displayMode = 'Pełny ekran'"
             >
-              MiniGamesy
+              {{ t('settings.fullscreen') }}
             </button>
           </div>
         </div>
 
         <div class="setting-group">
-          <label>Rozdzielczość</label>
+          <label>{{ t('settings.resolution') }}</label>
           <div class="toggle-group">
             <button
               class="toggle-option !py-[0.25rem]"
@@ -265,7 +273,7 @@ onUnmounted(() => {
         </div>
 
         <div class="setting-group">
-          <label>Pamięć RAM</label>
+          <label>{{ t('settings.ram') }}</label>
           <div class="ram-slider-container">
             <input
               id="ramSlider"
@@ -289,38 +297,38 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="my-0 flex flex-row items-center justify-between mb-4">
-          <div class="text-[var(--text-secondary)] w-full">Tryb wyświetlania gry</div>
-
-          <div class="flex items-center gap-2 w-full">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.displayMode === 'Okno' }"
-              @click="generalStore.settings.displayMode = 'Okno'"
-            >
-              Okno
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.displayMode === 'Pełny ekran' }"
-              @click="generalStore.settings.displayMode = 'Pełny ekran'"
-            >
-              Pełny ekran
-            </button>
-          </div>
-        </div>
-
         <div class="card-header !mb-0">
           <div class="card-title">
             <div class="nav-icon">
               <i class="fas fa-user"></i>
             </div>
-            <h2>Ustawienia launchera</h2>
+            <h2>{{ t('settings.launcherSettings') }}</h2>
+          </div>
+        </div>
+
+        <div class="my-0 flex flex-row items-center justify-between mt-2 mb-4">
+          <div class="text-[var(--text-secondary)]">Język / Language</div>
+
+          <div class="flex gap-2">
+            <button
+              class="toggle-option !py-[0.25rem]"
+              :class="{ active: generalStore.settings.language === 'pl' }"
+              @click="changeLanguage('pl')"
+            >
+              Polski
+            </button>
+            <button
+              class="toggle-option !py-[0.25rem]"
+              :class="{ active: generalStore.settings.language === 'en' }"
+              @click="changeLanguage('en')"
+            >
+              English
+            </button>
           </div>
         </div>
 
         <div class="my-0 flex flex-row items-center justify-between">
-          <div class="text-[var(--text-secondary)]">Motyw</div>
+          <div class="text-[var(--text-secondary)]">{{ t('settings.theme') }}</div>
 
           <div class="flex gap-2 my-4">
             <button
@@ -348,7 +356,7 @@ onUnmounted(() => {
             )
           }"
         >
-          <div class="text-[var(--text-secondary)]">Powiadomienia</div>
+          <div class="text-[var(--text-secondary)]">{{ t('settings.notifications') }}</div>
 
           <div class="flex items-center gap-2">
             <button
@@ -356,20 +364,20 @@ onUnmounted(() => {
               :class="{ active: generalStore.settings.showNotifications === true }"
               @click="generalStore.setShowNotifications(true)"
             >
-              Włączone
+              {{ t('settings.enabled') }}
             </button>
             <button
               class="toggle-option !py-[0.25rem]"
               :class="{ active: generalStore.settings.showNotifications === false }"
               @click="generalStore.setShowNotifications(false)"
             >
-              Wyłączone
+              {{ t('settings.disabled') }}
             </button>
           </div>
         </div>
 
         <div class="my-0 mt-4 flex flex-row items-center justify-between">
-          <div class="text-[var(--text-secondary)]">Ukrywanie w zasobniku</div>
+          <div class="text-[var(--text-secondary)]">{{ t('settings.hideToTray') }}</div>
 
           <div class="flex items-center gap-2">
             <button
@@ -377,14 +385,14 @@ onUnmounted(() => {
               :class="{ active: generalStore.settings.hideToTray === true }"
               @click="generalStore.setHideToTray(true)"
             >
-              Włączone
+              {{ t('settings.enabled') }}
             </button>
             <button
               class="toggle-option !py-[0.25rem]"
               :class="{ active: generalStore.settings.hideToTray === false }"
               @click="generalStore.setHideToTray(false)"
             >
-              Wyłączone
+              {{ t('settings.disabled') }}
             </button>
           </div>
         </div>
@@ -397,7 +405,7 @@ onUnmounted(() => {
           "
           class="my-0 mt-4 flex flex-row items-center justify-between"
         >
-          <div class="text-[var(--text-secondary)] w-full">Automatyczne aktualizacje</div>
+          <div class="text-[var(--text-secondary)] w-full">{{ t('settings.autoUpdate') }}</div>
 
           <div class="flex items-center gap-2">
             <button
@@ -405,14 +413,14 @@ onUnmounted(() => {
               :class="{ active: generalStore.settings.autoUpdate === true }"
               @click="generalStore.settings.autoUpdate = true"
             >
-              Włączone
+              {{ t('settings.enabled') }}
             </button>
             <button
               class="toggle-option !py-[0.25rem]"
               :class="{ active: generalStore.settings.autoUpdate === false }"
               @click="generalStore.settings.autoUpdate = false"
             >
-              Wyłączone
+              {{ t('settings.disabled') }}
             </button>
           </div>
         </div>
@@ -426,7 +434,7 @@ onUnmounted(() => {
           "
           class="my-0 mt-4 flex flex-row items-center justify-between"
         >
-          <div class="text-[var(--text-secondary)] w-full">Kanał aktualizacji</div>
+          <div class="text-[var(--text-secondary)] w-full">{{ t('settings.updateChannel') }}</div>
 
           <div class="flex items-center gap-2">
             <button
@@ -453,7 +461,7 @@ onUnmounted(() => {
             <div class="nav-icon">
               <i class="fas fa-user"></i>
             </div>
-            <h2>Ustawienia Konta</h2>
+            <h2>{{ t('settings.accountSettings') }}</h2>
           </div>
 
           <div class="settings-actions">
@@ -470,7 +478,7 @@ onUnmounted(() => {
         </div>
 
         <div class="setting-group !w-full">
-          <label>Zmiana emaila</label>
+          <label>{{ t('settings.changeEmail') }}</label>
           <div class="flex gap-2 !w-full items-center">
             <div class="form-group !w-full">
               <div class="input-wrapper !w-full flex">
@@ -480,7 +488,7 @@ onUnmounted(() => {
                   v-model="state.email"
                   type="email"
                   class="form-input"
-                  placeholder="Adres email"
+                  placeholder="Email"
                   :class="{ invalid: emailV$.email.$error }"
                   required
                 />
@@ -492,12 +500,12 @@ onUnmounted(() => {
             </div>
             <button class="btn-primary mb-4 max-w-1/3" @click="handleChangeEmail">
               <i class="fas fa-edit"></i>
-              Zmień email
+              {{ t('settings.changeEmail') }}
             </button>
           </div>
 
           <template v-if="userStore.user?.accountType === AccountType.BACKEND">
-            <label class="mt-[11px]">Zmiana hasła</label>
+            <label class="mt-[11px]">{{ t('settings.changePassword') }}</label>
             <div class="form-group" :class="{ '!mb-5': v$.old.$error }">
               <div class="input-wrapper">
                 <i class="fas fa-lock input-icon"></i>
@@ -505,7 +513,7 @@ onUnmounted(() => {
                   v-model="state.old"
                   :type="!state.showedOld ? 'password' : 'text'"
                   class="form-input"
-                  placeholder="Stare hasło"
+                  :placeholder="t('settings.oldPassword')"
                   :class="{ invalid: v$.old.$error }"
                   required
                 />
@@ -532,7 +540,7 @@ onUnmounted(() => {
                   v-model="state.new"
                   :type="!state.showedNew ? 'password' : 'text'"
                   class="form-input"
-                  placeholder="Hasło"
+                  :placeholder="t('settings.newPassword')"
                   :class="{ invalid: v$.new.$error }"
                   required
                 />
@@ -559,7 +567,7 @@ onUnmounted(() => {
                   v-model="state.repeatNew"
                   :type="!state.showedRepeatNew ? 'password' : 'text'"
                   class="form-input"
-                  placeholder="Potwórz hasło"
+                  :placeholder="t('settings.repeatPassword')"
                   :class="{ invalid: v$.repeatNew.$error }"
                   required
                 />
@@ -585,7 +593,7 @@ onUnmounted(() => {
               @click="handleChangePassword"
             >
               <i class="fas fa-edit"></i>
-              Zmień hasło
+              {{ t('settings.changePassword') }}
             </button>
           </template>
         </div>

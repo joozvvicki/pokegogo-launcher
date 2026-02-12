@@ -5,10 +5,13 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { MainPreset } from './assets/theme/preset'
 
+import i18n from './i18n'
+
 const app = createApp(App)
 
 app.use(router)
 app.use(createPinia())
+app.use(i18n)
 app.use(PrimeVue, {
   theme: {
     preset: MainPreset,

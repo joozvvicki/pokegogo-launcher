@@ -25,6 +25,7 @@ const useGeneralStore = defineStore('general', () => {
     updateChannel: 'beta',
     isSidebarCollapsed: false,
     gameMode: 'Pokemons',
+    language: 'pl',
     customTheme: localStorage.getItem('customTheme')
       ? JSON.parse(localStorage.getItem('customTheme') || '')
       : null
@@ -97,6 +98,7 @@ const useGeneralStore = defineStore('general', () => {
     if (loaded.updateChannel) settings.updateChannel = loaded.updateChannel
     if (loaded.isSidebarCollapsed) settings.isSidebarCollapsed = loaded.isSidebarCollapsed
     if (loaded.gameMode) settings.gameMode = loaded.gameMode
+    if (loaded.language) settings.language = loaded.language
   }
 
   const saveSettings = (): void => {
@@ -115,6 +117,7 @@ const useGeneralStore = defineStore('general', () => {
     settings.autoUpdate = true
     settings.updateChannel = 'beta'
     settings.isSidebarCollapsed = false
+    settings.language = 'pl'
     saveSettings()
   }
 
@@ -132,6 +135,11 @@ const useGeneralStore = defineStore('general', () => {
     setTheme('custom')
     settings.customTheme = theme
     localStorage.setItem('customTheme', JSON.stringify(theme))
+  }
+
+  const setLanguage = (lang: string): void => {
+    settings.language = lang
+    saveSettings()
   }
 
   return {
@@ -157,6 +165,7 @@ const useGeneralStore = defineStore('general', () => {
     setShowNotifications,
     getTheme,
     setTheme,
+    setLanguage,
     setCustomTheme
   }
 })

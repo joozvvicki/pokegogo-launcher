@@ -1,0 +1,39 @@
+{
+  "settings": {
+    "title": "Ustawienia gry",
+    "gameMode": "Tryb gry",
+    "resolution": "Rozdzielczość",
+    "ram": "Pamięć RAM",
+    "displayMode": "Tryb wyświetlania gry",
+    "window": "Okno",
+    "fullscreen": "Pełny ekran",
+    "launcherSettings": "Ustawienia launchera",
+    "theme": "Motyw",
+    "notifications": "Powiadomienia",
+    "hideToTray": "Ukrywanie w zasobniku",
+    "autoUpdate": "Automatyczne aktualizacje",
+    "updateChannel": "Kanał aktualizacji",
+    "accountSettings": "Ustawienia Konta",
+    "changeEmail": "Zmiana emaila",
+    "changePassword": "Zmiana hasła",
+    "oldPassword": "Stare hasło",
+    "newPassword": "Hasło",
+    "repeatPassword": "Powtórz hasło",
+    "save": "Zapisz",
+    "reset": "Przywróć",
+    "verifyFiles": "Sprawdź pliki",
+    "enabled": "Włączone",
+    "disabled": "Wyłączone",
+    "successSave": "Zapisano ustawienia.",
+    "successReset": "Przywrócono domyślne ustawienia",
+    "successPasswordChange": "Pomyślnie zmieniono hasło",
+    "errorPasswordChange": "Nie udało się zmienić hasła",
+    "successEmailChange": "Pomyślnie zmieniono email",
+    "errorEmailChange": "Nie udało się zmienić email"
+  },
+  "general": {
+    "required": "To pole jest wymagane",
+    "emailInvalid": "Nieprawidłowy adres email",
+    "passwordMismatch": "Hasła muszą być identyczne"
+  }
+}
