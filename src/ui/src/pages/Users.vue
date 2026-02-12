@@ -13,6 +13,8 @@ import { AccountType, UserRole } from '@ui/types/app'
 import { showToast } from '@ui/utils'
 import { nextTick } from 'process'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const props = defineProps<{
   filteredPlayers: IUser[]
@@ -60,7 +62,7 @@ const handleSearchInput = (): void => {
 const getPlayerID = (player: IUser): string => {
   if (player?.mcid) return player.mcid
   if (player?.uuid) return player.uuid
-  return '(Brak)'
+  return t('users.none')
 }
 
 const handleRequestFriend = async (player: IUser): Promise<void> => {
@@ -71,10 +73,10 @@ const handleRequestFriend = async (player: IUser): Promise<void> => {
       await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
 
-      showToast(`Wysłano zaproszenie do ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteSent')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się wysłać zaproszenia do ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteFailed')} ${player.nickname}`, 'error')
   }
 }
 
@@ -85,10 +87,10 @@ const handleCancelRequest = async (player: IUser): Promise<void> => {
       await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
 
-      showToast(`Cofnięto zaproszenie do ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteCancelled')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się anulować zaproszenia do ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteCancelFailed')} ${player.nickname}`, 'error')
   }
 }
 
@@ -100,10 +102,10 @@ const handleRemoveFriend = async (player: IUser): Promise<void> => {
       await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
 
-      showToast(`Usunięto ${player.nickname} z listy znajomych`, 'success')
+      showToast(`${t('users.toasts.friendRemoved')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się usunąć ${player.nickname} z listy znajomych`, 'error')
+    showToast(`${t('users.toasts.friendRemoveFailed')} ${player.nickname}`, 'error')
   }
 }
 
@@ -131,10 +133,10 @@ const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
       await emit('refresh-data')
       await userStore.updateProfile()
 
-      showToast(`Zaakceptowano zaproszenie od ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteAccepted')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się zaakceptować zaproszenia od ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteAcceptFailed')} ${player.nickname}`, 'error')
   }
 }
 
@@ -146,10 +148,10 @@ const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
       await emit('refresh-data')
       await userStore.updateProfile()
 
-      showToast(`Odrzucono zaproszenie od ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteRejected')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się odrzucić zaproszenia od ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteRejectFailed')} ${player.nickname}`, 'error')
   }
 }
 
@@ -199,7 +201,7 @@ onUnmounted(() => {
             v-model="searchQuery"
             type="text"
             class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-            :placeholder="`Wyszukaj gracza...`"
+            :placeholder="t('users.searchPlaceholder')"
             @input="handleSearchInput"
           />
         </div>
@@ -210,16 +212,13 @@ onUnmounted(() => {
           v-if="showInstruction"
           class="absolute top-10 z-100 right-2 w-1/4 p-4 rounded-xl border border-[var(--primary)] backdrop-blur-3xl bg-[var(--bg-dark)]"
         >
-          <h1 class="text-[var(--primary)] text-[1rem]">Słowa kluczowe</h1>
-          <p><b>q:hwid</b> - wyświetla graczy, którzy mają HWID</p>
-          <p><b>q:nohwid</b> - wyświetla graczy, którzy NIE mają HWID</p>
-          <p>
-            <b>q:hwid>x</b> - wyświetla graczy, którzy mają takie samo HWID i więcej niz x kont.
-            Mozliwe sa operatory: &gt;, &lt; i =
-          </p>
-          <p><b>hwid:[hwid]</b> - wyświetla graczy, którzy mają określone [hwid]</p>
-          <p><b>q:banned</b> - wyświetla graczy zbanowanych</p>
-          <p><b>q:online</b> - wyświetla graczy, którzy są aktualnie aktywni</p>
+          <h1 class="text-[var(--primary)] text-[1rem]">{{ t('users.keywords.title') }}</h1>
+          <p><b>q:hwid</b> - {{ t('users.keywords.hwid') }}</p>
+          <p><b>q:nohwid</b> - {{ t('users.keywords.nohwid') }}</p>
+          <p><b>q:hwid>x</b> - {{ t('users.keywords.hwidCount') }}</p>
+          <p><b>hwid:[hwid]</b> - {{ t('users.keywords.hwidSpecific') }}</p>
+          <p><b>q:banned</b> - {{ t('users.keywords.banned') }}</p>
+          <p><b>q:online</b> - {{ t('users.keywords.online') }}</p>
         </div>
       </div>
 
@@ -267,7 +266,7 @@ onUnmounted(() => {
                       `"
                     class="!max-w-content !shrink-0 bg-red-500"
                   >
-                    BANNED
+                    {{ t('users.banned') }}
                   </span>
                 </div>
               </div>
@@ -359,10 +358,10 @@ onUnmounted(() => {
         <div ref="observerTarget" class="w-full py-4 flex justify-center items-center h-20 mt-2">
           <div v-if="isLoadingPlayers" class="flex flex-col items-center gap-2">
             <i class="fas fa-circle-notch fa-spin text-2xl text-[var(--primary)]"></i>
-            <span class="text-xs opacity-70">Ładowanie graczy...</span>
+            <span class="text-xs opacity-70">{{ t('users.loading') }}</span>
           </div>
           <div v-if="!hasMorePlayers" class="flex flex-col items-center gap-2">
-            <span class="text-xs opacity-70">Koniec wyników</span>
+            <span class="text-xs opacity-70">{{ t('users.endOfResults') }}</span>
           </div>
         </div>
       </div>

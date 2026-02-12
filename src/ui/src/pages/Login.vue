@@ -11,6 +11,9 @@ const { useMethods, useVariables } = useLoginService()
 
 const { handleLogin, handleChangeTab, removeSavedAccount, handleRegister } = useMethods()
 const { savedAccounts, appState, formState, login$ } = useVariables()
+
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 </script>
 
 <template>
@@ -19,7 +22,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
 
   <footer class="absolute z-200 bottom-2 w-full text-center">
     <div class="text-[10px] text-[var(--text-muted)] text-center">
-      <p>&copy; 2024-2025 Pokemongogo.pl. Wszystkie prawa zastrzeżone.</p>
+      <p>&copy; 2025-2026 Pokemongogo.pl. {{ t('login.copyright') }}</p>
     </div>
   </footer>
 
@@ -29,9 +32,9 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
     >
       <Transition name="fade" mode="out-in">
         <div v-if="appState.activeTab === ActiveTab.LOGIN">
-          <h1 class="text-2xl w-full text-center mb-2">Logowanie do PokemonGoGo</h1>
+          <h1 class="text-2xl w-full text-center mb-2">{{ t('login.title') }}</h1>
           <p class="text-center mb-4">
-            Zaloguj się do launchera korzystając z jednego z dostępnych sposobów.
+            {{ t('login.subtitle') }}
           </p>
 
           <div class="flex gap-2">
@@ -67,7 +70,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
 
           <div v-if="savedAccounts.length" class="flex relative w-full">
             <hr class="my-4 w-full border-[var(--primary)]" />
-            <span class="mt-[7px] mx-2">lub</span>
+            <span class="mt-[7px] mx-2">{{ t('login.or') }}</span>
             <hr class="my-4 w-full border-[var(--primary)]" />
           </div>
 
@@ -80,7 +83,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
                 <input
                   v-model="formState.nick"
                   type="text"
-                  placeholder="Podaj nick.."
+                  :placeholder="t('login.placeholder.nick')"
                   class="form-input !pl-[2rem] group"
                   :class="{ invalid: login$.nick.$error }"
                 />
@@ -119,12 +122,14 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
               </div>
             </div>
 
-            <button class="btn-primary mt-2" @click="handleLogin(null)">Zaloguj się</button>
+            <button class="btn-primary mt-2" @click="handleLogin(null)">
+              {{ t('login.loginButton') }}
+            </button>
           </div>
 
           <div class="flex relative w-full">
             <hr class="my-4 w-full border-[var(--primary)]" />
-            <span class="mt-[7px] mx-2">lub</span>
+            <span class="mt-[7px] mx-2">{{ t('login.or') }}</span>
             <hr class="my-4 w-full border-[var(--primary)]" />
           </div>
 
@@ -133,22 +138,22 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
             @click="handleLogin({ accountType: AccountType.MICROSOFT })"
           >
             <i class="fab fa-microsoft"></i>
-            <span>Zaloguj przez Microsoft</span>
+            <span>{{ t('login.microsoftLogin') }}</span>
           </button>
 
           <p class="text-xs text-center">
-            Nie masz konta?
+            {{ t('login.noAccount') }}
             <span
               class="text-[var(--primary)] hover:cursor-pointer hover:underline"
               @click="handleChangeTab(ActiveTab.REGISTER)"
-              >Zarejestruj się</span
+              >{{ t('login.register') }}</span
             >
           </p>
         </div>
         <div v-else>
-          <h1 class="text-2xl w-full text-center mb-2">Rejestracja PokemonGoGo</h1>
+          <h1 class="text-2xl w-full text-center mb-2">{{ t('register.title') }}</h1>
           <p class="text-center mb-4">
-            Załóż konto, aby móc korzystać z aplikacji i wejść na serwer PokemonGoGo.pl
+            {{ t('register.subtitle') }}
           </p>
 
           <Message
@@ -156,8 +161,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
             class="!bg-blue-400/20 !text-blue-500 !outline !outline-blue-700 !mb-4"
           >
             <span class="text-[10px]">
-              Pamiętaj, że rejestrować się powinny tylko konta non-premium. Gdy masz konto premium,
-              zaloguj się przez Microsoft.
+              {{ t('register.info') }}
             </span>
           </Message>
 
@@ -170,7 +174,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
                 <input
                   v-model="formState.nick"
                   type="text"
-                  placeholder="Podaj nick.."
+                  :placeholder="t('register.placeholder.nick')"
                   class="form-input group !pl-[2rem]"
                   :class="{ invalid: login$.nick.$error }"
                 />
@@ -188,7 +192,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
                 <input
                   v-model="formState.email"
                   type="text"
-                  placeholder="Podaj email.."
+                  :placeholder="t('register.placeholder.email')"
                   class="form-input !pl-[2rem] group"
                   :class="{ invalid: login$.email?.$error }"
                 />
@@ -235,7 +239,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
                 <input
                   v-model="formState.repeatPassword"
                   :type="formState.repeatPasswordType"
-                  placeholder="Potwórz hasło.."
+                  :placeholder="t('register.placeholder.repeatPassword')"
                   class="form-input !pl-[2rem] group"
                   :class="{ invalid: login$.repeatPassword?.$error }"
                 />
@@ -256,15 +260,17 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
               </div>
             </div>
 
-            <button class="btn-primary my-2" @click="handleRegister">Zarejestruj się</button>
+            <button class="btn-primary my-2" @click="handleRegister">
+              {{ t('register.registerButton') }}
+            </button>
 
             <p class="text-xs text-center">
-              Masz już konto?
+              {{ t('register.hasAccount') }}
               <span
                 class="text-[var(--primary)] hover:cursor-pointer hover:underline"
                 @click="handleChangeTab(ActiveTab.LOGIN)"
               >
-                Zaloguj się
+                {{ t('register.login') }}
               </span>
             </p>
           </div>
@@ -281,7 +287,7 @@ const { savedAccounts, appState, formState, login$ } = useVariables()
         <div class="spinner-ring"></div>
       </div>
       <div class="loading-text">
-        <span id="loading-message">{{ appState.loadingMessage ?? 'Ładowanie..' }}</span>
+        <span id="loading-message">{{ appState.loadingMessage ?? t('general.loading') }}</span>
       </div>
     </div>
   </div>

@@ -7,6 +7,9 @@ import { UserRole } from '@ui/types/app'
 import { defaultDatePickerTime, showToast } from '@ui/utils'
 import DatePicker from 'primevue/datepicker'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 type BanType = 'nickname' | 'hwid'
 type BanMode = 'temporary' | 'permanent'
@@ -81,8 +84,8 @@ const banUser = async (): Promise<void> => {
     modalVisible.value = false
     showToast(
       isPermanentBan.value
-        ? 'Pomyślnie nadano permanentnego bana użytkownikowi ' + playerData.value.nickname
-        : 'Pomyślnie zbanowano użytkownika ' + playerData.value.nickname,
+        ? `${t('modals.banPlayer.successPerm')} ${playerData.value.nickname}`
+        : `${t('modals.banPlayer.successTemp')} ${playerData.value.nickname}`,
       'error'
     )
   }
@@ -100,7 +103,7 @@ const unbanUser = async (): Promise<void> => {
 
   if (res) {
     await emits('refreshData')
-    showToast('Pomyślnie odbanowano użytkownika ' + playerData.value.nickname)
+    showToast(`${t('modals.banPlayer.successUnban')} ${playerData.value.nickname}`)
     handleCancel()
   }
 }
@@ -133,7 +136,13 @@ defineExpose({
             <div class="nav-icon">
               <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </div>
-            <h2 id="ban-title">{{ actionType === 'ban' ? 'Zbanuj' : 'Odbanuj' }} gracza</h2>
+            <h2 id="ban-title">
+              {{
+                actionType === 'ban'
+                  ? t('modals.banPlayer.titleBan')
+                  : t('modals.banPlayer.titleUnban')
+              }}
+            </h2>
           </div>
         </div>
         <div class="modal-content flex-col">
@@ -150,14 +159,14 @@ defineExpose({
                 :class="{ active: banType === 'hwid' }"
                 @click="banType = 'hwid'"
               >
-                HWID
+                {{ t('modals.banPlayer.hwid') }}
               </button>
               <button
                 class="toggle-option !py-[0.25rem]"
                 :class="{ active: banType === 'nickname' }"
                 @click="banType = 'nickname'"
               >
-                Nick
+                {{ t('modals.banPlayer.nick') }}
               </button>
             </div>
 
@@ -168,29 +177,29 @@ defineExpose({
                 :class="{ active: banMode === 'temporary' }"
                 @click="banMode = 'temporary'"
               >
-                Czasowy
+                {{ t('modals.banPlayer.temp') }}
               </button>
               <button
                 class="toggle-option !py-[0.25rem]"
                 :class="{ active: banMode === 'permanent' }"
                 @click="banMode = 'permanent'"
               >
-                Permban
+                {{ t('modals.banPlayer.perm') }}
               </button>
             </div>
 
             <!-- data tylko jeśli ban NIE jest permanentny -->
             <div v-if="!isPermanentBan" class="flex gap-2 flex-col mb-2">
-              <label for="banEnd" class="input-label">Czas zakończenia bana</label>
+              <label for="banEnd" class="input-label">{{ t('modals.banPlayer.endTime') }}</label>
               <DatePicker
                 v-model="banTime"
-                placeholder="Wybierz datę"
+                :placeholder="t('modals.banPlayer.datePlaceholder')"
                 :pt="defaultDatePickerTime"
                 input-class="!w-full"
               />
               <DatePicker
                 v-model="banTime"
-                placeholder="Wybierz datę"
+                :placeholder="t('modals.banPlayer.datePlaceholder')"
                 :pt="defaultDatePickerTime"
                 time-only
                 inline
@@ -198,13 +207,13 @@ defineExpose({
             </div>
 
             <label for="banReason" class="input-label">
-              Powód bana
+              {{ t('modals.banPlayer.reason') }}
               <span class="text-xs text-red-400">*</span>
             </label>
             <textarea
               id="banReason"
               v-model="banReasonInput"
-              placeholder="Wpisz powód bana"
+              :placeholder="t('modals.banPlayer.reasonPlaceholder')"
               rows="4"
               class="jvm-args !resize-none !outline-none"
             ></textarea>
@@ -218,9 +227,11 @@ defineExpose({
             aria-label="Zbanuj gracza"
             @click="actionType === 'ban' ? banUser() : unbanUser()"
           >
-            {{ actionType === 'ban' ? 'Zbanuj' : 'Odbanuj' }}
+            {{ actionType === 'ban' ? t('modals.banPlayer.ban') : t('modals.banPlayer.unban') }}
           </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <button type="button" class="btn-secondary" @click="handleCancel">
+            {{ t('modals.banPlayer.cancel') }}
+          </button>
         </div>
       </div>
     </div>

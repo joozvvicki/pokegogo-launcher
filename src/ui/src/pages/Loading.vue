@@ -7,7 +7,11 @@ import { applyTheme, themes } from '@ui/assets/theme/themes'
 import { checkUpdate } from '@ui/utils'
 import useGeneralStore from '@ui/stores/general-store'
 
-const status = ref<string>('Inicjalizowanie..')
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+const status = ref<string>(t('load.init'))
 const progress = ref(0)
 
 const generalStore = useGeneralStore()
@@ -18,11 +22,11 @@ enum APP_STATUSES {
   STARTING = 'starting'
 }
 
-const statuses = {
-  [APP_STATUSES.CHECK_FOR_UPDATE]: 'Sprawdzanie aktualizacji..',
-  [APP_STATUSES.UPDATING]: 'Aktualizowanie..',
-  [APP_STATUSES.STARTING]: 'Witamy!'
-}
+const statuses = computed(() => ({
+  [APP_STATUSES.CHECK_FOR_UPDATE]: t('load.checkUpdate'),
+  [APP_STATUSES.UPDATING]: t('load.updating'),
+  [APP_STATUSES.STARTING]: t('load.welcome')
+}))
 
 const firstFloatingBlock = computed(() => {
   return (
@@ -43,11 +47,11 @@ onMounted(() => {
 
   const runLoadingFlow = async (): Promise<void> => {
     try {
-      status.value = statuses[APP_STATUSES.CHECK_FOR_UPDATE]
+      status.value = statuses.value[APP_STATUSES.CHECK_FOR_UPDATE]
       await checkUpdate()
       progress.value = 25
 
-      status.value = statuses[APP_STATUSES.UPDATING]
+      status.value = statuses.value[APP_STATUSES.UPDATING]
       if (generalStore.isUpdateAvailable && generalStore.settings.autoUpdate) {
         await window.electron?.ipcRenderer?.invoke('update:start')
       }
@@ -55,14 +59,14 @@ onMounted(() => {
 
       await window.electron?.ipcRenderer?.invoke('load:start-services')
 
-      status.value = statuses[APP_STATUSES.STARTING]
+      status.value = statuses.value[APP_STATUSES.STARTING]
       progress.value = 100
 
       setTimeout(() => {
         window.electron?.ipcRenderer?.send('load:finish')
       }, 600)
     } catch {
-      status.value = 'Wystąpił błąd'
+      status.value = t('load.error')
       progress.value = 100
       setTimeout(() => {
         window.electron?.ipcRenderer?.send('load:finish')

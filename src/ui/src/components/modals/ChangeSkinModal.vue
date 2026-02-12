@@ -7,6 +7,9 @@ import { changeCustomSkin } from '@ui/api/endpoints'
 import { showToast } from '@ui/utils'
 import { AxiosError } from 'axios'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const userStore = useUserStore()
@@ -61,7 +64,7 @@ const handleSubmit = async (): Promise<void> => {
   const skinFile = fileInputRef.value?.files ? fileInputRef.value.files[0] : null
 
   if (!skinFile) {
-    showToast('Proszę wybrać plik skina.', 'error')
+    showToast(t('modals.changeSkin.selectFile'), 'error')
     return
   }
 
@@ -77,7 +80,7 @@ const handleSubmit = async (): Promise<void> => {
     const result = await changeCustomSkin(formData)
 
     if (result) {
-      showToast('Skin został pomyślnie zmieniony!', 'success')
+      showToast(t('modals.changeSkin.success'), 'success')
       modalVisible.value = false
       v$.value.$reset()
       router.go(0)
@@ -110,7 +113,7 @@ const handleSubmit = async (): Promise<void> => {
             <div class="nav-icon">
               <i class="fas fa-pencil" aria-hidden="true"></i>
             </div>
-            <h2>Custom skin</h2>
+            <h2>{{ t('modals.changeSkin.title') }}</h2>
           </div>
           <div>
             <button class="nav-icon" @click="handleExit">
@@ -126,29 +129,29 @@ const handleSubmit = async (): Promise<void> => {
           @change="handleFileUpload"
         />
         <div class="setting-group mb-2!">
-          <label class="input-label mb-1">Typ skina</label>
+          <label class="input-label mb-1">{{ t('modals.changeSkin.type') }}</label>
           <div class="toggle-group">
             <button
               class="toggle-option"
               :class="{ active: state.type === 'classic' }"
               @click="state.type = 'classic'"
             >
-              Steve
+              {{ t('modals.changeSkin.steve') }}
             </button>
             <button
               class="toggle-option"
               :class="{ active: state.type === 'slim' }"
               @click="state.type = 'slim'"
             >
-              Alexa
+              {{ t('modals.changeSkin.alex') }}
             </button>
           </div>
         </div>
 
         <div v-if="userStore.user" class="setting-group mb-2!">
-          <label>Customowy skin</label>
+          <label>{{ t('modals.changeSkin.custom') }}</label>
           <p class="text-[var(--text-secondary)] mb-2 text-[0.7rem]">
-            Kliknij na podgląd skina, aby zmienić swój customowy skin w grze.
+            {{ t('modals.changeSkin.hint') }}
           </p>
           <div class="flex w-full items-center justify-center mb-4">
             <div
@@ -160,8 +163,12 @@ const handleSubmit = async (): Promise<void> => {
           </div>
         </div>
         <div class="flex gap-2">
-          <button class="btn-primary" @click="handleSubmit">Zatwierdź</button>
-          <button class="btn-secondary" @click="handleExit">Anuluj</button>
+          <button class="btn-primary" @click="handleSubmit">
+            {{ t('modals.changeSkin.confirm') }}
+          </button>
+          <button class="btn-secondary" @click="handleExit">
+            {{ t('modals.changeSkin.cancel') }}
+          </button>
         </div>
       </div>
     </div>

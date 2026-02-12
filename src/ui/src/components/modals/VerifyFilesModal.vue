@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import useGeneralStore from '@ui/stores/general-store'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const modalVisible = ref(false)
 const isVerifying = ref(false)
@@ -15,7 +18,7 @@ const openModal = (): void => {
   window.electron?.ipcRenderer?.on('verify:log', (_, data: string, ended: boolean) => {
     if (ended) {
       setTimeout(() => {
-        currentLog.value = 'Sprawdzanie zakończone'
+        currentLog.value = t('modals.verifyFiles.checkEnded')
         isVerifying.value = false
         isEnd.value = true
       }, 250)
@@ -74,7 +77,7 @@ defineExpose({
             <div class="nav-icon">
               <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </div>
-            <h2>Naprawianie plików</h2>
+            <h2>{{ t('modals.verifyFiles.title') }}</h2>
           </div>
           <div>
             <button class="nav-icon" @click="handleExit">
@@ -84,16 +87,18 @@ defineExpose({
         </div>
         <div class="modal-content">
           <p class="text-[var(--text-secondary)] mb-4">
-            Pamiętaj, aby nie zamykać launchera podczas weryfikacji plików.
+            {{ t('modals.verifyFiles.warning') }}
           </p>
 
           <p v-if="currentLog.length" class="log-description">
             {{ currentLog }}
           </p>
         </div>
-        <button v-if="isEnd" class="btn-primary" @click="handleExit">Zakończ</button>
+        <button v-if="isEnd" class="btn-primary" @click="handleExit">
+          {{ t('modals.verifyFiles.finish') }}
+        </button>
         <button v-else class="btn-primary" @click="isVerifying ? cancelVerifying() : verifyFiles()">
-          {{ isVerifying ? 'Przerwij weryfikowanie' : 'Rozpocznij weryfikacje' }}
+          {{ isVerifying ? t('modals.verifyFiles.stop') : t('modals.verifyFiles.start') }}
         </button>
       </div>
     </div>

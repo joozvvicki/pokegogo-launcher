@@ -10,6 +10,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 const url = import.meta.env.RENDERER_VITE_API_URL
 const userStore = useUserStore()
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const selectedType = ref<string>('launcher')
 const allChangelog = ref<any[]>([])
 const isLoadingChangelog = ref<boolean>(true)
@@ -41,7 +44,7 @@ const handleRemoveChangelog = async (changelog: any): Promise<void> => {
   const res = await removeChangelog(changelog.uuid)
 
   if (res) {
-    showToast('Pomyślnie usunięto changelog ' + changelog.name + '.')
+    showToast(`${t('changelog.deleteSuccess')} ${changelog.name}.`)
     await fetchChangelog()
   }
 }
@@ -56,13 +59,13 @@ const improves = (changelog: any): any[] =>
 const getChangeTagByType = (type: string): string => {
   switch (type) {
     case 'new':
-      return 'NOWE'
+      return t('changelog.changeTypes.new')
     case 'fix':
-      return 'POPRAWKA'
+      return t('changelog.changeTypes.fix')
     case 'improve':
-      return 'ULEPSZONO'
+      return t('changelog.changeTypes.improve')
     default:
-      return 'NOWE'
+      return t('changelog.changeTypes.new')
   }
 }
 
@@ -112,7 +115,7 @@ onMounted(async () => {
         v-model="searchQuery"
         type="text"
         class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-        placeholder="Wyszukaj changelog po słowach kluczowych.."
+        :placeholder="t('changelog.searchPlaceholder')"
       />
 
       <div class="flex gap-2 z-400">

@@ -5,6 +5,8 @@ import AddItem from '@ui/components/modals/AddItem.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const userStore = useUserStore()
@@ -35,13 +37,9 @@ const handleChangeItemIndex = async (item: any, step: number = 1): Promise<void>
 
   if (res) {
     showToast(
-      'Pomyślnie zmieniono index przedmiotu ' +
-        item.name +
-        ' z ' +
-        item.index +
-        ' na ' +
-        (item.index + step) +
-        '.'
+      `${t('items.toasts.indexChanged')} ${item.name} ` +
+        `z ${item.index} ` +
+        `na ${item.index + step}.`
     )
     await fetchItems()
   }
@@ -51,7 +49,7 @@ const handleRemoveItem = async (item: any): Promise<void> => {
   const res = await removeItem(item.uuid)
 
   if (res) {
-    showToast('Pomyślnie usunięto przedmiot ' + item.name + '.')
+    showToast(`${t('items.toasts.deleted')} ${item.name}.`)
     await fetchItems()
   }
 }
@@ -85,15 +83,17 @@ onMounted(async () => {
         v-model="searchQuery"
         type="text"
         class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-        placeholder="Wyszukaj przedmiot po nazwie.."
+        :placeholder="t('items.searchPlaceholder')"
       />
     </div>
 
     <div class="logs-table-wrapper">
       <div v-if="isLoadingItems" class="loading-users">
         <i :class="'fas fa-spinner fa-spin'"></i>
-        Ładowanie przedmiotów..
-        <button class="btn-primary" style="max-width: 300px" @click="fetchItems">Odśwież</button>
+        {{ t('items.loading') }}
+        <button class="btn-primary" style="max-width: 300px" @click="fetchItems">
+          {{ t('items.refresh') }}
+        </button>
       </div>
       <template v-else>
         <div
@@ -102,15 +102,15 @@ onMounted(async () => {
           class="no-results flex items-center justify-center h-full flex-col gap-2"
         >
           <i class="fas fa-search"></i>
-          <h3 class="text-lg">Brak wyników</h3>
-          <p>Nie znaleziono żadnych przedmiotów pasujących do kryteriów wyszukiwania.</p>
+          <h3 class="text-lg">{{ t('items.noResultsTitle') }}</h3>
+          <p>{{ t('items.noResultsDesc') }}</p>
         </div>
         <table v-else class="logs-table select-none">
           <thead>
             <tr class="font-black text-[0.9rem]">
-              <th>Nazwa</th>
-              <th>Cena</th>
-              <th>Opis</th>
+              <th>{{ t('items.table.name') }}</th>
+              <th>{{ t('items.table.price') }}</th>
+              <th>{{ t('items.table.desc') }}</th>
               <th>
                 <div class="relative flex flex-row-reverse gap-2 z-300">
                   <button class="info-btn" @click="fetchItems">
@@ -157,7 +157,11 @@ onMounted(async () => {
                   </div>
                 </td>
                 <td>
-                  {{ item?.price ? Number(item.price).toFixed(2) + ' PLN' : 'Brak' }}
+                  {{
+                    item?.price
+                      ? Number(item.price).toFixed(2) + ' PLN'
+                      : t('items.priceParams.none')
+                  }}
                 </td>
                 <td>
                   <pre

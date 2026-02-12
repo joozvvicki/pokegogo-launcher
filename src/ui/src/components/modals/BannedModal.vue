@@ -2,6 +2,9 @@
 import useUserStore from '@ui/stores/user-store'
 import { differenceInMilliseconds, parseISO } from 'date-fns'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const modalVisible = ref(true)
 const userStore = useUserStore()
@@ -15,7 +18,7 @@ const isBanned = computed(() => {
   )
 })
 
-const banReason = computed(() => userStore.user?.banReason || 'Brak szczegółowego powodu.')
+const banReason = computed(() => userStore.user?.banReason || t('modals.banned.noReason'))
 
 const acknowledgeBan = (): void => {
   modalVisible.value = false
@@ -37,12 +40,12 @@ const acknowledgeBan = (): void => {
           <div class="nav-icon">
             <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
           </div>
-          <h2 id="ban-title">Zostałeś zbanowany</h2>
+          <h2 id="ban-title">{{ t('modals.banned.title') }}</h2>
         </div>
       </div>
       <div class="modal-content">
         <p class="ban-description">
-          Twoje konto zostało zablokowane. Szczegóły dotyczące powodu blokady poniżej:
+          {{ t('modals.banned.desc') }}
         </p>
         <p class="ban-reason">{{ banReason }}</p>
       </div>
@@ -52,7 +55,7 @@ const acknowledgeBan = (): void => {
         aria-label="Rozumiem i zamykam informację o banie"
         @click="acknowledgeBan"
       >
-        Rozumiem
+        {{ t('modals.banned.understand') }}
       </button>
     </div>
   </div>

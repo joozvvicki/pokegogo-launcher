@@ -3,95 +3,119 @@ import { ref, reactive, computed } from 'vue'
 import { themes, main } from '@ui/assets/theme/themes'
 import useGeneralStore from '@ui/stores/general-store'
 
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 // --- KONFIGURACJA UI ---
 // Definiujemy kategorie zakładek
-const categories = {
-  colors: { label: 'Paleta Główna', icon: 'fas fa-palette' },
-  backgrounds: { label: 'Tła & Obrazy', icon: 'fas fa-image' },
-  ui: { label: 'UI & Elementy', icon: 'fas fa-layer-group' },
-  text: { label: 'Tekst & Komunikaty', icon: 'fas fa-font' },
-  login: { label: 'Login & Form', icon: 'fas fa-sign-in-alt' },
-  effects: { label: 'Efekty & Inne', icon: 'fas fa-magic' }
-}
+const categories = computed(() => ({
+  colors: { label: t('theme.categories.colors'), icon: 'fas fa-palette' },
+  backgrounds: { label: t('theme.categories.backgrounds'), icon: 'fas fa-image' },
+  ui: { label: t('theme.categories.ui'), icon: 'fas fa-layer-group' },
+  text: { label: t('theme.categories.text'), icon: 'fas fa-font' },
+  login: { label: t('theme.categories.login'), icon: 'fas fa-sign-in-alt' },
+  effects: { label: t('theme.categories.effects'), icon: 'fas fa-magic' }
+}))
 
 // Mapowanie kluczy zmiennych na czytelne nazwy i kategorie
 // To obejmuje WSZYSTKIE pola z twojego pliku themes.ts
-const propertyConfig: Record<
-  string,
-  { label: string; category: keyof typeof categories; type?: 'textarea' | 'text' }
-> = {
+const propertyConfig = computed<
+  Record<
+    string,
+    { label: string; category: keyof typeof categories.value; type?: 'textarea' | 'text' }
+  >
+>(() => ({
   // --- Paleta Główna ---
-  name: { label: 'Nazwa wewn. (bez spacji)', category: 'effects', type: 'text' },
-  primary: { label: 'Kolor Wiodący (Primary)', category: 'colors' },
-  primaryShop: { label: 'Akcent Sklepu', category: 'colors' },
-  primaryDark: { label: 'Primary Ciemny', category: 'colors' },
-  primaryLight: { label: 'Primary Jasny / Off-White', category: 'colors' },
+  name: { label: t('theme.labels.name'), category: 'effects', type: 'text' },
+  primary: { label: t('theme.labels.primary'), category: 'colors' },
+  primaryShop: { label: t('theme.labels.primaryShop'), category: 'colors' },
+  primaryDark: { label: t('theme.labels.primaryDark'), category: 'colors' },
+  primaryLight: { label: t('theme.labels.primaryLight'), category: 'colors' },
 
   // --- Tła ---
-  bgDark: { label: 'Tło Ciemne (Główne)', category: 'backgrounds' },
-  bgCard: { label: 'Tło Karty (Przezroczyste)', category: 'backgrounds' },
-  bgLight: { label: 'Tło Jasne / Surface', category: 'backgrounds' },
-  bgBody: { label: 'Tło Body (Podkład)', category: 'backgrounds' },
-  bgPrimary: { label: 'Tło Primary', category: 'backgrounds' },
-  bgInput: { label: 'Tło Inputów', category: 'backgrounds' },
-  loadingOverlay: { label: 'Overlay Ładowania', category: 'backgrounds' },
-  vignetteColor: { label: 'Kolor Winiety', category: 'backgrounds' },
-  backgroundImage: { label: 'URL Obrazka Tła', category: 'backgrounds', type: 'text' },
+  bgDark: { label: t('theme.labels.bgDark'), category: 'backgrounds' },
+  bgCard: { label: t('theme.labels.bgCard'), category: 'backgrounds' },
+  bgLight: { label: t('theme.labels.bgLight'), category: 'backgrounds' },
+  bgBody: { label: t('theme.labels.bgBody'), category: 'backgrounds' },
+  bgPrimary: { label: t('theme.labels.bgPrimary'), category: 'backgrounds' },
+  bgInput: { label: t('theme.labels.bgInput'), category: 'backgrounds' },
+  loadingOverlay: { label: t('theme.labels.loadingOverlay'), category: 'backgrounds' },
+  vignetteColor: { label: t('theme.labels.vignetteColor'), category: 'backgrounds' },
+  backgroundImage: {
+    label: t('theme.labels.backgroundImage'),
+    category: 'backgrounds',
+    type: 'text'
+  },
 
   // --- Tekst ---
-  textPrimary: { label: 'Tekst Główny', category: 'text' },
-  textSecondary: { label: 'Tekst Drugorzędny', category: 'text' },
-  textSecondaryAlt: { label: 'Tekst Alternatywny', category: 'text' },
-  textMuted: { label: 'Tekst Wyciszony', category: 'text' },
-  breadcrumbsText: { label: 'Tekst Breadcrumbs', category: 'text' },
-  errorMessage: { label: 'Tekst Błędu', category: 'text' },
+  textPrimary: { label: t('theme.labels.textPrimary'), category: 'text' },
+  textSecondary: { label: t('theme.labels.textSecondary'), category: 'text' },
+  textSecondaryAlt: { label: t('theme.labels.textSecondaryAlt'), category: 'text' },
+  textMuted: { label: t('theme.labels.textMuted'), category: 'text' },
+  breadcrumbsText: { label: t('theme.labels.breadcrumbsText'), category: 'text' },
+  errorMessage: { label: t('theme.labels.errorMessage'), category: 'text' },
 
   // --- UI Elements ---
-  border: { label: 'Border (Główny)', category: 'ui' },
-  border2: { label: 'Border (Drugi)', category: 'ui' },
-  borderPrimary: { label: 'Border Primary', category: 'ui' },
-  borderRadius: { label: 'Zaokrąglenie (px)', category: 'ui', type: 'text' },
-  borderRadiusSmall: { label: 'Małe zaokrąglenie', category: 'ui', type: 'text' },
-  newsItem: { label: 'News Item Tło', category: 'ui' },
-  newsItemHover: { label: 'News Item Hover', category: 'ui' },
-  btnHover: { label: 'Przycisk Hover', category: 'ui' },
-  btnGlow: { label: 'Poświata Przycisku', category: 'ui' },
-  footerHover: { label: 'Stopka Hover', category: 'ui' },
-  shopItem: { label: 'Gradient Sklepu', category: 'ui', type: 'textarea' },
-  navIcon: { label: 'Ikony Nawigacji', category: 'ui' },
-  navItem: { label: 'Tło Nawigacji', category: 'ui' },
-  navItemHoverNavIcon: { label: 'Nav Hover Ikona', category: 'ui' },
-  navItemActive: { label: 'Nav Aktywny', category: 'ui' },
-  tagDark: { label: 'Tag Ciemny', category: 'ui' },
-  statusPulse: { label: 'Puls Statusu', category: 'ui' },
-  banBtn: { label: 'Przycisk Ban', category: 'ui' },
-  banBtnText: { label: 'Tekst Ban', category: 'ui' },
-  toastError: { label: 'Toast Błąd', category: 'ui' },
-  toastWarning: { label: 'Toast Ostrzeżenie', category: 'ui' },
+  border: { label: t('theme.labels.border'), category: 'ui' },
+  border2: { label: t('theme.labels.border2'), category: 'ui' },
+  borderPrimary: { label: t('theme.labels.borderPrimary'), category: 'ui' },
+  borderRadius: { label: t('theme.labels.borderRadius'), category: 'ui', type: 'text' },
+  borderRadiusSmall: { label: t('theme.labels.borderRadiusSmall'), category: 'ui', type: 'text' },
+  newsItem: { label: t('theme.labels.newsItem'), category: 'ui' },
+  newsItemHover: { label: t('theme.labels.newsItemHover'), category: 'ui' },
+  btnHover: { label: t('theme.labels.btnHover'), category: 'ui' },
+  btnGlow: { label: t('theme.labels.btnGlow'), category: 'ui' },
+  footerHover: { label: t('theme.labels.footerHover'), category: 'ui' },
+  shopItem: { label: t('theme.labels.shopItem'), category: 'ui', type: 'textarea' },
+  navIcon: { label: t('theme.labels.navIcon'), category: 'ui' },
+  navItem: { label: t('theme.labels.navItem'), category: 'ui' },
+  navItemHoverNavIcon: { label: t('theme.labels.navItemHoverNavIcon'), category: 'ui' },
+  navItemActive: { label: t('theme.labels.navItemActive'), category: 'ui' },
+  tagDark: { label: t('theme.labels.tagDark'), category: 'ui' },
+  statusPulse: { label: t('theme.labels.statusPulse'), category: 'ui' },
+  banBtn: { label: t('theme.labels.banBtn'), category: 'ui' },
+  banBtnText: { label: t('theme.labels.banBtnText'), category: 'ui' },
+  toastError: { label: t('theme.labels.toastError'), category: 'ui' },
+  toastWarning: { label: t('theme.labels.toastWarning'), category: 'ui' },
 
   // --- Login & Form ---
-  loginTabBtnBg: { label: 'Login Tab Tło', category: 'login' },
-  loginTabBtnHover: { label: 'Login Tab Hover', category: 'login' },
-  loginInvalidBg: { label: 'Login Invalid Tło', category: 'login' },
-  loginInvalidBorder: { label: 'Login Invalid Border', category: 'login' },
-  btnMicrosoft: { label: 'Przycisk Microsoft', category: 'login', type: 'textarea' },
-  playerLogout: { label: 'Przycisk Wyloguj', category: 'login' },
+  loginTabBtnBg: { label: t('theme.labels.loginTabBtnBg'), category: 'login' },
+  loginTabBtnHover: { label: t('theme.labels.loginTabBtnHover'), category: 'login' },
+  loginInvalidBg: { label: t('theme.labels.loginInvalidBg'), category: 'login' },
+  loginInvalidBorder: { label: t('theme.labels.loginInvalidBorder'), category: 'login' },
+  btnMicrosoft: { label: t('theme.labels.btnMicrosoft'), category: 'login', type: 'textarea' },
+  playerLogout: { label: t('theme.labels.playerLogout'), category: 'login' },
 
   // --- Efekty & Inne ---
-  gradientPrimary: { label: 'Gradient Główny', category: 'effects', type: 'textarea' },
-  gradientBanned: { label: 'Gradient Ban', category: 'effects', type: 'textarea' },
-  gradientOverlay: { label: 'Gradient Overlay', category: 'effects', type: 'textarea' },
-  shadowGlow: { label: 'Cień Glow', category: 'effects', type: 'text' },
-  shadowCard: { label: 'Cień Karty', category: 'effects', type: 'text' },
-  transition: { label: 'Animacja (CSS)', category: 'effects', type: 'text' },
-  firstFloating: { label: 'Emoji 1 (Latające)', category: 'effects', type: 'text' },
-  secondFloating: { label: 'Emoji 2 (Latające)', category: 'effects', type: 'text' }
-}
+  gradientPrimary: {
+    label: t('theme.labels.gradientPrimary'),
+    category: 'effects',
+    type: 'textarea'
+  },
+  gradientBanned: {
+    label: t('theme.labels.gradientBanned'),
+    category: 'effects',
+    type: 'textarea'
+  },
+  gradientOverlay: {
+    label: t('theme.labels.gradientOverlay'),
+    category: 'effects',
+    type: 'textarea'
+  },
+  shadowGlow: { label: t('theme.labels.shadowGlow'), category: 'effects', type: 'text' },
+  shadowCard: { label: t('theme.labels.shadowCard'), category: 'effects', type: 'text' },
+  transition: { label: t('theme.labels.transition'), category: 'effects', type: 'text' },
+  firstFloating: { label: t('theme.labels.firstFloating'), category: 'effects', type: 'text' },
+  secondFloating: { label: t('theme.labels.secondFloating'), category: 'effects', type: 'text' }
+}))
+
+// --- LOGIKA KOMPONENTU ---
 
 // --- LOGIKA KOMPONENTU ---
 
 const isVisible = ref(false)
-const activeTab = ref<keyof typeof categories>('colors')
+const activeTab = ref<string>('colors')
 const customTheme = ref<Record<string, string> | null>(
   localStorage.getItem('customTheme') ? JSON.parse(localStorage.getItem('customTheme')!) : null
 )
@@ -104,10 +128,10 @@ const editingTheme = reactive<Record<string, string>>({
 const categorizedFields = computed(() => {
   const groups: Record<string, Array<{ key: string; label: string; type: string }>> = {}
 
-  Object.keys(categories).forEach((k) => (groups[k] = []))
+  Object.keys(categories.value).forEach((k) => (groups[k] = []))
 
   Object.keys(editingTheme).forEach((key): void => {
-    const config = propertyConfig[key]
+    const config = propertyConfig.value[key]
 
     const category = config?.category || 'effects'
     const label = config?.label || key
@@ -236,7 +260,7 @@ const exportTheme = (): void => {
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Błąd podczas eksportu motywu:', error)
+    console.error(t('theme.exportError'), error)
   }
 }
 
@@ -263,7 +287,7 @@ const importTheme = (): void => {
 
         // Walidacja: czy to w ogóle jest obiekt?
         if (typeof parsedTheme !== 'object' || parsedTheme === null) {
-          alert('Nieprawidłowy format pliku motywu.')
+          alert(t('theme.importErrorFmt'))
           return
         }
 
@@ -278,7 +302,7 @@ const importTheme = (): void => {
         })
       } catch (err) {
         console.error('Błąd parsowania JSON:', err)
-        alert('Błąd podczas importu pliku. Sprawdź czy plik jest poprawnym JSON-em.')
+        alert(t('theme.importErrorJson'))
       }
     }
 
@@ -301,7 +325,7 @@ defineExpose({ open })
 
         <div class="editor-panel">
           <div class="panel-header">
-            <h3><i class="fas fa-swatchbook mr-2"></i> Edytor Motywu</h3>
+            <h3><i class="fas fa-swatchbook mr-2"></i> {{ t('theme.title') }}</h3>
             <div class="flex gap-2">
               <button class="nav-icon" @click="importTheme">
                 <i class="fas fa-upload"></i>
@@ -316,13 +340,13 @@ defineExpose({ open })
           <div class="presets-row">
             <div class="flex gap-2 flex-wrap">
               <button
-                v-for="t in themes"
-                :key="t.name"
+                v-for="themeItem in themes"
+                :key="themeItem.name"
                 class="preset-btn"
-                :style="{ borderColor: t.primary }"
-                @click="loadBaseTheme(t.name)"
+                :style="{ borderColor: themeItem.primary }"
+                @click="loadBaseTheme(themeItem.name)"
               >
-                {{ t.name }}
+                {{ themeItem.name }}
               </button>
             </div>
           </div>
@@ -348,7 +372,7 @@ defineExpose({ open })
               v-if="categorizedFields[activeTab]?.length === 0"
               class="text-center text-[var(--text-muted)] mt-10"
             >
-              Brak opcji w tej kategorii.
+              {{ t('theme.noOptions') }}
             </div>
 
             <div
@@ -358,7 +382,7 @@ defineExpose({ open })
             >
               <div class="label-row">
                 <label>{{ field.label }}</label>
-                <span class="var-name" title="Kliknij by skopiować" @click="(): void => {}"
+                <span class="var-name" :title="t('theme.tooltips.copyVar')" @click="(): void => {}"
                   >--{{ field.key }}</span
                 >
               </div>
@@ -377,7 +401,7 @@ defineExpose({ open })
                       "
                     />
                   </div>
-                  <div class="alpha-slider-wrapper" title="Przezroczystość (Alpha)">
+                  <div class="alpha-slider-wrapper" :title="t('theme.tooltips.alpha')">
                     <input
                       type="range"
                       min="0"
@@ -415,7 +439,7 @@ defineExpose({ open })
 
           <div class="panel-footer">
             <button class="btn-save" @click="saveAndClose">
-              <i class="fas fa-save"></i> Zapisz i Zamknij
+              <i class="fas fa-save"></i> {{ t('theme.saveClose') }}
             </button>
           </div>
         </div>

@@ -6,6 +6,9 @@ import { showToast } from '@ui/utils'
 import { useVuelidate } from '@vuelidate/core'
 import { helpers, minLength, required } from '@vuelidate/validators'
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
@@ -25,8 +28,8 @@ const rules = computed(() => {
   return modalVisible.value
     ? {
         description: {
-          required: helpers.withMessage('Treść jest wymagana', required),
-          minLength: helpers.withMessage('Treść musi mieć co najmniej 2 znaki', minLength(2))
+          required: helpers.withMessage(t('modals.discordReport.required'), required),
+          minLength: helpers.withMessage(t('modals.discordReport.minLength'), minLength(2))
         }
       }
     : {}
@@ -58,9 +61,9 @@ const handleSubmit = async (): Promise<void> => {
   formData.append(
     'payload_json',
     JSON.stringify({
-      content: `**Nickname**: ${userStore.user?.nickname ?? 'Brak Nicku'}\n**Wersja**: ${
+      content: `**Nickname**: ${userStore.user?.nickname ?? t('modals.discordReport.noNick')}\n**Wersja**: ${
         generalStore.appVersion
-      }\n**Treść zgłoszenia**:\n${state.description}`
+      }\n**${t('modals.discordReport.content')}**:\n${state.description}`
     })
   )
 
@@ -70,7 +73,7 @@ const handleSubmit = async (): Promise<void> => {
   })
 
   if (result.ok) {
-    showToast('Zgłoszenie zostało wysłane', 'success')
+    showToast(t('modals.discordReport.success'), 'success')
   }
 
   handleExit()
@@ -93,7 +96,7 @@ const handleSubmit = async (): Promise<void> => {
             <div class="nav-icon">
               <i class="fa fa-warning" aria-hidden="true"></i>
             </div>
-            <h2>Zgłoszenie</h2>
+            <h2>{{ t('modals.discordReport.title') }}</h2>
           </div>
           <div>
             <button class="nav-icon" @click="handleExit">
@@ -103,13 +106,15 @@ const handleSubmit = async (): Promise<void> => {
         </div>
         <div class="modal-content">
           <div class="flex flex-col w-full">
-            <label class="input-label mb-1 text-[var(--text-secondary))]">Treść zgłoszenia</label>
+            <label class="input-label mb-1 text-[var(--text-secondary))]">{{
+              t('modals.discordReport.content')
+            }}</label>
             <div class="form-group h-full">
               <div class="input-wrapper flex">
                 <textarea
                   v-model="state.description"
                   class="form-input !pl-[1rem] resize-none"
-                  placeholder="Treść zgłoszenia.."
+                  :placeholder="t('modals.discordReport.placeholder')"
                   :class="{ invalid: v$.description?.$error }"
                   rows="5"
                   aria-required="true"
@@ -124,8 +129,12 @@ const handleSubmit = async (): Promise<void> => {
           </div>
         </div>
         <div class="flex gap-2 mt-2">
-          <button class="btn-secondary" @click="handleExit">Anuluj</button>
-          <button class="btn-primary" @click="handleSubmit">Wyślij</button>
+          <button class="btn-secondary" @click="handleExit">
+            {{ t('modals.discordReport.cancel') }}
+          </button>
+          <button class="btn-primary" @click="handleSubmit">
+            {{ t('modals.discordReport.send') }}
+          </button>
         </div>
       </div>
     </div>

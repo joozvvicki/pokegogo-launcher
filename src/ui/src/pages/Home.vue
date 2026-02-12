@@ -12,6 +12,9 @@ const generalStore = useGeneralStore()
 const time = ref<number>(0)
 const serverStatus = ref<{ players: { online: number } } | null>(null)
 
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
+
 const props = defineProps<{
   events: any[]
 }>()
@@ -53,7 +56,7 @@ onMounted(async () => {
       >
         <i class="fas fa-memory text-[var(--primary)]"></i>
         <div class="flex justify-between w-full">
-          <span class="ml-1">RAM</span>
+          <span class="ml-1">{{ t('home.ram') }}</span>
           <strong id="playerCount">{{ generalStore.settings.ram }}GB</strong>
         </div>
       </div>
@@ -62,7 +65,7 @@ onMounted(async () => {
       >
         <i class="fas fa-microchip text-[var(--primary)]"></i>
         <div class="flex justify-between w-full">
-          <span class="ml-1">Tryb</span>
+          <span class="ml-1">{{ t('home.mode') }}</span>
           <strong id="playerCount">{{ generalStore.settings.gameMode }}</strong>
         </div>
       </div>
@@ -71,7 +74,7 @@ onMounted(async () => {
       >
         <i class="fas fa-users text-[var(--primary)]"></i>
         <div class="flex justify-between w-full">
-          <span class="ml-1">Graczy Online</span>
+          <span class="ml-1">{{ t('home.playersOnline') }}</span>
           <strong id="playerCount">{{ serverStatus?.players?.online ?? '0' }}</strong>
         </div>
       </div>
@@ -80,7 +83,7 @@ onMounted(async () => {
       >
         <i class="fas fa-signal text-[var(--primary)]"></i>
         <div class="flex justify-between w-full">
-          <span class="ml-1">Ping</span>
+          <span class="ml-1">{{ t('home.ping') }}</span>
           <strong id="serverPing">{{ time.toFixed(0) }}ms</strong>
         </div>
       </div>
@@ -89,7 +92,7 @@ onMounted(async () => {
       >
         <i class="fas fa-clock text-[var(--primary)]"></i>
         <div class="flex justify-between w-full">
-          <span class="ml-1">Uptime</span>
+          <span class="ml-1">{{ t('home.uptime') }}</span>
           <strong>24/7</strong>
         </div>
       </div>

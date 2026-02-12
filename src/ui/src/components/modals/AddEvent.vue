@@ -8,6 +8,9 @@ import { parseISO } from 'date-fns'
 import DatePicker from 'primevue/datepicker'
 import { computed, reactive, ref } from 'vue'
 import { FTPChannel } from '@ui/types/ftp'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
@@ -29,24 +32,24 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const rules = computed(() => {
   return {
     name: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     type: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     desc: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     photo: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     startDate: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     ...(state.type !== 'mega'
       ? {
           endDate: {
-            required: helpers.withMessage('Pole jest wymagane', required)
+            required: helpers.withMessage(t('general.required'), required)
           }
         }
       : {})
@@ -97,7 +100,7 @@ const addEvent = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie dodano nowe wydarzenie ' + state.name + '.')
+      showToast(`${t('events.addSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -124,7 +127,7 @@ const editEvent = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie edytowano wydarzenie ' + state.name + '.')
+      showToast(`${t('events.editSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -174,7 +177,9 @@ defineExpose({
               <div class="nav-icon">
                 <i class="fas fa-plus"></i>
               </div>
-              <h2 id="ban-title">{{ actionType === 'add' ? 'Dodaj' : 'Edytuj' }} wydarzenie</h2>
+              <h2 id="ban-title">
+                {{ actionType === 'add' ? t('events.addTitle') : t('events.editTitle') }}
+              </h2>
             </div>
           </div>
           <div class="nav-icon ml-auto" @click="handleCancel">
@@ -207,9 +212,9 @@ defineExpose({
               </button>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Nazwa</label>
+              <label class="input-label mb-1">{{ t('events.labels.name') }}</label>
               <small class="mb-1 text-[var(--text-secondary)]">
-                Nazwa wydarzenia wyświetlana na stronie głównej launchera.
+                {{ t('events.labels.nameDesc') }}
               </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
@@ -217,7 +222,7 @@ defineExpose({
                     v-model="state.name"
                     type="text"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
+                    :placeholder="t('events.placeholders.name')"
                     :class="{ invalid: v$.name.$error }"
                     aria-required="true"
                     required
@@ -231,8 +236,10 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Typ</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Typ dodawanego wydarzenia </small>
+              <label class="input-label mb-1">{{ t('events.labels.type') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('events.labels.typeDesc') }}
+              </small>
               <div class="toggle-group">
                 <button
                   v-if="actionType === 'edit'"
@@ -241,7 +248,7 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'mega'"
                 >
-                  MEGA
+                  {{ t('events.types.mega') }}
                 </button>
                 <button
                   class="toggle-option"
@@ -249,21 +256,21 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'normal'"
                 >
-                  Normalny
+                  {{ t('events.types.normal') }}
                 </button>
               </div>
             </div>
           </div>
 
           <div class="flex flex-col">
-            <label class="input-label mb-1">Opis</label>
+            <label class="input-label mb-1">{{ t('events.labels.desc') }}</label>
             <small class="mb-1 text-[var(--text-secondary)]">
-              Opis wydarzenia wyświetlany na stronie głównej launchera.
+              {{ t('events.labels.descDesc') }}
             </small>
             <div class="form-group">
               <textarea
                 v-model="state.desc"
-                placeholder="Podaj opis.."
+                :placeholder="t('events.placeholders.desc')"
                 :rows="3"
                 class="form-input !pl-[1rem] !resize-none !outline-none"
                 :class="{ invalid: v$.desc.$error }"
@@ -278,12 +285,14 @@ defineExpose({
 
           <div class="flex gap-2 w-full">
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data początkowa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data początku wydarzenia </small>
+              <label class="input-label mb-1">{{ t('events.labels.startDate') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('events.labels.startDateDesc') }}
+              </small>
               <div class="form-group">
                 <DatePicker
                   v-model="state.startDate"
-                  placeholder="Wybierz datę"
+                  :placeholder="t('events.placeholders.date')"
                   class="w-full my-app-dark"
                   input-class="!text-[0.8rem] w-full"
                   :class="{ invalid: v$.startDate.$error }"
@@ -296,12 +305,14 @@ defineExpose({
               </div>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data końcowa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data końca wydarzenia </small>
+              <label class="input-label mb-1">{{ t('events.labels.endDate') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('events.labels.endDateDesc') }}
+              </small>
               <div class="form-group">
                 <DatePicker
                   v-model="state.endDate"
-                  placeholder="Wybierz datę"
+                  :placeholder="t('events.placeholders.date')"
                   class="w-full"
                   input-class="!text-[0.8rem] w-full"
                   :class="{ invalid: v$.endDate?.$error }"
@@ -324,9 +335,11 @@ defineExpose({
             @click="actionType === 'add' ? addEvent() : editEvent()"
           >
             <i class="fa fa-save" />
-            Zapisz
+            {{ t('events.save') }}
           </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <button type="button" class="btn-secondary" @click="handleCancel">
+            {{ t('events.cancel') }}
+          </button>
         </div>
       </div>
     </div>

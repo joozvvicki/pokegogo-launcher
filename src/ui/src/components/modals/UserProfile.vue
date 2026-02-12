@@ -18,6 +18,9 @@ import {
 } from '@ui/api/endpoints'
 import { getHeadUrl, showToast } from '@ui/utils'
 import { useUserCacheStore } from '@ui/stores/user-cache-store'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'refresh-data', query?: string, reset?: boolean): Promise<void>
@@ -171,7 +174,7 @@ const openChangeSkinModal = (): void => {
 const getPlayerID = (player: IUser): string => {
   if (player?.mcid) return player.mcid
   if (player?.uuid) return player.uuid
-  return '(Brak)'
+  return `(${t('modals.userProfile.none')})`
 }
 
 const isAdmin = computed(() => {
@@ -200,7 +203,7 @@ const formattedBanTime = computed(() => {
   const banEndDateString = userStore.selectedProfile?.banEndDate as string | null
 
   if (!banEndDateString?.length) {
-    return 'Permanentnie'
+    return t('modals.userProfile.perm')
   }
 
   const banEndDate = parseISO(banEndDateString)
@@ -208,7 +211,7 @@ const formattedBanTime = computed(() => {
 
   if (remainingMs <= 0) {
     clearInterval(timerInterval.value)
-    return 'Blokada zakończyła się'
+    return t('modals.userProfile.banEnded')
   }
 
   const duration = intervalToDuration({
@@ -221,7 +224,7 @@ const formattedBanTime = computed(() => {
   const minutes = pad(duration.minutes || 0)
   const seconds = pad(duration.seconds || 0)
 
-  return `Pozostało: ${hours}:${minutes}:${seconds}`
+  return `${t('modals.userProfile.remaining')}${hours}:${minutes}:${seconds}`
 })
 
 const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
@@ -235,10 +238,18 @@ const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
       await fetchPlayerFriends()
       await fetchPlayerFriendRequests()
 
-      showToast(`Zaakceptowano zaproszenie od ${player.nickname}`, 'success')
+      await fetchPlayerFriendRequests()
+
+      showToast(
+        t('modals.userProfile.friendRequestAccepted', { nickname: player.nickname }),
+        'success'
+      )
     }
   } catch {
-    showToast(`Nie udało się zaakceptować zaproszenia od ${player.nickname}`, 'error')
+    showToast(
+      t('modals.userProfile.friendRequestAcceptFailed', { nickname: player.nickname }),
+      'error'
+    )
   }
 }
 
@@ -253,10 +264,18 @@ const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
       await fetchPlayerFriends()
       await fetchPlayerFriendRequests()
 
-      showToast(`Odrzucono zaproszenie od ${player.nickname}`, 'success')
+      await fetchPlayerFriendRequests()
+
+      showToast(
+        t('modals.userProfile.friendRequestRejected', { nickname: player.nickname }),
+        'success'
+      )
     }
   } catch {
-    showToast(`Nie udało się odrzucić zaproszenia od ${player.nickname}`, 'error')
+    showToast(
+      t('modals.userProfile.friendRequestRejectFailed', { nickname: player.nickname }),
+      'error'
+    )
   }
 }
 
@@ -281,10 +300,18 @@ const handleRemoveFriend = async (playerToRemove: IUser): Promise<void> => {
 
       chatsStore.removeActiveChat(playerToRemove)
 
-      showToast(`Usunięto ${playerToRemove.nickname} z listy znajomych`, 'success')
+      chatsStore.removeActiveChat(playerToRemove)
+
+      showToast(
+        t('modals.userProfile.friendRemoved', { nickname: playerToRemove.nickname }),
+        'success'
+      )
     }
   } catch {
-    showToast(`Nie udało się usunąć ${playerToRemove.nickname} z listy znajomych`, 'error')
+    showToast(
+      t('modals.userProfile.friendRemoveFailed', { nickname: playerToRemove.nickname }),
+      'error'
+    )
   }
 }
 
@@ -379,7 +406,7 @@ const handleEscape = (e: KeyboardEvent): void => {
                     `"
           class="mx-auto"
         >
-          Konto zablokowane. {{ formattedBanTime }}
+          {{ t('modals.userProfile.accountBlocked') }} {{ formattedBanTime }}
         </span>
 
         <div class="flex flex-col text-xs mt-2">
@@ -400,7 +427,7 @@ const handleEscape = (e: KeyboardEvent): void => {
             class="mx-auto"
           >
             <i class="fas fa-user-friends"></i>
-            Jesteście znajomymi
+            {{ t('modals.userProfile.areFriends') }}
           </div>
           <div
             v-if="hasFriendRequestFromMe(player)"
@@ -419,7 +446,7 @@ const handleEscape = (e: KeyboardEvent): void => {
             class="mx-auto"
           >
             <i class="fas fa-user-friends"></i>
-            Wysłano zaproszenie do znajomych
+            {{ t('modals.userProfile.friendRequestSent') }}
           </div>
           <template v-if="isMod">
             <div
@@ -446,7 +473,8 @@ const handleEscape = (e: KeyboardEvent): void => {
                     `"
                 class="mx-auto"
               >
-                Ost. logowanie: {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
+                {{ t('modals.userProfile.lastLogin') }}
+                {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
               </div>
               <div
                 v-if="player.createdAt"
@@ -463,7 +491,7 @@ const handleEscape = (e: KeyboardEvent): void => {
                     `"
                 class="mx-auto"
               >
-                Zarejestrowano:
+                {{ t('modals.userProfile.registered') }}
                 {{ format(player.createdAt, 'dd.MM.yyyy, HH:mm') }}
               </div>
             </div>
@@ -502,7 +530,7 @@ const handleEscape = (e: KeyboardEvent): void => {
                     `"
               class="mx-auto"
             >
-              Brak HWID
+              {{ t('modals.userProfile.noHwid') }}
             </div>
           </template>
         </div>
@@ -551,7 +579,7 @@ const handleEscape = (e: KeyboardEvent): void => {
         </template>
 
         <h1 class="flex flex-wrap gap-2 my-2 text-lg font-black">
-          Znajomi
+          {{ t('modals.userProfile.friends') }}
           <span
             :style="`
                       background: var(--text-secondary);
@@ -634,13 +662,11 @@ const handleEscape = (e: KeyboardEvent): void => {
 
           <!-- Empty state for friends -->
           <span v-else class="text-xs text-[var(--text-muted)]">
-            Aktualnie
             {{
               userStore.user && getPlayerID(player) === getPlayerID(userStore.user)
-                ? 'nie masz'
-                : 'gracz nie ma'
+                ? t('modals.userProfile.noFriendsUser')
+                : t('modals.userProfile.noFriendsPlayer')
             }}
-            żadnych znajomych.
           </span>
         </div>
       </div>

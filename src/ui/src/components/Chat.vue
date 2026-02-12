@@ -7,6 +7,9 @@ import { nextTick, ref, watch, computed } from 'vue'
 import { useChatsStore } from '@ui/stores/chats-store'
 import type { IMessage } from '@ui/types/app'
 
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 const userStore = useUserStore()
 const chatsStore = useChatsStore()
 const message = ref<string[]>([])
@@ -183,7 +186,7 @@ const computeRightOffset = (uuid: string): string => {
             >
               <div v-if="!chat.messages?.length">
                 <div class="text-center text-xs text-[var(--text-secondary)] my-2 mt-auto">
-                  Rozmowa rozpoczęta
+                  {{ t('chat.start') }}
                 </div>
               </div>
 
@@ -235,7 +238,7 @@ const computeRightOffset = (uuid: string): string => {
                   v-model="message[i]"
                   type="text"
                   class="w-full rounded-full px-4 py-2 text-xs border border-[var(--bg-card)] outline-none focus:outline-none focus:border-[var(--primary)] focus:ring-[var(--primary)]"
-                  placeholder="Wpisz wiadomość..."
+                  :placeholder="t('chat.placeholder')"
                   @keyup.enter="handleSendMessage(i, chat.uuid)"
                 />
                 <button class="nav-icon" @click="handleSendMessage(i, chat.uuid)">
@@ -244,7 +247,7 @@ const computeRightOffset = (uuid: string): string => {
               </template>
               <template v-else>
                 <div class="w-full text-center text-xs text-[var(--text-secondary)] py-2">
-                  Nie możesz odpowiedzieć na tę konwersację
+                  {{ t('chat.cannotReply') }}
                 </div>
               </template>
             </div>

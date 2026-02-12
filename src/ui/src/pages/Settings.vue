@@ -170,17 +170,6 @@ const setNewTheme = (newTheme: string): void => {
   saveSettings()
 }
 
-const changeGameMode = async (newMode: string): Promise<void> => {
-  try {
-    await window.electron?.ipcRenderer?.invoke('launch:remove-markfile')
-  } catch {
-    /* ignore */
-  }
-  generalStore.settings.gameMode = newMode
-
-  saveSettings()
-}
-
 const changeLanguage = (lang: string): void => {
   generalStore.setLanguage(lang)
   locale.value = lang

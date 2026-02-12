@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import { useVuelidate } from '@vuelidate/core'
 import { helpers, maxLength, minLength, required } from '@vuelidate/validators'
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const modalVisible = ref(false)
 const state = reactive({
@@ -12,16 +15,15 @@ const openModal = (): void => {
   modalVisible.value = true
 }
 
-const v$ = useVuelidate(
-  {
-    newFolder: {
-      required: helpers.withMessage('Nazwa jest wymagana', required),
-      minLength: helpers.withMessage('Nazwa musi mieć co najmniej 2 znaki', minLength(2)),
-      maxLength: helpers.withMessage('Nazwa może mieć maksymalnie 50 znaków', maxLength(50))
-    }
-  },
-  state
-)
+const rules = computed(() => ({
+  newFolder: {
+    required: helpers.withMessage(t('createFolder.errors.required'), required),
+    minLength: helpers.withMessage(t('createFolder.errors.minLength'), minLength(2)),
+    maxLength: helpers.withMessage(t('createFolder.errors.maxLength'), maxLength(50))
+  }
+}))
+
+const v$ = useVuelidate(rules, state)
 
 const handleExit = async (): Promise<void> => {
   modalVisible.value = false
@@ -64,7 +66,7 @@ const handleSubmit = async (): Promise<void> => {
             <div class="nav-icon">
               <i class="fas fa-folder-plus" aria-hidden="true"></i>
             </div>
-            <h2>Tworzenie folderu</h2>
+            <h2>{{ t('createFolder.title') }}</h2>
           </div>
           <div>
             <button class="nav-icon" @click="handleExit">
@@ -74,14 +76,16 @@ const handleSubmit = async (): Promise<void> => {
         </div>
         <div class="modal-content">
           <div class="flex flex-col w-full">
-            <label class="input-label mb-1 text-[var(--text-secondary))]">Nazwa folderu</label>
+            <label class="input-label mb-1 text-[var(--text-secondary))]">{{
+              t('createFolder.label')
+            }}</label>
             <div class="form-group h-full">
               <div class="input-wrapper flex">
                 <input
                   v-model="state.newFolder"
                   type="text"
                   class="form-input !pl-[1rem]"
-                  placeholder="Podaj nazwę"
+                  :placeholder="t('createFolder.placeholder')"
                   :class="{ invalid: v$.newFolder.$error }"
                   aria-required="true"
                   required
@@ -95,8 +99,8 @@ const handleSubmit = async (): Promise<void> => {
           </div>
         </div>
         <div class="flex gap-2 mt-2">
-          <button class="btn-primary" @click="handleSubmit">Utwórz</button>
-          <button class="btn-secondary" @click="handleExit">Anuluj</button>
+          <button class="btn-primary" @click="handleSubmit">{{ t('createFolder.create') }}</button>
+          <button class="btn-secondary" @click="handleExit">{{ t('createFolder.cancel') }}</button>
         </div>
       </div>
     </div>

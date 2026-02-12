@@ -9,6 +9,9 @@ import { useRouter } from 'vue-router'
 import useUserStore from '@ui/stores/user-store'
 import logo from '@ui/assets/logo.png'
 import { UserRole } from '@ui/types/app'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
@@ -120,7 +123,7 @@ onUnmounted(() => {
       </button>
       <div>></div>
       <div class="active">
-        {{ $route.meta.displayName }}
+        {{ t($route.meta.displayName as string) }}
       </div>
     </div>
 

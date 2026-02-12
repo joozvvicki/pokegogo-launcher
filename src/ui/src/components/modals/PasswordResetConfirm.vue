@@ -2,6 +2,9 @@
 import { resetPassword } from '@ui/api/endpoints'
 import { IUser } from '@ui/env'
 import { reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const modalVisible = ref(false)
 const state = reactive({
@@ -61,15 +64,15 @@ defineExpose({
             <div class="nav-icon">
               <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </div>
-            <h2 id="ban-title">Reset hasła</h2>
+            <h2 id="ban-title">{{ t('modals.passwordReset.title') }}</h2>
           </div>
         </div>
         <div class="modal-content">
           <p v-if="!state.generatedPass" class="ban-description">
-            Czy napewno chcesz zresetować hasło użytkownika {{ state.nickname }}?
+            {{ t('modals.passwordReset.confirm', { nickname: state.nickname }) }}
           </p>
           <p v-else class="ban-description">
-            Wygenerowane hasło: {{ state.generatedPass }}
+            {{ t('modals.passwordReset.generated') }}{{ state.generatedPass }}
             <span class="copy-btn" @click="copyToClipboard(state.generatedPass)">
               <i class="fa fa-copy" />
             </span>
@@ -77,9 +80,15 @@ defineExpose({
         </div>
         <div class="flex gap-2">
           <button type="button" class="btn-primary" @click="handleSubmit">
-            {{ state.generatedPass.length ? 'OK' : 'Zresetuj' }}
+            {{
+              state.generatedPass.length
+                ? t('modals.passwordReset.ok')
+                : t('modals.passwordReset.reset')
+            }}
           </button>
-          <button type="button" class="btn-secondary" @click="closeModal">Anuluj</button>
+          <button type="button" class="btn-secondary" @click="closeModal">
+            {{ t('modals.passwordReset.cancel') }}
+          </button>
         </div>
       </div>
     </div>

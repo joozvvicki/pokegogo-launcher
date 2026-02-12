@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import useUserStore from '@ui/stores/user-store'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const modalVisible = ref(false)
@@ -45,18 +48,21 @@ defineExpose({
             <div class="nav-icon">
               <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </div>
-            <h2 id="ban-title">Aktualizacja launchera</h2>
+            <h2 id="ban-title">{{ t('modals.updateConfirm.title') }}</h2>
           </div>
         </div>
         <div class="modal-content">
           <p class="ban-description">
-            Czy napewno chcesz aktualizować launcher? Spowoduje to wyłączenie minecrafta oraz
-            wylogowanie z konta.
+            {{ t('modals.updateConfirm.desc') }}
           </p>
         </div>
         <div class="flex gap-2">
-          <button type="button" class="btn-primary" @click="handleSubmit">Aktualizuj</button>
-          <button type="button" class="btn-secondary" @click="closeModal">Anuluj</button>
+          <button type="button" class="btn-primary" @click="handleSubmit">
+            {{ t('modals.updateConfirm.update') }}
+          </button>
+          <button type="button" class="btn-secondary" @click="closeModal">
+            {{ t('modals.updateConfirm.cancel') }}
+          </button>
         </div>
       </div>
     </div>

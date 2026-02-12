@@ -7,7 +7,11 @@ import useVuelidate from '@vuelidate/core'
 import { helpers, required } from '@vuelidate/validators'
 import { parseISO } from 'date-fns'
 import DatePicker from 'primevue/datepicker'
+
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
@@ -30,22 +34,22 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const rules = computed(() => {
   return {
     name: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     version: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     type: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     photo: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     startDate: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     changes: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     }
   }
 })
@@ -95,7 +99,7 @@ const addChangelog = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie dodano nowy changelog ' + state.name + '.')
+      showToast(`${t('changelog.addSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -122,7 +126,7 @@ const editChangelog = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie edytowano changelog ' + state.name + '.')
+      showToast(`${t('changelog.editSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -172,7 +176,9 @@ defineExpose({
               <div class="nav-icon">
                 <i class="fas fa-plus"></i>
               </div>
-              <h2 id="ban-title">{{ actionType === 'add' ? 'Dodaj' : 'Edytuj' }} changelog</h2>
+              <h2 id="ban-title">
+                {{ actionType === 'add' ? t('changelog.addTitle') : t('changelog.editTitle') }}
+              </h2>
             </div>
           </div>
           <div class="nav-icon ml-auto" @click="handleCancel">
@@ -205,15 +211,17 @@ defineExpose({
               </button>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Nazwa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Nazwa changeloga</small>
+              <label class="input-label mb-1">{{ t('changelog.labels.name') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('changelog.labels.nameDesc') }}</small
+              >
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
                     v-model="state.name"
                     type="text"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
+                    :placeholder="t('changelog.placeholders.name')"
                     :class="{ invalid: v$.name.$error }"
                     aria-required="true"
                     required
@@ -226,15 +234,17 @@ defineExpose({
               </div>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Wersja</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Wersja changeloga</small>
+              <label class="input-label mb-1">{{ t('changelog.labels.version') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('changelog.labels.versionDesc') }}</small
+              >
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
                     v-model="state.version"
                     type="text"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj wersję"
+                    :placeholder="t('changelog.placeholders.version')"
                     :class="{ invalid: v$.version.$error }"
                     aria-required="true"
                     required
@@ -247,12 +257,14 @@ defineExpose({
               </div>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data wydania changeloga </small>
+              <label class="input-label mb-1">{{ t('changelog.labels.date') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('changelog.labels.dateDesc') }}
+              </small>
               <div class="form-group">
                 <DatePicker
                   v-model="state.startDate"
-                  placeholder="Wybierz datę"
+                  :placeholder="t('changelog.placeholders.date')"
                   class="w-full"
                   input-class="!text-[0.8rem] w-full"
                   :class="{ invalid: v$.startDate.$error }"
@@ -266,8 +278,10 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Typ</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Typ dodawanego changeloga </small>
+              <label class="input-label mb-1">{{ t('changelog.labels.type') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('changelog.labels.typeDesc') }}
+              </small>
               <div class="toggle-group">
                 <button
                   class="toggle-option"
@@ -275,7 +289,7 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'launcher'"
                 >
-                  Launcher
+                  {{ t('changelog.types.launcher') }}
                 </button>
                 <button
                   class="toggle-option"
@@ -283,23 +297,23 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'server'"
                 >
-                  Serwer
+                  {{ t('changelog.types.server') }}
                 </button>
               </div>
             </div>
           </div>
 
           <div class="flex flex-col">
-            <label class="input-label mb-1">Lista zmian</label>
+            <label class="input-label mb-1">{{ t('changelog.labels.changes') }}</label>
             <small class="mb-1 text-[var(--text-secondary)]">
-              Lista zmian wykonanych w danym changelogu
+              {{ t('changelog.labels.changesDesc') }}
             </small>
             <div class="logs-table-wrapper">
               <table class="logs-table">
                 <thead>
                   <tr class="font-black text-[0.9rem]">
-                    <th>Typ</th>
-                    <th>Opis</th>
+                    <th>{{ t('changelog.table.type') }}</th>
+                    <th>{{ t('changelog.table.desc') }}</th>
                     <th>
                       <div class="relative flex flex-row-reverse gap-2">
                         <button class="info-btn" @click="state.changes.push({})">
@@ -321,21 +335,21 @@ defineExpose({
                             }"
                             @click="change.type = 'new'"
                           >
-                            Nowość
+                            {{ t('changelog.changeTypes.newLabel') }}
                           </button>
                           <button
                             class="toggle-option !py-1"
                             :class="{ active: change.type === 'fix' }"
                             @click="change.type = 'fix'"
                           >
-                            Poprawka
+                            {{ t('changelog.changeTypes.fixLabel') }}
                           </button>
                           <button
                             class="toggle-option !py-1"
                             :class="{ active: change.type === 'improve' }"
                             @click="change.type = 'improve'"
                           >
-                            Ulepszenie
+                            {{ t('changelog.changeTypes.improveLabel') }}
                           </button>
                         </div>
                       </td>
@@ -347,7 +361,7 @@ defineExpose({
                                 v-model="change.desc"
                                 type="text"
                                 class="form-input !py-1 !pl-[1rem]"
-                                placeholder="Co zmieniono?"
+                                :placeholder="t('changelog.placeholders.desc')"
                                 aria-required="true"
                                 required
                               />
@@ -381,9 +395,11 @@ defineExpose({
             @click="actionType === 'add' ? addChangelog() : editChangelog()"
           >
             <i class="fa fa-save" />
-            Zapisz
+            {{ t('changelog.save') }}
           </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <button type="button" class="btn-secondary" @click="handleCancel">
+            {{ t('changelog.cancel') }}
+          </button>
         </div>
       </div>
     </div>

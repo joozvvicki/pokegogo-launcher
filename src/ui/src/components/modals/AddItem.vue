@@ -6,6 +6,9 @@ import { showToast } from '@ui/utils'
 import useVuelidate from '@vuelidate/core'
 import { helpers, required } from '@vuelidate/validators'
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
@@ -32,29 +35,32 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const rules = computed(() => {
   return {
     name: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     desc: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     price: {
-      required: helpers.withMessage('Pole jest wymagane', required),
-      isMoreThanZero: helpers.withMessage('Wartość musi być większa od 0', (v: string | number) => {
-        return typeof v === 'string' ? parseInt(v) !== 0 : v !== 0
-      })
+      required: helpers.withMessage(t('general.required'), required),
+      isMoreThanZero: helpers.withMessage(
+        t('addItem.errors.greaterThanZero'),
+        (v: string | number) => {
+          return typeof v === 'string' ? parseInt(v) !== 0 : v !== 0
+        }
+      )
     },
     photo: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     ...(state.type === 'rank'
       ? {
           rank: {
-            required: helpers.withMessage('Pole jest wymagane', required)
+            required: helpers.withMessage(t('general.required'), required)
           },
           days: {
-            required: helpers.withMessage('Pole jest wymagane', required),
+            required: helpers.withMessage(t('general.required'), required),
             isMoreThanZero: helpers.withMessage(
-              'Wartość musi być większa od 0',
+              t('addItem.errors.greaterThanZero'),
               (v: string | number) => {
                 return typeof v === 'string' ? parseInt(v) !== 0 : v !== 0
               }
@@ -65,19 +71,19 @@ const rules = computed(() => {
     ...(state.type === 'custom'
       ? {
           command: {
-            required: helpers.withMessage('Pole jest wymagane', required)
+            required: helpers.withMessage(t('general.required'), required)
           }
         }
       : {}),
     ...(state.type === 'item' || state.type === 'key_item'
       ? {
           item: {
-            required: helpers.withMessage('Pole jest wymagane', required)
+            required: helpers.withMessage(t('general.required'), required)
           },
           count: {
-            required: helpers.withMessage('Pole jest wymagane', required),
+            required: helpers.withMessage(t('general.required'), required),
             isMoreThanZero: helpers.withMessage(
-              'Wartość musi być większa od 0',
+              t('addItem.errors.greaterThanZero'),
               (v: string | number) => {
                 return typeof v === 'string' ? parseInt(v) !== 0 : v !== 0
               }
@@ -179,7 +185,7 @@ const addItem = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie dodano nowy przedmiot ' + state.name + '.')
+      showToast(`${t('addItem.success.add')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -209,7 +215,7 @@ const editItem = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie edytowano przedmiot ' + state.name + '.')
+      showToast(`${t('addItem.success.edit')} ${state.name}.`)
       await emits('refreshData')
       handleCancel()
     }
@@ -266,7 +272,9 @@ defineExpose({
               <div class="nav-icon">
                 <i class="fas fa-plus"></i>
               </div>
-              <h2 id="ban-title">{{ actionType === 'add' ? 'Dodaj' : 'Edytuj' }} przedmiot</h2>
+              <h2 id="ban-title">
+                {{ actionType === 'add' ? t('addItem.title.add') : t('addItem.title.edit') }}
+              </h2>
             </div>
           </div>
           <div class="nav-icon ml-auto" @click="handleCancel">
@@ -305,8 +313,10 @@ defineExpose({
               </button>
             </div>
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Nazwa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Wyświetlana na stronie </small>
+              <label class="input-label mb-1">{{ t('addItem.labels.name') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('addItem.labels.nameDesc') }}
+              </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
@@ -314,7 +324,7 @@ defineExpose({
                     v-model="state.name"
                     type="text"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
+                    :placeholder="t('addItem.placeholders.name')"
                     :class="{ invalid: v$.name.$error }"
                     aria-required="true"
                     required
@@ -328,8 +338,10 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Cena</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Cena przedmiotu </small>
+              <label class="input-label mb-1">{{ t('addItem.labels.price') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('addItem.labels.priceDesc') }}
+              </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
@@ -339,7 +351,7 @@ defineExpose({
                     :min="0.01"
                     :max="10000"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj cenę"
+                    :placeholder="t('addItem.placeholders.price')"
                     :class="{ invalid: v$.price.$error }"
                     aria-required="true"
                     required
@@ -353,8 +365,10 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Promocja</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Podaj przecenę (w zł) </small>
+              <label class="input-label mb-1">{{ t('addItem.labels.promotion') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('addItem.labels.promotionDesc') }}
+              </small>
               <div class="form-group h-full">
                 <div class="input-wrapper flex">
                   <input
@@ -364,7 +378,7 @@ defineExpose({
                     :min="0.01"
                     :max="10000"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj liczbę"
+                    :placeholder="t('addItem.placeholders.number')"
                     aria-required="true"
                     required
                   />
@@ -375,8 +389,10 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Typ</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Typ dodawanego przedmiotu </small>
+              <label class="input-label mb-1">{{ t('addItem.labels.type') }}</label>
+              <small class="mb-1 text-[var(--text-secondary)]">
+                {{ t('addItem.labels.typeDesc') }}
+              </small>
               <div class="toggle-group">
                 <button
                   class="toggle-option"
@@ -384,7 +400,7 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'rank'"
                 >
-                  Ranga
+                  {{ t('addItem.types.rank') }}
                 </button>
                 <button
                   class="toggle-option"
@@ -392,7 +408,7 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'key_item'"
                 >
-                  Klucz
+                  {{ t('addItem.types.key') }}
                 </button>
                 <button
                   class="toggle-option"
@@ -400,7 +416,7 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'item'"
                 >
-                  Item
+                  {{ t('addItem.types.item') }}
                 </button>
                 <button
                   class="toggle-option"
@@ -408,22 +424,21 @@ defineExpose({
                   :disabled="actionType === 'edit'"
                   @click="state.type = 'custom'"
                 >
-                  Inny
+                  {{ t('addItem.types.custom') }}
                 </button>
               </div>
             </div>
           </div>
 
           <div class="flex flex-col">
-            <label class="input-label mb-1">Opis</label>
+            <label class="input-label mb-1">{{ t('addItem.labels.desc') }}</label>
             <small class="mb-1 text-[var(--text-secondary)]">
-              Opis jest formatowany. Jeśli chcesz, aby wyświetlał się dobrze na stronie pamiętaj,
-              aby pisać tekst w nowych liniach.
+              {{ t('addItem.labels.descDesc') }}
             </small>
             <div class="form-group">
               <textarea
                 v-model="state.desc"
-                placeholder="Podaj opis.."
+                :placeholder="t('addItem.placeholders.desc')"
                 :rows="6"
                 class="form-input !pl-[1rem] !resize-none !outline-none"
                 :class="{ invalid: v$.desc.$error }"
@@ -439,10 +454,10 @@ defineExpose({
           <template v-if="state.type === 'rank' || state.type === 'custom'">
             <div class="flex gap-2">
               <div class="flex flex-col w-full">
-                <label class="input-label">Nazwa rangi</label>
-                <small class="mb-1 text-[var(--text-secondary)]"
-                  >Nazwa rangi z LuckyPerms. Przykłady: vip, mvp, ultra, legend.</small
-                >
+                <label class="input-label">{{ t('addItem.labels.rankName') }}</label>
+                <small class="mb-1 text-[var(--text-secondary)]">{{
+                  t('addItem.labels.rankNameDesc')
+                }}</small>
                 <div class="form-group !mt-0 !translate-y-[2px]">
                   <div class="input-wrapper flex">
                     <input
@@ -450,7 +465,7 @@ defineExpose({
                       v-model="state.rank"
                       type="text"
                       class="form-input !pl-[1rem]"
-                      placeholder="Podaj komendę"
+                      :placeholder="t('addItem.placeholders.command')"
                       :class="{ invalid: v$.rank?.$error }"
                       aria-required="true"
                       required
@@ -464,10 +479,10 @@ defineExpose({
               </div>
 
               <div class="flex flex-col w-full">
-                <label class="input-label">Długość trwania</label>
-                <small class="mb-1 text-[var(--text-secondary)]"
-                  >Podaj czas na jaki gracz otrzyma tę rangę. Domyślnie 30</small
-                >
+                <label class="input-label">{{ t('addItem.labels.duration') }}</label>
+                <small class="mb-1 text-[var(--text-secondary)]">{{
+                  t('addItem.labels.durationDesc')
+                }}</small>
                 <div class="form-group !mt-0 !translate-y-[2px]">
                   <div class="input-wrapper flex">
                     <input
@@ -475,7 +490,7 @@ defineExpose({
                       v-model="state.days"
                       type="number"
                       class="form-input !pl-[1rem]"
-                      placeholder="Podaj ilość dni"
+                      :placeholder="t('addItem.placeholders.days')"
                       :class="{ invalid: v$.days?.$error }"
                       aria-required="true"
                       required
@@ -496,13 +511,13 @@ defineExpose({
           >
             <div class="flex flex-col w-full">
               <label class="input-label">{{
-                state.type === 'key_item' ? 'Nazwa klucza' : 'ID Przedmiotu'
+                state.type === 'key_item' ? t('addItem.labels.keyName') : t('addItem.labels.itemId')
               }}</label>
               <small class="mb-1 text-[var(--text-secondary)]">
                 {{
                   state.type === 'key_item'
-                    ? 'Wpisz nazwę klucza z pluginu, np. legendary, mythic'
-                    : 'Wpisz nazwę przedmiotu, np. cobblemon:master_ball'
+                    ? t('addItem.labels.keyNameDesc')
+                    : t('addItem.labels.itemIdDesc')
                 }}
               </small>
               <div class="form-group !mt-0 !translate-y-[2px]">
@@ -512,7 +527,7 @@ defineExpose({
                     v-model="state.item"
                     type="text"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj komendę"
+                    :placeholder="t('addItem.placeholders.command')"
                     :class="{ invalid: v$.item?.$error }"
                     aria-required="true"
                     required
@@ -526,9 +541,9 @@ defineExpose({
             </div>
 
             <div class="flex flex-col w-full">
-              <label class="input-label">Ilość do sprzedaży</label>
+              <label class="input-label">{{ t('addItem.labels.amount') }}</label>
               <small class="mb-1 text-[var(--text-secondary)]">
-                Podaj ilość w jakiej będzie sprzedawany przedmiot. Domyślnie 1
+                {{ t('addItem.labels.amountDesc') }}
               </small>
               <div class="form-group !mt-0 !translate-y-[2px]">
                 <div class="input-wrapper flex">
@@ -537,7 +552,7 @@ defineExpose({
                     v-model="state.count"
                     type="number"
                     class="form-input !pl-[1rem]"
-                    placeholder="Podaj ilość"
+                    :placeholder="t('addItem.placeholders.amount')"
                     :class="{ invalid: v$.count?.$error }"
                     aria-required="true"
                     required
@@ -552,11 +567,9 @@ defineExpose({
           </div>
 
           <template v-if="state.type === 'custom'">
-            <label class="input-label">Komenda</label>
+            <label class="input-label">{{ t('addItem.labels.command') }}</label>
             <small class="mb-1 text-[var(--text-secondary)]">
-              Możesz wykorzystywać różne zmienne podane wyżej. {player} - nick gracza. Podane wyżej:
-              {amount} - ilość przedmiotu, {item} - nazwa przedmiotu, {rank} - nazwa rangi, {days} -
-              długość trwania.
+              {{ t('addItem.labels.commandDesc') }}
             </small>
             <div class="form-group !mt-0 !translate-y-[2px]">
               <div class="input-wrapper flex">
@@ -565,7 +578,7 @@ defineExpose({
                   v-model="state.command"
                   type="text"
                   class="form-input !pl-[1rem]"
-                  placeholder="Podaj komendę"
+                  :placeholder="t('addItem.placeholders.command')"
                   :class="{ invalid: v$.command?.$error }"
                   aria-required="true"
                   required

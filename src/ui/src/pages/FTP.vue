@@ -3,6 +3,8 @@ import CreateFolderModal from '@ui/components/modals/CreateFolderModal.vue'
 import { useFTP } from '@ui/services/ftp-service'
 import { format } from 'date-fns'
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
 const {
   searchQuery,
@@ -53,7 +55,7 @@ onMounted(async () => {
           v-model="searchQuery"
           type="text"
           class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-          placeholder="Szukaj..."
+          :placeholder="t('ftp.searchPlaceholder')"
         />
       </div>
     </div>
@@ -75,13 +77,13 @@ onMounted(async () => {
         class="absolute inset-0 z-50 flex items-center justify-center bg-black/70"
       >
         <i class="fa fa-spinner fa-spin text-3xl text-white"></i>
-        <div class="text-white text-lg font-bold">Wczytywanie...</div>
+        <div class="text-white text-lg font-bold">{{ t('ftp.loading') }}</div>
       </div>
 
       <template v-if="dragActive">
         <div class="drop-hint flex flex-col gap-2">
           <i class="fa fa-upload text-3xl"></i>
-          Upuść pliki tutaj, aby je przesłać
+          {{ t('ftp.dropHint') }}
         </div>
       </template>
 
@@ -185,8 +187,8 @@ onMounted(async () => {
         <template v-if="!filteredFiles.length">
           <div class="w-full h-full flex items-center justify-center flex-col">
             <i class="fa fa-exclamation-triangle text-5xl mb-2"></i>
-            <h2 class="text-lg font-black">Brak plików</h2>
-            <p>W tym folderze nie ma żadnych plików.</p>
+            <h2 class="text-lg font-black">{{ t('ftp.noFilesTitle') }}</h2>
+            <p>{{ t('ftp.noFilesDesc') }}</p>
           </div>
         </template>
 
@@ -213,12 +215,12 @@ onMounted(async () => {
               <i
                 v-if="file.status === 'zipped-dirty'"
                 class="fa fa-box-open text-yellow-500"
-                title="Folder spakowany, ale zawiera nowe pliki"
+                :title="t('ftp.tooltips.zippedDirty')"
               ></i>
               <i
                 v-else-if="file.status === 'zipped'"
                 class="fa fa-box text-green-400"
-                title="Folder spakowany"
+                :title="t('ftp.tooltips.zipped')"
               ></i>
               <i v-else class="fa fa-folder text-[var(--primary)]"></i>
             </template>
@@ -238,17 +240,17 @@ onMounted(async () => {
                   v-if="file.flag === 'important'"
                   class="bg-[var(--primary)] ml-2 text-[0.6rem] text-white py-[2px] px-[6px] rounded-[4px] font-bold"
                 >
-                  Pobierane zawsze
+                  {{ t('ftp.flags.important') }}
                 </span>
                 <span
                   v-else-if="file.flag === 'ignore'"
                   class="bg-gray-600 ml-2 text-[0.6rem] text-white py-[2px] px-[6px] rounded-[4px] font-bold"
                 >
-                  Ignorowane
+                  {{ t('ftp.flags.ignored') }}
                 </span>
               </p>
               <p v-if="file.status === 'zipped-dirty'" class="text-[0.6rem] text-yellow-500">
-                ⚠️ Zawiera niespakowane zmiany
+                {{ t('ftp.warnings.zippedDirty') }}
               </p>
             </div>
 
@@ -261,7 +263,7 @@ onMounted(async () => {
                 <button
                   v-if="file.isDirectory"
                   class="nav-icon hover:text-[var(--primary)]"
-                  title="Spakuj folder (utwórz .zip)"
+                  :title="t('ftp.tooltips.zipFolder')"
                   @click.stop="handleZipFolder(file)"
                 >
                   <i class="fa fa-box-open"></i>
@@ -275,7 +277,7 @@ onMounted(async () => {
                     'opacity-50': loadingStatuses,
                     'text-yellow-400': fileIsImportant(file)
                   }"
-                  title="Oznacz jako ważne (zawsze pobierane)"
+                  :title="t('ftp.tooltips.markImportant')"
                   @click.stop="toggleImportant(file)"
                 >
                   <i :class="fileIsImportant(file) ? 'fa fa-star' : 'fa-regular fa-star'" />
@@ -284,7 +286,7 @@ onMounted(async () => {
                 <button
                   v-if="file.isDirectory"
                   class="nav-icon hover:text-[var(--primary)]"
-                  title="Pobierz folder"
+                  :title="t('ftp.tooltips.downloadFolder')"
                   @click.stop="downloadFolder(file.name)"
                 >
                   <i class="fa fa-download"></i>
@@ -293,7 +295,7 @@ onMounted(async () => {
                 <button
                   v-else
                   class="nav-icon hover:text-[var(--primary)]"
-                  title="Pobierz plik"
+                  :title="t('ftp.tooltips.downloadFile')"
                   @click.stop="downloadFile(file.name)"
                 >
                   <i class="fa fa-download"></i>
