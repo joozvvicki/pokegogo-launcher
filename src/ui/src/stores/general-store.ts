@@ -125,6 +125,7 @@ const useGeneralStore = defineStore('general', () => {
     settings.machineId = machineId
     settings.macAddress = macAdress
     settings.ipAddress = ipAddress
+    saveSettings()
   }
 
   const setShowNotifications = (show: boolean): void => {

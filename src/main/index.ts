@@ -80,7 +80,12 @@ if (!gotTheLock) {
 
     if (!ipcMain.listenerCount('data:machine'))
       ipcMain.handle('data:machine', async () => {
-        const hwid = await machineId()
+        let hwid = ''
+        try {
+          hwid = await machineId()
+        } catch (err) {
+          Logger.warn('Failed to get machineId:', err)
+        }
         const addr = await address()
         return {
           machineId: hwid,

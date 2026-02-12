@@ -74,14 +74,34 @@ export const useLauncherService = (): {
   }
 
   const setMachineData = async (): Promise<void> => {
-    const machineData = await window.electron?.ipcRenderer?.invoke('data:machine')
+    let machineData = {
+      machineId: '',
+      macAddress: '',
+      ipAddress: ''
+    }
 
-    if (machineData)
+    try {
+      machineData = await window.electron?.ipcRenderer?.invoke('data:machine')
+    } catch {
+      // ignore
+    }
+
+    // Fallback logic
+    if (!machineData?.machineId) {
+      if (generalStore.settings.machineId) {
+        machineData.machineId = generalStore.settings.machineId
+      } else {
+        machineData.machineId = self.crypto.randomUUID()
+      }
+    }
+
+    if (machineData) {
       generalStore.setMachineData(
         machineData.machineId,
         machineData.macAddress,
         machineData.ipAddress
       )
+    }
   }
 
   const fetchUpdateData = async (): Promise<void> => {
