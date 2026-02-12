@@ -1,11 +1,14 @@
-export class DiscordService {
+import { net } from 'electron'
+
+export class DiscordLogger {
   private webhookUrl: string
 
   constructor() {
     this.webhookUrl = import.meta.env.VITE_DISCORD_ERROR_URL
   }
 
-  async sendError(title: string, details: any, user?: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  sendError(title: string, details: any, user?: string): void {
     if (!this.webhookUrl) return
 
     const fields = [
@@ -18,8 +21,8 @@ export class DiscordService {
         value: new Date().toISOString()
       },
       {
-        name: 'User Agent',
-        value: navigator.userAgent
+        name: 'Platform',
+        value: process.platform
       }
     ]
 
@@ -38,21 +41,25 @@ export class DiscordService {
       }
     ]
 
-    try {
-      await fetch(this.webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ embeds })
-      })
-    } catch (error) {
-      console.error('Failed to send error to Discord:', error)
-    }
+    const request = net.request({
+      method: 'POST',
+      url: this.webhookUrl,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    request.on('error', (err) => {
+      console.error('Failed to send error to Discord:', err)
+    })
+
+    request.write(JSON.stringify({ embeds }))
+    request.end()
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private formatDetails(details: any): string {
-    if (typeof details === 'string') return details
+    if (typeof details === 'string') return details.substring(0, 1000)
     if (details instanceof Error) {
       return `**Message:** ${details.message}\n**Stack:**\n\`\`\`${
         details.stack?.substring(0, 800) || 'No stack trace'
@@ -61,9 +68,9 @@ export class DiscordService {
     try {
       return `\`\`\`json\n${JSON.stringify(details, null, 2).substring(0, 800)}\n\`\`\``
     } catch {
-      return String(details)
+      return String(details).substring(0, 1000)
     }
   }
 }
 
-export const discordLogger = new DiscordService()
+export const discordLogger = new DiscordLogger()

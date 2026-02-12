@@ -40,4 +40,20 @@ router.beforeEach(async (to, _from, next) => {
   }
 })
 
+import { discordLogger } from './services/discord-service'
+
+window.onerror = (message, source, lineno, colno, error) => {
+  discordLogger.sendError('[Global] Uncaught Exception', {
+    message,
+    source,
+    lineno,
+    colno,
+    error
+  })
+}
+
+window.onunhandledrejection = (event) => {
+  discordLogger.sendError('[Global] Unhandled Rejection', event.reason)
+}
+
 app.mount('#app')

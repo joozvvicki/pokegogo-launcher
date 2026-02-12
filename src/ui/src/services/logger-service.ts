@@ -1,3 +1,5 @@
+import { discordLogger } from './discord-service'
+
 class LoggerService {
   private name: string
 
@@ -18,12 +20,14 @@ class LoggerService {
     )
   }
 
-  err(...args: string[]): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  err(...args: any[]): void {
     console.error(
       `%c${this.name}`,
       'background: #ff4757; color: black; border-radius: 5px; padding: 2px 4px;',
       ...args
     )
+    discordLogger.sendError(`[Logger] ${this.name} Error`, args)
   }
 
   log(...args: string[]): void {

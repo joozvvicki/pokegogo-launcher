@@ -13,8 +13,20 @@ import { machineId } from 'node-machine-id'
 import { address } from 'address/promises'
 import { platform } from 'os'
 
+import { discordLogger } from './services/discord-logger'
+
 const CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID
 let rpc: RP | null = null
+
+process.on('uncaughtException', (error) => {
+  Logger.error('Uncaught Exception:', error)
+  discordLogger.sendError('Main Process Uncaught Exception', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  Logger.error('Unhandled Rejection:', reason)
+  discordLogger.sendError('Main Process Unhandled Rejection', reason)
+})
 
 function initDiscord(): void {
   try {

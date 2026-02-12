@@ -4,6 +4,7 @@ import { app, BrowserWindow, screen } from 'electron'
 import os from 'os'
 import Logger from 'electron-log'
 import { ChildProcessWithoutNullStreams } from 'child_process'
+import { discordLogger } from './discord-logger'
 
 const toMCLC = (token: string): unknown => {
   const data = JSON.parse(token)
@@ -96,6 +97,15 @@ function computeResolution(
 
 export function createMinecraftInstance(config: MinecraftInstanceConfig): MinecraftInstance {
   const { token, accessToken, accountType, settings, window } = config
+
+  // Extract nickname for Discord logging
+  let nickname = 'Unknown'
+  try {
+    const data = JSON.parse(token)
+    nickname = accountType === 'microsoft' ? data.profile.name : data.nickname
+  } catch (e) {
+    // ignore
+  }
   const plt = os.platform()
   const baseDir = app.getPath('userData')
   const minecraftDir = path.join(baseDir, 'instances', settings.gameMode.toLowerCase())
@@ -145,8 +155,14 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     })
 
     client.on('data', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Data > ', data)
       window.webContents.send('launch:show-log', data)
+
+      if (typeof data === 'string') {
+        // Send error logs to Discord
+        if (data.includes('[Error]') || data.includes('Exception') || data.includes('FATAL')) {
+          discordLogger.sendError('Game Client Error', data, nickname)
+        }
+      }
 
       if (!mcOpened)
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
@@ -158,13 +174,14 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       }
     })
 
-    client.on('progress', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Progress > ', data)
-    })
-
-    client.on('close', () => {
-      Logger.log('PokeGoGo Launcher > MC Closed')
+    client.on('close', (code) => {
+      Logger.log('PokeGoGo Launcher > MC Closed with code', code)
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+
+      if (code !== 0 && code !== 130 && code !== 143 && mcOpened) {
+        discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
+      }
+
       mcOpened = false
       window.show()
     })
