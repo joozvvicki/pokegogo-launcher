@@ -156,7 +156,9 @@ const handleChangeUpdateChannel = async (channel: string): Promise<void> => {
   generalStore.saveSettings()
   await checkUpdate()
   await window.electron?.ipcRenderer?.invoke('launch:remove-markfile')
-  showToast(generalStore.isUpdateAvailable ? 'Update available.' : 'App is up-to-date.')
+  showToast(
+    generalStore.isUpdateAvailable ? t('toasts.updateAvailable') : t('toasts.updateUpToDate')
+  )
 }
 
 const verifyFilesModalRef = ref()
@@ -181,6 +183,17 @@ const openThemeEditor = (): void => {
   themeEditorModalRef.value?.open()
 }
 
+const openLauncherLogs = async (): Promise<void> => {
+  await window.electron?.ipcRenderer?.invoke('logs:open-launcher')
+}
+
+const openGameLogs = async (): Promise<void> => {
+  await window.electron?.ipcRenderer?.invoke(
+    'logs:open-game',
+    generalStore.settings.gameMode || 'main'
+  )
+}
+
 // Funkcja obsługująca zapisanie customowego motywu
 const handleCustomTheme = (customConfig: Record<string, string>): void => {
   // Możesz tutaj dodać logikę zapisu do localStorage lub bazy
@@ -191,7 +204,7 @@ const handleCustomTheme = (customConfig: Record<string, string>): void => {
         value
       )
   })
-  showToast('Zastosowano własny motyw!', 'success')
+  showToast(t('settings.customThemeApplied'), 'success')
 }
 
 onUnmounted(() => {
@@ -284,7 +297,7 @@ onUnmounted(() => {
           </div>
 
           <div class="setting-item row">
-            <label>Language</label>
+            <label>{{ t('settings.language') }}</label>
             <div class="lang-toggles">
               <button
                 :class="{ active: generalStore.settings.language === 'pl' }"
@@ -368,6 +381,26 @@ onUnmounted(() => {
                 @click="handleChangeUpdateChannel('dev')"
               >
                 Dev
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-item row">
+            <label>{{ t('settings.logs') }}</label>
+            <div class="flex gap-2">
+              <button
+                class="g-btn small icon-only"
+                :title="t('settings.openLauncherLogs')"
+                @click="openLauncherLogs"
+              >
+                <i class="fas fa-file-alt"></i> Launcher
+              </button>
+              <button
+                class="g-btn small icon-only"
+                :title="t('settings.openGameLogs')"
+                @click="openGameLogs"
+              >
+                <i class="fas fa-gamepad"></i> Game
               </button>
             </div>
           </div>
@@ -471,7 +504,7 @@ onUnmounted(() => {
           <div class="danger-zone mt-auto">
             <button class="text-btn danger" @click="resetSettings">
               <i class="fas fa-undo"></i>
-              {{ t('settings.resetSettings') || 'Reset Default Settings' }}
+              {{ t('settings.resetSettings') }}
             </button>
           </div>
         </div>

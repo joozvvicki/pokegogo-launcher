@@ -29,7 +29,13 @@
     "successPasswordChange": "Password changed successfully.",
     "errorPasswordChange": "Failed to change password.",
     "successEmailChange": "Email changed successfully.",
-    "errorEmailChange": "Failed to change email."
+    "errorEmailChange": "Failed to change email.",
+    "language": "Language",
+    "logs": "Logs",
+    "openLauncherLogs": "Open Launcher Logs",
+    "openGameLogs": "Open Game Logs",
+    "customThemeApplied": "Custom theme applied!",
+    "resetSettings": "Reset Default Settings"
   },
   "login": {
     "copyright": "All rights reserved.",

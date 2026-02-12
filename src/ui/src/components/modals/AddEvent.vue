@@ -280,7 +280,7 @@ defineExpose({
             </div>
 
             <!-- Dates -->
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 pt-2 gap-4 w-full">
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-semibold text-gray-400">{{
                   t('events.labels.startDate')
@@ -288,22 +288,32 @@ defineExpose({
                 <DatePicker
                   v-model="state.startDate"
                   :placeholder="t('events.placeholders.date')"
-                  class="g-input-wrapper w-full"
-                  :input-class="'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')"
+                  class="w-full"
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
+                    }
+                  }"
                 />
                 <span v-if="v$.startDate.$error" class="text-xs text-red-500">{{
                   v$.startDate.$errors[0]?.$message
                 }}</span>
               </div>
-              <div class="flex flex-col gap-1">
+              <div class="flex flex-col gap-1 w-full">
                 <label class="text-sm font-semibold text-gray-400">{{
                   t('events.labels.endDate')
                 }}</label>
                 <DatePicker
                   v-model="state.endDate"
                   :placeholder="t('events.placeholders.date')"
-                  class="g-input-wrapper w-full"
-                  :input-class="'g-input w-full ' + (v$.endDate?.$error ? '!border-red-500' : '')"
+                  class="w-full"
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full ' + (v$.endDate?.$error ? '!border-red-500' : '')
+                    }
+                  }"
                   show-clear
                 />
                 <span v-if="v$.endDate?.$error" class="text-xs text-red-500">{{
@@ -339,27 +349,7 @@ defineExpose({
 }
 
 /* DatePicker Overrides for Glass Theme */
-:deep(.p-datepicker) {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-}
-:deep(.p-datepicker-header) {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: white;
-}
-:deep(.p-datepicker table th) {
-  color: var(--text-secondary);
-}
-:deep(.p-datepicker table td > span.p-highlight) {
-  background: var(--primary);
-  color: white;
-}
-:deep(.p-datepicker table td > span:hover) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
+/* Moved to base.css because DatePicker uses appendTo="body" */
 
 /* Transition */
 .fade-enter-active,

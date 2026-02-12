@@ -770,10 +770,11 @@ body {
 /* Global Input Styles */
 .g-input,
 .glass-input {
+  box-sizing: border-box;
   width: 100%;
   padding: 0.8rem 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid var(--border2);
   border-radius: 16px;
   color: var(--text-primary);
   font-family: inherit;
@@ -787,6 +788,75 @@ body {
   border-color: var(--primary);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+/* ... (skipping button styles) ... */
+
+/* DatePicker Global Overrides (Glass Theme) */
+/* Target the popup panel specifically to avoid messing up the input wrapper */
+.p-datepicker-panel {
+  background: var(--bg-dark) !important; /* Themed dark background */
+  border: 1px solid var(--border) !important; /* Themed border */
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  padding: 1rem !important;
+  z-index: 9999 !important;
+}
+
+.p-datepicker-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border2) !important;
+  color: var(--text-primary) !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.p-datepicker-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker table th {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.p-datepicker table td > span {
+  color: var(--text-primary) !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 50% !important;
+  transition: all 0.2s !important;
+}
+
+.p-datepicker table td > span:hover {
+  background: var(--bg-light) !important;
+}
+
+.p-datepicker table td > span.p-datepicker-today > span {
+  background: transparent !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.p-datepicker table td > span.p-datepicker-selected {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4) !important;
+}
+
+.p-datepicker .p-datepicker-prev,
+.p-datepicker .p-datepicker-next {
+  color: var(--text-secondary) !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  transition: all 0.2s !important;
+}
+
+.p-datepicker .p-datepicker-prev:hover,
+.p-datepicker .p-datepicker-next:hover {
+  background: var(--bg-light) !important;
+  color: var(--primary) !important;
 }
 
 /* Global Button Styles */
@@ -860,4 +930,111 @@ body {
   display: flex;
   gap: 0.8rem;
   margin-top: auto;
+}
+
+/* PrimeVue Components Z-Index Fix */
+.p-datepicker,
+.p-datepicker-panel,
+.p-component-overlay,
+.p-connected-overlay-enter-done,
+.p-dropdown-panel,
+.p-dialog,
+.p-popover,
+.p-contextmenu,
+.p-menu {
+  z-index: 9999 !important;
+}
+
+.p-toast {
+  z-index: 10000 !important;
+}
+
+/* DatePicker Input Wrapper Fix */
+.p-datepicker:not(.p-datepicker-panel) {
+  display: inline-flex !important;
+  align-items: center;
+  position: relative;
+  width: 100%; /* Ensure root takes full width */
+}
+
+/* Ensure input shrinks to fit when clear icon is present */
+.p-datepicker:not(.p-datepicker-panel) .p-inputtext,
+.p-datepicker:not(.p-datepicker-panel) .g-input {
+  flex: 1;
+  min-width: 0;
+  width: auto !important; /* Override 100% width to allow flex sizing */
+}
+
+/* Adjust clear icon positioning if necessary */
+.p-datepicker-clear-icon {
+  margin-left: -2rem; /* Pull icon over input if needed, or rely on flex */
+  z-index: 1;
+  color: var(--text-secondary);
+}
+
+/* DatePicker Global Overrides (Glass Theme) */
+/* Target the popup panel specifically to avoid messing up the input wrapper */
+.p-datepicker-panel {
+  background: #161b22 !important; /* Solid dark background to fix transparency */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  padding: 1rem !important;
+  z-index: 9999 !important;
+}
+
+.p-datepicker-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.p-datepicker-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker table th {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.p-datepicker table td > span {
+  color: var(--text-primary) !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 50% !important;
+  transition: all 0.2s !important;
+}
+
+.p-datepicker table td > span:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.p-datepicker table td > span.p-datepicker-today > span {
+  background: transparent !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+.p-datepicker table td > span.p-datepicker-selected {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4) !important;
+}
+
+.p-datepicker .p-datepicker-prev,
+.p-datepicker .p-datepicker-next {
+  color: var(--text-secondary) !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  transition: all 0.2s !important;
+}
+
+.p-datepicker .p-datepicker-prev:hover,
+.p-datepicker .p-datepicker-next:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--primary) !important;
 }

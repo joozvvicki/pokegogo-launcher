@@ -29,7 +29,13 @@
     "successPasswordChange": "Pomyślnie zmieniono hasło",
     "errorPasswordChange": "Nie udało się zmienić hasła",
     "successEmailChange": "Pomyślnie zmieniono email",
-    "errorEmailChange": "Nie udało się zmienić email"
+    "errorEmailChange": "Nie udało się zmienić email",
+    "language": "Język",
+    "logs": "Logi",
+    "openLauncherLogs": "Otwórz logi launchera",
+    "openGameLogs": "Otwórz logi gry",
+    "customThemeApplied": "Zastosowano własny motyw!",
+    "resetSettings": "Przywróć ustawienia domyślne"
   },
   "login": {
     "copyright": "Wszystkie prawa zastrzeżone.",

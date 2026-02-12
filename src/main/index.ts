@@ -1,5 +1,5 @@
 import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-import { app, BrowserWindow, ipcMain, Menu, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, Notification, shell } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
@@ -127,6 +127,18 @@ if (!gotTheLock) {
           if (ipcMain.listenerCount('launch:exit')) ipcMain.emit('launch:exit')
         }
       })
+
+    import { shell } from 'electron'
+
+    ipcMain.handle('logs:open-launcher', async () => {
+      const logPath = join(app.getPath('userData'), 'logs')
+      await shell.openPath(logPath)
+    })
+
+    ipcMain.handle('logs:open-game', async (_, gameMode: string) => {
+      const logPath = join(app.getPath('userData'), 'instances', gameMode.toLowerCase(), 'logs')
+      await shell.openPath(logPath)
+    })
 
     ipcMain.on('discord:update-activity', (_, activity) => {
       if (rpc) {
