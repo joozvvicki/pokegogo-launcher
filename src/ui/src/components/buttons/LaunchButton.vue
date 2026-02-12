@@ -225,6 +225,7 @@ onUnmounted(() => {
       class="launch-button"
       :class="{
         banned: isBanned,
+        running: generalStore.isOpeningGame,
         'mb-7': generalStore.currentLog.length
       }"
       :disabled="isBanned"
@@ -365,16 +366,30 @@ onUnmounted(() => {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.margin-title {
-  margin-bottom: 0px;
+/* Adjusted typography for running state */
+.launch-running .title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px; /* Space between title and info */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 0.5rem;
 }
 
 .launch-button .info {
   font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.margin-title {
+  margin-bottom: 2px;
 }
 
 .launch-button-bg {
@@ -393,8 +408,46 @@ onUnmounted(() => {
 }
 
 .launch-button:hover {
-  transform: scale(1.05); /* Slight scale up */
+  transform: scale(1.02); /* More subtle scale */
   box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+/* Base Pulse Animation for Running State */
+.launch-button.running {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Danger Hover Effect for Running State */
+.launch-button.running:hover {
+  background: var(--gradient-banned);
+  animation: none; /* Stop pulsing on hover to focus on danger */
+  box-shadow:
+    0 0 20px rgba(239, 68, 68, 0.4),
+    inset 0 0 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.launch-button.running:hover .info {
+  color: white; /* Make 'Click to abort' clearer on red bg */
+  opacity: 1;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(var(--primary-rgb), 0.4),
+      inset 0 0 20px rgba(255, 255, 255, 0.2);
+  }
+  70% {
+    box-shadow:
+      0 0 0 10px rgba(var(--primary-rgb), 0),
+      inset 0 0 20px rgba(255, 255, 255, 0.2);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(var(--primary-rgb), 0),
+      inset 0 0 20px rgba(255, 255, 255, 0.2);
+  }
 }
 
 .slide-down-enter-active,

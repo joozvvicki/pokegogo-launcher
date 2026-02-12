@@ -78,6 +78,8 @@
   },
   "changelog": {
     "searchPlaceholder": "Search changelog by keywords..",
+    "add": "Add",
+    "loading": "Loading changelogs..",
     "deleteSuccess": "Successfully deleted changelog",
     "addSuccess": "Successfully added new changelog",
     "editSuccess": "Successfully edited changelog",
@@ -123,6 +125,9 @@
   },
   "events": {
     "deleteSuccess": "Successfully deleted event",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
     "searchPlaceholder": "Search event by name..",
     "loading": "Loading events..",
     "refresh": "Refresh",
@@ -195,6 +200,9 @@
   },
   "ftp": {
     "searchPlaceholder": "Search...",
+    "createFolder": "Create folder",
+    "uploadFolder": "Upload folder",
+    "uploadFile": "Upload file",
     "loading": "Loading...",
     "dropHint": "Drop files here to upload",
     "noFilesTitle": "No files",
@@ -220,6 +228,9 @@
       "indexChanged": "Successfully changed item index",
       "deleted": "Successfully deleted item"
     },
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
     "searchPlaceholder": "Search item by name..",
     "loading": "Loading items..",
     "refresh": "Refresh",
@@ -233,6 +244,11 @@
     "priceParams": {
       "none": "None"
     }
+  },
+  "shop": {
+    "searchPlaceholder": "Search item..",
+    "refresh": "Refresh",
+    "loading": "Loading shop.."
   },
   "createFolder": {
     "title": "Create folder",

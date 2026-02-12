@@ -113,35 +113,37 @@ onMounted(async () => {
     </div>
 
     <!-- Floating Dock -->
-    <div class="floating-dock">
-      <div class="dock-stats">
-        <div class="dock-stat-item" :title="t('home.playersOnline')">
-          <i class="fas fa-users"></i>
-          <span>{{ serverStatus?.players?.online ?? '0' }}</span>
+    <Teleport to="body">
+      <div class="floating-dock">
+        <div class="dock-stats">
+          <div class="dock-stat-item" :title="t('home.playersOnline')">
+            <i class="fas fa-users"></i>
+            <span>{{ serverStatus?.players?.online ?? '0' }}</span>
+          </div>
+          <div class="dock-divider"></div>
+          <div class="dock-stat-item" :title="t('home.ping')">
+            <i class="fas fa-signal"></i>
+            <span>{{ time.toFixed(0) }}ms</span>
+          </div>
+          <div class="dock-divider"></div>
+          <div class="dock-stat-item" :title="t('home.ram')">
+            <i class="fas fa-microchip"></i>
+            <span>{{ generalStore.settings.ram }}GB</span>
+          </div>
         </div>
-        <div class="dock-divider"></div>
-        <div class="dock-stat-item" :title="t('home.ping')">
-          <i class="fas fa-signal"></i>
-          <span>{{ time.toFixed(0) }}ms</span>
-        </div>
-        <div class="dock-divider"></div>
-        <div class="dock-stat-item" :title="t('home.ram')">
-          <i class="fas fa-microchip"></i>
-          <span>{{ generalStore.settings.ram }}GB</span>
-        </div>
-      </div>
 
-      <div class="dock-main-action">
-        <LaunchButton class="dock-launch-btn" />
-      </div>
+        <div class="dock-main-action">
+          <LaunchButton class="dock-launch-btn" />
+        </div>
 
-      <div class="dock-extra">
-        <div class="dock-stat-item" :title="t('home.uptime')">
-          <i class="fas fa-server"></i>
-          <span>Online</span>
+        <div class="dock-extra">
+          <div class="dock-stat-item" :title="t('home.uptime')">
+            <i class="fas fa-server"></i>
+            <span>Online</span>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 

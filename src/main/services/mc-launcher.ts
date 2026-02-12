@@ -150,6 +150,12 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       customArgs: [`-DaccessToken=${accessToken}`]
     })
 
+    // Immediately signal that the game has started (process exists)
+    // This allows the launcher to "know" it's running even before log output
+    window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
+    mcOpened = true
+    if (plt !== 'darwin') window.hide()
+
     client.on('debug', (data) => {
       Logger.log('PokeGoGo Launcher > MC Debug > ', data)
     })
@@ -164,14 +170,8 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         }
       }
 
-      if (!mcOpened)
-        window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
-
-      if (typeof data === 'string' && data.includes('[LibGui] Initializing Client...')) {
-        window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
-        mcOpened = true
-        if (plt !== 'darwin') window.hide()
-      }
+      // We don't need to spam minecraft-start anymore since we set it to started above
+      // But if we want to support "re-showing" if it crashes early, handle that in 'close'
     })
 
     client.on('close', (code) => {

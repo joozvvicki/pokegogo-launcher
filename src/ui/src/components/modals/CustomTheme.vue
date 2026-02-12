@@ -227,8 +227,11 @@ const loadBaseTheme = (themeName: string): void => {
   })
 }
 
+const emit = defineEmits(['apply'])
+
 const saveAndClose = (): void => {
   generalStore.setCustomTheme(editingTheme)
+  emit('apply', editingTheme)
   close()
 }
 

@@ -128,8 +128,6 @@ if (!gotTheLock) {
         }
       })
 
-    import { shell } from 'electron'
-
     ipcMain.handle('logs:open-launcher', async () => {
       const logPath = join(app.getPath('userData'), 'logs')
       await shell.openPath(logPath)

@@ -78,6 +78,8 @@
   },
   "changelog": {
     "searchPlaceholder": "Wyszukaj changelog po słowach kluczowych..",
+    "add": "Dodaj",
+    "loading": "Ładowanie changelogów..",
     "deleteSuccess": "Pomyślnie usunięto changelog",
     "addSuccess": "Pomyślnie dodano nowy changelog",
     "editSuccess": "Pomyślnie edytowano changelog",
@@ -123,6 +125,9 @@
   },
   "events": {
     "deleteSuccess": "Pomyślnie usunięto wydarzenie",
+    "add": "Dodaj",
+    "edit": "Edytuj",
+    "delete": "Usuń",
     "searchPlaceholder": "Wyszukaj wydarzenie po nazwie..",
     "loading": "Ładowanie wydarzeń..",
     "refresh": "Odśwież",
@@ -195,6 +200,9 @@
   },
   "ftp": {
     "searchPlaceholder": "Szukaj...",
+    "createFolder": "Utwórz folder",
+    "uploadFolder": "Prześlij folder",
+    "uploadFile": "Prześlij plik",
     "loading": "Wczytywanie...",
     "dropHint": "Upuść pliki tutaj, aby je przesłać",
     "noFilesTitle": "Brak plików",
@@ -220,6 +228,9 @@
       "indexChanged": "Pomyślnie zmieniono index przedmiotu",
       "deleted": "Pomyślnie usunięto przedmiot"
     },
+    "add": "Dodaj",
+    "edit": "Edytuj",
+    "delete": "Usuń",
     "searchPlaceholder": "Wyszukaj przedmiot po nazwie..",
     "loading": "Ładowanie przedmiotów..",
     "refresh": "Odśwież",
@@ -233,6 +244,11 @@
     "priceParams": {
       "none": "Brak"
     }
+  },
+  "shop": {
+    "searchPlaceholder": "Szukaj przedmiotu..",
+    "refresh": "Odśwież",
+    "loading": "Ładowanie sklepu.."
   },
   "createFolder": {
     "title": "Tworzenie folderu",
