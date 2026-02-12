@@ -172,6 +172,12 @@
       "banned": "displays banned players",
       "online": "displays players currently online"
     },
+    "filters": {
+      "title": "Filters",
+      "clearAll": "Clear All"
+    },
+    "requestFriend": "Add Friend",
+    "removeFriend": "Remove Friend",
     "banned": "BANNED",
     "loading": "Loading players...",
     "endOfResults": "End of results",
@@ -481,5 +487,8 @@
     "required": "This field is required",
     "emailInvalid": "Invalid email address",
     "passwordMismatch": "Passwords must match"
+  },
+  "header": {
+    "changeLanguage": "Change Language"
   }
 }

@@ -258,474 +258,271 @@ defineExpose({
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="launch-title">
-            <div class="flex gap-4 items-center">
-              <div class="nav-icon">
-                <i class="fas fa-plus"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-box-open"></i>
               </div>
-              <h2 id="ban-title">
-                {{ actionType === 'add' ? t('addItem.title.add') : t('addItem.title.edit') }}
-              </h2>
+              <h3>{{ actionType === 'add' ? t('addItem.title.add') : t('addItem.title.edit') }}</h3>
             </div>
+            <button class="g-close-btn" @click="handleCancel">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div class="nav-icon ml-auto" @click="handleCancel">
-            <i class="fas fa-x"></i>
-          </div>
-        </div>
-        <div class="modal-content">
-          <div class="flex gap-3 w-full">
-            <div class="flex flex-col min-w-[5.5rem] mr-2">
-              <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
-              <div
-                v-if="state.photo"
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <img
-                  :src="
-                    preview?.length
-                      ? preview
-                      : state.photo.includes('https://')
-                        ? state.photo
-                        : `${url}/items/image/${uuid}`
-                  "
-                  class="h-[4rem]"
-                  @dragstart.prevent="null"
-                />
+
+          <div class="g-modal-content custom-scrollbar">
+            <div class="flex gap-4 w-full">
+              <!-- Photo Upload -->
+              <div class="flex flex-col min-w-[5.5rem]">
+                <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
+                <div
+                  v-if="state.photo"
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer overflow-hidden text-center relative hover:opacity-80 transition-opacity"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <img
+                    :src="
+                      preview?.length
+                        ? preview
+                        : state.photo.includes('https://')
+                          ? state.photo
+                          : `${url}/items/image/${uuid}`
+                    "
+                    class="w-full h-full object-cover"
+                    @dragstart.prevent="null"
+                  />
+                </div>
+                <button
+                  v-else
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer hover:bg-white/5 transition-colors"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <i class="fa fa-image text-2xl text-gray-400" />
+                </button>
               </div>
-              <button
-                v-else
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <i class="fa fa-image text-[3rem]" />
-              </button>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">{{ t('addItem.labels.name') }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{ t('addItem.labels.nameDesc') }}
-              </small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
+
+              <!-- Main Fields -->
+              <div class="flex flex-col gap-3 w-full">
+                <!-- Name -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('addItem.labels.name')
+                  }}</label>
                   <input
-                    id="login-email"
                     v-model="state.name"
                     type="text"
-                    class="form-input !pl-[1rem]"
+                    class="g-input"
                     :placeholder="t('addItem.placeholders.name')"
-                    :class="{ invalid: v$.name.$error }"
-                    aria-required="true"
-                    required
+                    :class="{ '!border-red-500': v$.name.$error }"
                   />
-                  <div class="input-line"></div>
+                  <span v-if="v$.name.$error" class="text-xs text-red-500">{{
+                    v$.name.$errors[0]?.$message
+                  }}</span>
                 </div>
-                <div class="error-message" :class="{ show: v$.name.$error }">
-                  {{ v$.name.$errors[0]?.$message }}
+
+                <!-- Price & Promotion -->
+                <div class="flex gap-2">
+                  <div class="flex flex-col gap-1 w-full">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('addItem.labels.price')
+                    }}</label>
+                    <input
+                      v-model="state.price"
+                      type="number"
+                      step="0.01"
+                      :min="0.01"
+                      class="g-input"
+                      :placeholder="t('addItem.placeholders.price')"
+                      :class="{ '!border-red-500': v$.price.$error }"
+                    />
+                    <span v-if="v$.price.$error" class="text-xs text-red-500">{{
+                      v$.price.$errors[0]?.$message
+                    }}</span>
+                  </div>
+                  <div class="flex flex-col gap-1 w-full">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('addItem.labels.promotion')
+                    }}</label>
+                    <input
+                      v-model="state.promotion"
+                      type="number"
+                      step="0.01"
+                      class="g-input"
+                      :placeholder="t('addItem.placeholders.number')"
+                    />
+                  </div>
+                </div>
+
+                <!-- Type Selector -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('addItem.labels.type')
+                  }}</label>
+                  <div class="flex bg-black/20 p-1 rounded-xl gap-1">
+                    <button
+                      v-for="type in ['rank', 'key_item', 'item', 'custom']"
+                      :key="type"
+                      class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize"
+                      :class="
+                        state.type === type
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      :disabled="actionType === 'edit'"
+                      @click="state.type = type"
+                    >
+                      {{ t(`addItem.types.${type === 'key_item' ? 'key' : type}`) }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">{{ t('addItem.labels.price') }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{ t('addItem.labels.priceDesc') }}
-              </small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
-                  <input
-                    id="login-email"
-                    v-model="state.price"
-                    type="number"
-                    :min="0.01"
-                    :max="10000"
-                    class="form-input !pl-[1rem]"
-                    :placeholder="t('addItem.placeholders.price')"
-                    :class="{ invalid: v$.price.$error }"
-                    aria-required="true"
-                    required
-                  />
-                  <div class="input-line"></div>
-                </div>
-                <div class="error-message" :class="{ show: v$.price.$error }">
-                  {{ v$.price.$errors[0]?.$message }}
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">{{ t('addItem.labels.promotion') }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{ t('addItem.labels.promotionDesc') }}
-              </small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
-                  <input
-                    id="login-email"
-                    v-model="state.promotion"
-                    type="number"
-                    :min="0.01"
-                    :max="10000"
-                    class="form-input !pl-[1rem]"
-                    :placeholder="t('addItem.placeholders.number')"
-                    aria-required="true"
-                    required
-                  />
-                  <div class="input-line"></div>
-                </div>
-                <div class="error-message"></div>
-              </div>
-            </div>
-
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">{{ t('addItem.labels.type') }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{ t('addItem.labels.typeDesc') }}
-              </small>
-              <div class="toggle-group">
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'rank' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'rank'"
-                >
-                  {{ t('addItem.types.rank') }}
-                </button>
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'key_item' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'key_item'"
-                >
-                  {{ t('addItem.types.key') }}
-                </button>
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'item' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'item'"
-                >
-                  {{ t('addItem.types.item') }}
-                </button>
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'custom' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'custom'"
-                >
-                  {{ t('addItem.types.custom') }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col">
-            <label class="input-label mb-1">{{ t('addItem.labels.desc') }}</label>
-            <small class="mb-1 text-[var(--text-secondary)]">
-              {{ t('addItem.labels.descDesc') }}
-            </small>
-            <div class="form-group">
+            <!-- Description -->
+            <div class="flex flex-col gap-1 mt-3">
+              <label class="text-sm font-semibold text-gray-400">{{
+                t('addItem.labels.desc')
+              }}</label>
               <textarea
                 v-model="state.desc"
+                class="g-input !h-auto resize-none"
+                rows="4"
                 :placeholder="t('addItem.placeholders.desc')"
-                :rows="6"
-                class="form-input !pl-[1rem] !resize-none !outline-none"
-                :class="{ invalid: v$.desc.$error }"
-                required
-                aria-required="true"
+                :class="{ '!border-red-500': v$.desc.$error }"
               ></textarea>
-              <div class="error-message" :class="{ show: v$.desc.$error }">
-                {{ v$.desc.$errors[0]?.$message }}
-              </div>
+              <span v-if="v$.desc.$error" class="text-xs text-red-500">{{
+                v$.desc.$errors[0]?.$message
+              }}</span>
             </div>
-          </div>
 
-          <template v-if="state.type === 'rank' || state.type === 'custom'">
-            <div class="flex gap-2">
-              <div class="flex flex-col w-full">
-                <label class="input-label">{{ t('addItem.labels.rankName') }}</label>
-                <small class="mb-1 text-[var(--text-secondary)]">{{
-                  t('addItem.labels.rankNameDesc')
-                }}</small>
-                <div class="form-group !mt-0 !translate-y-[2px]">
-                  <div class="input-wrapper flex">
-                    <input
-                      id="login-email"
-                      v-model="state.rank"
-                      type="text"
-                      class="form-input !pl-[1rem]"
-                      :placeholder="t('addItem.placeholders.command')"
-                      :class="{ invalid: v$.rank?.$error }"
-                      aria-required="true"
-                      required
-                    />
-                    <div class="input-line"></div>
-                  </div>
-                  <div class="error-message" :class="{ show: v$.rank?.$error }">
-                    {{ v$.rank?.$errors[0]?.$message }}
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex flex-col w-full">
-                <label class="input-label">{{ t('addItem.labels.duration') }}</label>
-                <small class="mb-1 text-[var(--text-secondary)]">{{
-                  t('addItem.labels.durationDesc')
-                }}</small>
-                <div class="form-group !mt-0 !translate-y-[2px]">
-                  <div class="input-wrapper flex">
-                    <input
-                      id="login-email"
-                      v-model="state.days"
-                      type="number"
-                      class="form-input !pl-[1rem]"
-                      :placeholder="t('addItem.placeholders.days')"
-                      :class="{ invalid: v$.days?.$error }"
-                      aria-required="true"
-                      required
-                    />
-                    <div class="input-line"></div>
-                  </div>
-                  <div class="error-message" :class="{ show: v$.days?.$error }">
-                    {{ v$.days?.$errors[0]?.$message }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <div
-            v-if="state.type === 'item' || state.type === 'key_item' || state.type === 'custom'"
-            class="flex gap-2"
-          >
-            <div class="flex flex-col w-full">
-              <label class="input-label">{{
-                state.type === 'key_item' ? t('addItem.labels.keyName') : t('addItem.labels.itemId')
-              }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{
-                  state.type === 'key_item'
-                    ? t('addItem.labels.keyNameDesc')
-                    : t('addItem.labels.itemIdDesc')
-                }}
-              </small>
-              <div class="form-group !mt-0 !translate-y-[2px]">
-                <div class="input-wrapper flex">
+            <!-- Dynamic Fields per Type -->
+            <div class="flex gap-3 mt-3">
+              <template v-if="state.type === 'rank' || state.type === 'custom'">
+                <div class="flex flex-col gap-1 w-full">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('addItem.labels.rankName')
+                  }}</label>
                   <input
-                    id="login-email"
+                    v-model="state.rank"
+                    type="text"
+                    class="g-input"
+                    :class="{ '!border-red-500': v$.rank?.$error }"
+                  />
+                  <span v-if="v$.rank?.$error" class="text-xs text-red-500">{{
+                    v$.rank?.$errors[0]?.$message
+                  }}</span>
+                </div>
+                <div class="flex flex-col gap-1 w-full">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('addItem.labels.duration')
+                  }}</label>
+                  <input
+                    v-model="state.days"
+                    type="number"
+                    class="g-input"
+                    :class="{ '!border-red-500': v$.days?.$error }"
+                  />
+                  <span v-if="v$.days?.$error" class="text-xs text-red-500">{{
+                    v$.days?.$errors[0]?.$message
+                  }}</span>
+                </div>
+              </template>
+
+              <template
+                v-if="state.type === 'item' || state.type === 'key_item' || state.type === 'custom'"
+              >
+                <div class="flex flex-col gap-1 w-full">
+                  <label class="text-sm font-semibold text-gray-400">
+                    {{
+                      state.type === 'key_item'
+                        ? t('addItem.labels.keyName')
+                        : t('addItem.labels.itemId')
+                    }}
+                  </label>
+                  <input
                     v-model="state.item"
                     type="text"
-                    class="form-input !pl-[1rem]"
-                    :placeholder="t('addItem.placeholders.command')"
-                    :class="{ invalid: v$.item?.$error }"
-                    aria-required="true"
-                    required
+                    class="g-input"
+                    :class="{ '!border-red-500': v$.item?.$error }"
                   />
-                  <div class="input-line"></div>
+                  <span v-if="v$.item?.$error" class="text-xs text-red-500">{{
+                    v$.item?.$errors[0]?.$message
+                  }}</span>
                 </div>
-                <div class="error-message" :class="{ show: v$.item?.$error }">
-                  {{ v$.item?.$errors[0]?.$message }}
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col w-full">
-              <label class="input-label">{{ t('addItem.labels.amount') }}</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                {{ t('addItem.labels.amountDesc') }}
-              </small>
-              <div class="form-group !mt-0 !translate-y-[2px]">
-                <div class="input-wrapper flex">
+                <div class="flex flex-col gap-1 w-full">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('addItem.labels.amount')
+                  }}</label>
                   <input
-                    id="login-email"
                     v-model="state.count"
                     type="number"
-                    class="form-input !pl-[1rem]"
-                    :placeholder="t('addItem.placeholders.amount')"
-                    :class="{ invalid: v$.count?.$error }"
-                    aria-required="true"
-                    required
+                    class="g-input"
+                    :class="{ '!border-red-500': v$.count?.$error }"
                   />
-                  <div class="input-line"></div>
+                  <span v-if="v$.count?.$error" class="text-xs text-red-500">{{
+                    v$.count?.$errors[0]?.$message
+                  }}</span>
                 </div>
-                <div class="error-message" :class="{ show: v$.count?.$error }">
-                  {{ v$.count?.$errors[0]?.$message }}
-                </div>
-              </div>
+              </template>
             </div>
-          </div>
 
-          <template v-if="state.type === 'custom'">
-            <label class="input-label">{{ t('addItem.labels.command') }}</label>
-            <small class="mb-1 text-[var(--text-secondary)]">
-              {{ t('addItem.labels.commandDesc') }}
-            </small>
-            <div class="form-group !mt-0 !translate-y-[2px]">
-              <div class="input-wrapper flex">
+            <template v-if="state.type === 'custom'">
+              <div class="flex flex-col gap-1 mt-3">
+                <label class="text-sm font-semibold text-gray-400">{{
+                  t('addItem.labels.command')
+                }}</label>
                 <input
-                  id="login-email"
                   v-model="state.command"
                   type="text"
-                  class="form-input !pl-[1rem]"
+                  class="g-input"
                   :placeholder="t('addItem.placeholders.command')"
-                  :class="{ invalid: v$.command?.$error }"
-                  aria-required="true"
-                  required
+                  :class="{ '!border-red-500': v$.command?.$error }"
                 />
-                <div class="input-line"></div>
+                <span v-if="v$.command?.$error" class="text-xs text-red-500">{{
+                  v$.command?.$errors[0]?.$message
+                }}</span>
               </div>
-              <div class="error-message" :class="{ show: v$.command?.$error }">
-                {{ v$.command?.$errors[0]?.$message }}
-              </div>
-            </div>
-          </template>
-        </div>
+            </template>
+          </div>
 
-        <div class="modal-footer flex ml-auto max-w-1/3">
-          <button
-            type="button"
-            class="btn-primary"
-            @click="actionType === 'add' ? addItem() : editItem()"
-          >
-            <i class="fa fa-save" />
-            Zapisz
-          </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleCancel">Anuluj</button>
+            <button
+              class="g-btn primary flex-1"
+              @click="actionType === 'add' ? addItem() : editItem()"
+            >
+              <i class="fa fa-save" />
+              Zapisz
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
-}
-
-.modal-card {
-  width: 90%;
-  max-width: 80vw;
-  max-height: 80vh;
+.g-modal-content {
   overflow-y: auto;
-  border-radius: 1rem;
-  padding: 0 2rem;
-  padding-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
+  max-height: 75vh;
+  padding-right: 0.5rem;
 }
 
-.modal-header {
-  position: sticky;
-  z-index: 1100;
-  padding: 1rem 0;
-  top: 0;
-  display: flex;
-  align-items: center;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  overflow-y: auto;
-}
-
-.input-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.input-field,
-.textarea-field {
-  background: rgba(30, 35, 45, 0.85);
-  border-radius: 0.5rem;
-  border: none;
-  color: white;
-  padding: 0.5rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.input-field::placeholder,
-.textarea-field::placeholder {
-  color: var(--text-secondary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: var(--primary);
-  font-weight: 700;
-  cursor: pointer;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

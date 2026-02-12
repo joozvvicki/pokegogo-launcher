@@ -37,4 +37,5 @@ export interface IUser {
   friends: string[]
   friendRequests: string[]
   headUrl?: string
+  hwidAccountCount?: number
 }

@@ -1,21 +1,38 @@
 <script lang="ts" setup>
 import { LOGGER } from '@ui/services/logger-service'
 import useGeneralStore from '@ui/stores/general-store'
+import useUserStore from '@ui/stores/user-store'
+import { UserRole } from '@ui/types/app'
 import { checkUpdate, showToast } from '@ui/utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import UpdateConfirm from '@ui/components/modals/UpdateConfirm.vue'
 import DiscordReportModal from '@ui/components/modals/DiscordReportModal.vue'
-import { useRouter } from 'vue-router'
-import useUserStore from '@ui/stores/user-store'
 import logo from '@ui/assets/logo.png'
-import { UserRole } from '@ui/types/app'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
-const { t } = useI18n()
-
-const userStore = useUserStore()
-const generalStore = useGeneralStore()
+const { t, locale } = useI18n()
 const router = useRouter()
+
+const generalStore = useGeneralStore()
+const userStore = useUserStore()
+
+const isAdmin = computed(() => {
+  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
+    userStore.user?.role ?? UserRole.USER
+  )
+})
+
+const isAdminMenuOpen = ref(false)
+const toggleAdminMenu = (): void => {
+  isAdminMenuOpen.value = !isAdminMenuOpen.value
+}
+
+const toggleLocale = (): void => {
+  locale.value = locale.value === 'en' ? 'pl' : 'en'
+  localStorage.setItem('locale', locale.value)
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const updateInterval = ref<any>()
 const isInstallingUpdate = ref<boolean>(false)
@@ -27,15 +44,6 @@ const openDiscordReportModal = (): void => {
 
 const openDiscord = (): void => {
   window.open('discord://-/invite/pokemongogo', '_blank')
-}
-
-const hasTech = computed(() => [UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER))
-const hasAdmin = computed(() =>
-  [UserRole.ADMIN, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
-)
-
-const handleChangeRoute = (newRoute: string): void => {
-  router.push(newRoute)
 }
 
 const minimizeWindow = (): void => {
@@ -78,10 +86,16 @@ const openConfirmModal = (): void => {
 
 onMounted(async () => {
   updateInterval.value = setInterval(checkUpdate, 1000 * 60)
+  window.addEventListener('click', () => {
+    isAdminMenuOpen.value = false
+  })
 })
 
 onUnmounted(() => {
   clearInterval(updateInterval.value)
+  window.removeEventListener('click', () => {
+    isAdminMenuOpen.value = false
+  })
 })
 </script>
 
@@ -91,56 +105,69 @@ onUnmounted(() => {
       <div class="applogo-icon">
         <img :src="logo" width="100%" @dragstart.prevent="null" />
       </div>
-      <h1>PokeGoGo</h1>
-    </div>
-    <div v-if="$route.path.includes('/app')" class="breadcrumbs flex items-center gap-2">
-      <button class="nav-icon" @click="$router.push('/app/home')">
-        <i class="fa fa-play" />
-      </button>
-      <button
-        v-if="hasAdmin"
-        class="nav-icon"
-        :class="{ active: $route.path === '/app/events' }"
-        @click="handleChangeRoute('/app/events')"
-      >
-        <i class="fa fa-calendar-days"></i>
-      </button>
-      <button
-        v-if="hasTech"
-        class="nav-icon"
-        :class="{ active: $route.path === '/app/items' }"
-        @click="handleChangeRoute('/app/items')"
-      >
-        <i class="fa fa-store"></i>
-      </button>
-      <button
-        v-if="hasTech"
-        class="nav-icon"
-        :class="{ active: $route.path === '/app/ftp' }"
-        @click="handleChangeRoute('/app/ftp')"
-      >
-        <i class="fa fa-folder-tree"></i>
-      </button>
-      <div>></div>
-      <div class="active">
-        {{ t($route.meta.displayName as string) }}
+      <div class="flex flex-col ml-2">
+        <h1>PokeGoGo</h1>
+        <div class="applogo-badge">{{ generalStore.settings.updateChannel }}</div>
       </div>
     </div>
 
-    <div class="flex ml-auto mr-[6rem] items-center gap-2">
-      <div class="applogo-badge">{{ generalStore.settings.updateChannel }}</div>
+    <!-- Simplified Breadcrumbs -->
+    <div v-if="$route.path.includes('/app')" class="breadcrumbs">
+      <span class="crumb-disabled">App</span>
+      <span class="separator">/</span>
+      <span class="crumb-active">
+        {{ t($route.meta.displayName as string) }}
+      </span>
+    </div>
 
-      <button class="nav-icon" @click="openDiscord">
+    <div class="flex ml-auto items-center gap-2 window-controls">
+      <button class="icon-btn lang-btn" :title="t('header.changeLanguage')" @click="toggleLocale">
+        <span>{{ locale.toUpperCase() }}</span>
+      </button>
+
+      <button
+        v-if="isAdmin"
+        class="icon-btn admin-btn"
+        :class="{ active: isAdminMenuOpen }"
+        title="Admin Tools"
+        @click.stop="toggleAdminMenu"
+      >
+        <i class="fas fa-shield-halved" />
+
+        <Transition name="fade-slide">
+          <div v-if="isAdminMenuOpen" class="admin-dropdown">
+            <button class="dropdown-item" @click="router.push('/app/users')">
+              <i class="fas fa-users-crown"></i>
+              <span>{{ t('router.users') }}</span>
+            </button>
+            <button class="dropdown-item" @click="router.push('/app/ftp')">
+              <i class="fas fa-folder-tree"></i>
+              <span>{{ t('router.ftp') }}</span>
+            </button>
+            <button class="dropdown-item" @click="router.push('/app/items')">
+              <i class="fas fa-boxes-stacked"></i>
+              <span>{{ t('router.items') }}</span>
+            </button>
+            <button class="dropdown-item" @click="router.push('/app/events')">
+              <i class="fas fa-calendar-star"></i>
+              <span>{{ t('router.events') }}</span>
+            </button>
+          </div>
+        </Transition>
+      </button>
+
+      <button class="icon-btn" title="Discord" @click="openDiscord">
         <i class="fab fa-discord" />
       </button>
 
-      <button class="nav-icon" @click="openDiscordReportModal">
+      <button class="icon-btn" title="Report Issue" @click="openDiscordReportModal">
         <i class="fa fa-question" />
       </button>
 
       <button
         v-if="isUpdateAvailable"
-        class="nav-icon"
+        class="icon-btn update-btn"
+        title="Update Available"
         @click="
           generalStore.currentState === 'minecraft-started'
             ? openConfirmModal()
@@ -150,13 +177,14 @@ onUnmounted(() => {
         <i v-if="isInstallingUpdate" class="fas fa-spinner fa-spin"></i>
         <i v-else class="fas fa-download"></i>
       </button>
-    </div>
-    <div class="buttons">
-      <button @click="minimizeWindow">
-        <i class="fa-solid fa-window-minimize"></i>
+
+      <div class="divider"></div>
+
+      <button class="win-btn" @click="minimizeWindow">
+        <i class="fa-solid fa-minus"></i>
       </button>
-      <button class="red" @click="closeWindow">
-        <i class="fa-solid fa-xmark fa-xl"></i>
+      <button class="win-btn close" @click="closeWindow">
+        <i class="fa-solid fa-xmark"></i>
       </button>
     </div>
 
@@ -166,73 +194,223 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.nav-icon {
-  border: none;
-  -webkit-app-region: no-drag;
-  transition: background 0.1s ease-in-out;
-}
-
-.nav-icon.active {
-  background: var(--nav-item-active);
-  color: var(--primary);
-}
-
-.buttons {
-  position: absolute;
-  right: 0;
-  top: 0;
+.header {
+  position: relative;
+  z-index: 50;
+  width: 100%;
+  height: 60px; /* Fixed height */
+  padding: 0 1.5rem;
   display: flex;
-  height: 100%;
+  align-items: center;
+  background: transparent; /* Transparent for glass feel */
+  -webkit-app-region: drag;
+  user-select: none;
 }
 
-.buttons button {
+/* Logo Section */
+.applogo {
+  display: flex;
+  align-items: center;
+  -webkit-app-region: no-drag; /* Interactable */
+}
+
+.applogo-icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.5));
+  transition: transform 0.3s ease;
+}
+
+.applogo:hover .applogo-icon {
+  transform: rotate(10deg) scale(1.1);
+}
+
+.applogo h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+  letter-spacing: 0.5px;
+}
+
+.applogo-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  margin-left: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  -webkit-app-region: no-drag;
+}
+
+.crumb-disabled {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.separator {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.crumb-active {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Controls */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  -webkit-app-region: no-drag;
+}
+
+.icon-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.update-btn {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.4);
+}
+
+.update-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.lang-btn {
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+.admin-btn {
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  position: relative;
+}
+
+.admin-btn:hover,
+.admin-btn.active {
+  background: var(--primary);
+  color: white;
+}
+
+.admin-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 180px;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
   background: transparent;
   border: none;
-  color: white;
-  width: 50px;
-  height: 100%;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  transform: translateX(4px);
+}
+
+.dropdown-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.divider {
+  width: 1px;
+  height: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 0.5rem;
+}
+
+.win-btn {
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  user-select: none;
-  -webkit-app-region: no-drag;
-  transition: background 0.1s ease-in-out;
+  transition: all 0.2s ease;
+  border-radius: 8px;
 }
 
-.buttons button > i {
-  height: 100%;
-  width: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
-.buttons button:hover,
-.buttons button:focus {
-  background: var(--btn-hover);
-}
-
-.buttons button.red:hover,
-.buttons button.red:focus {
-  background: rgba(197, 34, 48, 0.4) !important;
-}
-
-.breadcrumbs {
-  color: var(--breadcrumbs-text);
-  margin-left: 0.5rem;
-  user-select: none;
-  -webkit-app-region: no-drag;
-  text-transform: capitalize;
-}
-
-.breadcrumbs > i:hover {
-  cursor: pointer;
-  color: var(--primary);
-}
-
-.breadcrumbs > .active:hover {
-  cursor: pointer;
-  text-decoration: underline;
+.win-btn.close:hover {
+  background: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
 }
 </style>

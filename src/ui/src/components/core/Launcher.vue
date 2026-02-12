@@ -128,7 +128,7 @@ onUnmounted(() => {
 .view-prev-enter-active,
 .view-prev-leave-active {
   position: absolute;
-  width: calc(100vw - 6.5rem);
+  width: 100%;
   transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
 }
 

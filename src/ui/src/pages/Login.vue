@@ -1,4 +1,3 @@
-<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
 import Header from '@ui/components/core/Header.vue'
 import Background from '@ui/components/Background.vue'
@@ -20,93 +19,86 @@ const { t } = useI18n()
   <Header />
   <Background />
 
-  <footer class="absolute z-200 bottom-2 w-full text-center">
-    <div class="text-[10px] text-[var(--text-muted)] text-center">
-      <p>&copy; 2025-2026 Pokemongogo.pl. {{ t('login.copyright') }}</p>
-    </div>
-  </footer>
-
-  <div class="flex justify-center items-center h-[calc(100vh-54.5px)]">
-    <div
-      class="flex my-auto overflow-hidden flex-col justify-center border-[var(--primary)]/20 border w-1/3 mx-auto p-10 rounded-xl backdrop-blur-md"
-    >
+  <div class="login-container">
+    <div class="login-card">
       <Transition name="fade" mode="out-in">
-        <div v-if="appState.activeTab === ActiveTab.LOGIN">
-          <h1 class="text-2xl w-full text-center mb-2">{{ t('login.title') }}</h1>
-          <p class="text-center mb-4">
-            {{ t('login.subtitle') }}
-          </p>
+        <div v-if="appState.activeTab === ActiveTab.LOGIN" class="w-full">
+          <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-white mb-1 tracking-tight">
+              {{ t('login.title') }}
+            </h1>
+            <p class="text-[var(--text-secondary)] text-xs font-medium">
+              {{ t('login.subtitle') }}
+            </p>
+          </div>
 
-          <div class="flex gap-2">
+          <div v-if="savedAccounts.length" class="flex gap-3 flex-wrap justify-center mb-6">
             <div
               v-for="savedAccount in savedAccounts"
               :key="savedAccount.nickname"
-              class="relative px-4 py-2 flex items-center flex-col gap-1 border border-[var(--primary)]/20 rounded-md backdrop-blur-2xl w-1/3 hover:bg-[var(--primary-shop)] hover:text-white hover:cursor-pointer"
+              class="account-item group"
               @click="handleLogin(savedAccount)"
             >
-              <button
-                class="absolute top-2 right-2 hover:cursor-pointer"
-                @click.stop="removeSavedAccount(savedAccount)"
-              >
-                <i class="fa fa-trash" />
+              <button class="remove-btn" @click.stop="removeSavedAccount(savedAccount)">
+                <i class="fa fa-times" />
               </button>
-              <img
-                v-if="savedAccount.url"
-                :src="savedAccount.url"
-                class="rounded-full w-8 h-8"
-                @dragstart.prevent="null"
-              />
-              <div
-                v-else
-                class="rounded-full border-[var(--border)] border-2 w-8 h-8 flex items-center justify-center"
-              >
-                <i class="fa fa-user" />
+
+              <div class="avatar-ring">
+                <img
+                  v-if="savedAccount.url"
+                  :src="savedAccount.url"
+                  class="w-full h-full object-cover rounded-full"
+                  @dragstart.prevent="null"
+                />
+                <div
+                  v-else
+                  class="w-full h-full flex items-center justify-center bg-white/5 rounded-full"
+                >
+                  <i class="fa fa-user text-[var(--text-secondary)] text-xs" />
+                </div>
               </div>
-              <p class="text-[10px] text-[var(--text-muted)]">
+
+              <span
+                class="text-[11px] text-[var(--text-secondary)] font-bold truncate max-w-full group-hover:text-white transition-colors"
+              >
                 {{ savedAccount.nickname }}
-              </p>
+              </span>
             </div>
           </div>
 
-          <div v-if="savedAccounts.length" class="flex relative w-full">
-            <hr class="my-4 w-full border-[var(--primary)]" />
-            <span class="mt-[7px] mx-2">{{ t('login.or') }}</span>
-            <hr class="my-4 w-full border-[var(--primary)]" />
+          <div v-if="savedAccounts.length" class="divider mb-6">
+            <div class="line"></div>
+            <span class="text">{{ t('login.or') }}</span>
+            <div class="line"></div>
           </div>
 
-          <div class="flex relative flex-col w-full">
-            <div class="form-group h-full" :class="{ '!mb-5': login$.nick.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-user absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+          <div class="flex flex-col gap-3 w-full">
+            <div class="input-group" :class="{ error: login$.nick.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-user input-icon" />
                 <input
                   v-model="formState.nick"
                   type="text"
                   :placeholder="t('login.placeholder.nick')"
-                  class="form-input !pl-[2rem] group"
-                  :class="{ invalid: login$.nick.$error }"
+                  class="custom-input"
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.nick.$error }">
+              <div class="error-text" :class="{ show: login$.nick.$error }">
                 {{ login$.nick.$errors[0]?.$message }}
               </div>
             </div>
 
-            <div class="form-group h-full" :class="{ '!mb-5': login$.password.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-lock absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+            <div class="input-group" :class="{ error: login$.password.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-lock input-icon" />
                 <input
                   v-model="formState.password"
                   :type="formState.passwordType"
                   placeholder="Podaj hasło.."
-                  class="form-input !pl-[2rem] group"
-                  :class="{ invalid: login$.password.$error }"
+                  class="custom-input !pr-9"
                 />
                 <i
-                  class="fa absolute top-1/2 right-3 -translate-y-1/2 ml-3 hover:text-[var(--primary)] hover:cursor-pointer"
+                  class="fa input-eye"
                   :class="{
                     'fa-eye-slash': formState.passwordType === 'password',
                     'fa-eye': formState.passwordType === 'text'
@@ -117,105 +109,103 @@ const { t } = useI18n()
                   "
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.password.$error }">
+              <div class="error-text" :class="{ show: login$.password.$error }">
                 {{ login$.password.$errors[0]?.$message }}
               </div>
             </div>
 
-            <button class="btn-primary mt-2" @click="handleLogin(null)">
+            <button class="action-btn primary mt-2" @click="handleLogin(null)">
               {{ t('login.loginButton') }}
             </button>
           </div>
 
-          <div class="flex relative w-full">
-            <hr class="my-4 w-full border-[var(--primary)]" />
-            <span class="mt-[7px] mx-2">{{ t('login.or') }}</span>
-            <hr class="my-4 w-full border-[var(--primary)]" />
+          <div class="divider mt-6 mb-4">
+            <div class="line"></div>
+            <span class="text">{{ t('login.or') }}</span>
+            <div class="line"></div>
           </div>
 
           <button
-            class="btn-microsoft"
+            class="action-btn secondary"
             @click="handleLogin({ accountType: AccountType.MICROSOFT })"
           >
-            <i class="fab fa-microsoft"></i>
+            <i class="fab fa-microsoft text-sm"></i>
             <span>{{ t('login.microsoftLogin') }}</span>
           </button>
 
-          <p class="text-xs text-center">
+          <p class="text-[11px] text-center text-[var(--text-secondary)] mt-6">
             {{ t('login.noAccount') }}
             <span
-              class="text-[var(--primary)] hover:cursor-pointer hover:underline"
+              class="text-[var(--primary)] font-bold cursor-pointer hover:text-white transition-colors"
               @click="handleChangeTab(ActiveTab.REGISTER)"
-              >{{ t('login.register') }}</span
             >
+              {{ t('login.register') }}
+            </span>
           </p>
         </div>
-        <div v-else>
-          <h1 class="text-2xl w-full text-center mb-2">{{ t('register.title') }}</h1>
-          <p class="text-center mb-4">
-            {{ t('register.subtitle') }}
-          </p>
+
+        <div v-else class="w-full">
+          <div class="text-center mb-6">
+            <h1 class="text-2xl font-black text-white mb-1 tracking-tight">
+              {{ t('register.title') }}
+            </h1>
+            <p class="text-[var(--text-secondary)] text-xs font-medium">
+              {{ t('register.subtitle') }}
+            </p>
+          </div>
 
           <Message
             severity="info"
-            class="!bg-blue-400/20 !text-blue-500 !outline !outline-blue-700 !mb-4"
+            class="!bg-[var(--primary)]/10 !border !border-[var(--primary)]/20 !text-blue-200 !rounded-xl !mb-5 !p-3 shadow-sm"
+            :closable="false"
           >
-            <span class="text-[10px]">
+            <span class="text-[10px] leading-relaxed block font-medium">
               {{ t('register.info') }}
             </span>
           </Message>
 
-          <div class="flex relative flex-col w-full">
-            <div class="form-group h-full" :class="{ '!mb-5': login$.nick.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-user absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+          <div class="flex flex-col gap-3 w-full">
+            <div class="input-group" :class="{ error: login$.nick.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-user input-icon" />
                 <input
                   v-model="formState.nick"
                   type="text"
                   :placeholder="t('register.placeholder.nick')"
-                  class="form-input group !pl-[2rem]"
-                  :class="{ invalid: login$.nick.$error }"
+                  class="custom-input"
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.nick.$error }">
+              <div class="error-text" :class="{ show: login$.nick.$error }">
                 {{ login$.nick.$errors[0]?.$message }}
               </div>
             </div>
 
-            <div class="form-group h-full" :class="{ '!mb-5': login$.email?.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-envelope absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+            <div class="input-group" :class="{ error: login$.email?.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-envelope input-icon" />
                 <input
                   v-model="formState.email"
                   type="text"
                   :placeholder="t('register.placeholder.email')"
-                  class="form-input !pl-[2rem] group"
-                  :class="{ invalid: login$.email?.$error }"
+                  class="custom-input"
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.email?.$error }">
+              <div class="error-text" :class="{ show: login$.email?.$error }">
                 {{ login$.email?.$errors[0]?.$message }}
               </div>
             </div>
 
-            <div class="form-group h-full" :class="{ '!mb-5': login$.password.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-lock absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+            <div class="input-group" :class="{ error: login$.password.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-lock input-icon" />
                 <input
                   v-model="formState.password"
                   :type="formState.passwordType"
                   placeholder="Podaj hasło.."
-                  class="form-input !pl-[2rem] group"
-                  :class="{ invalid: login$.password.$error }"
+                  class="custom-input !pr-9"
                 />
                 <i
-                  class="fa absolute top-1/2 right-3 -translate-y-1/2 ml-3 hover:text-[var(--primary)] hover:cursor-pointer"
+                  class="fa input-eye"
                   :class="{
                     'fa-eye-slash': formState.passwordType === 'password',
                     'fa-eye': formState.passwordType === 'text'
@@ -226,25 +216,22 @@ const { t } = useI18n()
                   "
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.password.$error }">
+              <div class="error-text" :class="{ show: login$.password.$error }">
                 {{ login$.password.$errors[0]?.$message }}
               </div>
             </div>
 
-            <div class="form-group h-full" :class="{ '!mb-5': login$.repeatPassword?.$error }">
-              <div class="input-wrapper flex">
-                <i
-                  class="fa fa-lock absolute top-1/2 -translate-y-1/2 ml-3 text-[var(--primary)]"
-                />
+            <div class="input-group" :class="{ error: login$.repeatPassword?.$error }">
+              <div class="input-wrapper">
+                <i class="fa fa-lock input-icon" />
                 <input
                   v-model="formState.repeatPassword"
                   :type="formState.repeatPasswordType"
                   :placeholder="t('register.placeholder.repeatPassword')"
-                  class="form-input !pl-[2rem] group"
-                  :class="{ invalid: login$.repeatPassword?.$error }"
+                  class="custom-input !pr-9"
                 />
                 <i
-                  class="fa absolute top-1/2 right-3 -translate-y-1/2 ml-3 hover:text-[var(--primary)] hover:cursor-pointer"
+                  class="fa input-eye"
                   :class="{
                     'fa-eye-slash': formState.repeatPasswordType === 'password',
                     'fa-eye': formState.repeatPasswordType === 'text'
@@ -255,19 +242,19 @@ const { t } = useI18n()
                   "
                 />
               </div>
-              <div class="error-message" :class="{ show: login$.repeatPassword?.$error }">
+              <div class="error-text" :class="{ show: login$.repeatPassword?.$error }">
                 {{ login$.repeatPassword?.$errors[0]?.$message }}
               </div>
             </div>
 
-            <button class="btn-primary my-2" @click="handleRegister">
+            <button class="action-btn primary mt-3" @click="handleRegister">
               {{ t('register.registerButton') }}
             </button>
 
-            <p class="text-xs text-center">
+            <p class="text-[11px] text-center text-[var(--text-secondary)] mt-4">
               {{ t('register.hasAccount') }}
               <span
-                class="text-[var(--primary)] hover:cursor-pointer hover:underline"
+                class="text-[var(--primary)] font-bold cursor-pointer hover:text-white transition-colors"
                 @click="handleChangeTab(ActiveTab.LOGIN)"
               >
                 {{ t('register.login') }}
@@ -277,6 +264,12 @@ const { t } = useI18n()
         </div>
       </Transition>
     </div>
+
+    <footer class="absolute z-50 bottom-0 w-full text-center pointer-events-none">
+      <div class="text-[10px] text-[var(--text-muted)] opacity-50 font-medium">
+        <p>&copy; 2025-2026 Pokemongogo.pl. {{ t('login.copyright') }}</p>
+      </div>
+    </footer>
   </div>
 
   <div id="toastContainer" class="toast-container"></div>
@@ -293,17 +286,250 @@ const { t } = useI18n()
   </div>
 </template>
 
-<style lang="css">
+<style scoped>
 @import '@ui/assets/login.css';
 
+/* === LAYOUT === */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 80px);
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px; /* Kompaktowa szerokość */
+  padding: 2.5rem 2rem;
+
+  /* Stylizacja spójna z Home/FTP */
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* === INPUTS === */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--primary);
+  font-size: 0.8rem;
+  z-index: 10;
+}
+
+.input-eye {
+  position: absolute;
+  right: 14px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  z-index: 10;
+}
+
+.input-eye:hover {
+  color: var(--text-primary);
+}
+
+.custom-input {
+  width: 100%;
+  background: rgba(20, 20, 25, 0.6); /* Ciemniejsze tło jak w search bar */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.7rem 1rem 0.7rem 2.6rem;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.custom-input:focus {
+  background: rgba(20, 20, 25, 0.9);
+  border-color: rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 0 0 1px rgba(var(--primary-rgb), 0.3);
+}
+
+.custom-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Error States */
+.input-group.error .custom-input {
+  border-color: #ef4444;
+}
+
+.input-group.error .input-icon {
+  color: #ef4444;
+}
+
+.error-text {
+  font-size: 0.7rem;
+  color: #ef4444;
+  font-weight: 600;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 0.2s;
+  padding-left: 0.5rem;
+}
+
+.error-text.show {
+  max-height: 20px;
+  margin-top: 2px;
+}
+
+/* === BUTTONS === */
+.action-btn {
+  width: 100%;
+  padding: 0.7rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn.primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+}
+
+.action-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
+  filter: brightness(1.1);
+}
+
+.action-btn.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+.action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* === SAVED ACCOUNTS === */
+.account-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 72px;
+  padding: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.account-item:hover {
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-ring {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.remove-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #27272a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.account-item:hover .remove-btn {
+  opacity: 1;
+}
+
+.remove-btn:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+}
+
+/* === DIVIDER === */
+.divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.text {
+  padding: 0 0.8rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* === TRANSITIONS === */
 .fade-enter-active,
 .fade-leave-active {
-  transition: all 0.3s ease-in-out;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 </style>

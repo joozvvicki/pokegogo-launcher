@@ -9,10 +9,10 @@ import Logger from 'electron-log'
 
 const createMainWindow = (): BrowserWindow => {
   const mainWindow = new BrowserWindow({
-    minWidth: 1280,
-    width: 1280,
-    minHeight: 720,
-    height: 720,
+    minWidth: 1366,
+    width: 1366,
+    minHeight: 768,
+    height: 768,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),

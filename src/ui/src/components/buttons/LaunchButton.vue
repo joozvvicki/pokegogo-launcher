@@ -277,20 +277,40 @@ onUnmounted(() => {
 
 <style scoped>
 .launch-button-info {
-  width: 100%;
-  height: 1.5rem;
   position: absolute;
-  top: 100%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-dark);
-  padding: 0.1rem;
-  font-size: 0.6rem;
+  bottom: 110%; /* Position above the button */
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 300px;
+  min-width: 150px;
+  background: rgba(20, 20, 25, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
   color: var(--text-primary);
   text-align: center;
-  border-radius: 0 0 15px 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 20;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.launch-button-info::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: rgba(20, 20, 25, 0.9);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .launch-running {
@@ -299,15 +319,20 @@ onUnmounted(() => {
   align-items: center;
 }
 
+.launch-running .title {
+  font-size: 0.8rem; /* Smaller font text during loading */
+}
+
 .launch-button {
   position: relative;
   width: 100%;
-  padding: 1rem;
+  height: 100%; /* Fill parent */
+  padding: 0;
   background: var(--gradient-primary);
   color: white;
   border: none;
-  border-radius: 0.8rem;
-  font-size: 0.9rem;
+  border-radius: 18px; /* Match dock radius */
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 1px;
   cursor: pointer;
@@ -317,8 +342,9 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
   z-index: 2;
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.2); /* Inner glow */
 }
 
 .banned {
@@ -328,21 +354,27 @@ onUnmounted(() => {
 .banned:hover,
 .banned:focus {
   box-shadow: none !important;
+  transform: none !important;
 }
 
 .launch-button .title {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  z-index: 5;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .margin-title {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0px;
 }
 
 .launch-button .info {
-  font-size: 0.5rem;
-  color: var(--bg-dark);
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .launch-button-bg {
@@ -351,27 +383,28 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+  z-index: 1;
 }
 
 .launch-button:hover .launch-button-bg {
   left: 100%;
 }
 
-.launch-button:hover,
-.launch-button:focus {
-  box-shadow: 0 0.25rem 1rem var(--border);
+.launch-button:hover {
+  transform: scale(1.05); /* Slight scale up */
+  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.3);
 }
 
 .slide-down-enter-active,
 .slide-down-leave-active {
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-down-enter-from,
 .slide-down-leave-to {
   opacity: 0;
-  transform: translateY(-100%);
+  transform: translateY(-10px);
 }
 </style>

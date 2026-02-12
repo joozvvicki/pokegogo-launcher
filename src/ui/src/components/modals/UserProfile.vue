@@ -4,7 +4,7 @@
 import { IUser } from '@ui/env'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
-import { differenceInMilliseconds, format, intervalToDuration, parseISO } from 'date-fns'
+import { format } from 'date-fns'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
@@ -187,45 +187,8 @@ const onlyForAdmin = (player: IUser): boolean => {
   return isAdmin.value && ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
 }
 
-const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
-
-const hasFriendRequestFromMe = (player: IUser): boolean =>
-  !!player?.friendRequests?.includes(userStore.user?.nickname ?? '')
-
 const now = ref(new Date())
 const timerInterval = ref<number | undefined>(undefined)
-
-const pad = (num: number): string => String(num).padStart(2, '0')
-
-const formattedBanTime = computed(() => {
-  if (!userStore.selectedProfile?.isBanned) return
-
-  const banEndDateString = userStore.selectedProfile?.banEndDate as string | null
-
-  if (!banEndDateString?.length) {
-    return t('modals.userProfile.perm')
-  }
-
-  const banEndDate = parseISO(banEndDateString)
-  const remainingMs = differenceInMilliseconds(banEndDate, now.value)
-
-  if (remainingMs <= 0) {
-    clearInterval(timerInterval.value)
-    return t('modals.userProfile.banEnded')
-  }
-
-  const duration = intervalToDuration({
-    start: now.value,
-    end: banEndDate
-  })
-
-  const totalHours = (duration.days || 0) * 24 + (duration.hours || 0)
-  const hours = pad(totalHours)
-  const minutes = pad(duration.minutes || 0)
-  const seconds = pad(duration.seconds || 0)
-
-  return `${t('modals.userProfile.remaining')}${hours}:${minutes}:${seconds}`
-})
 
 const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
   try {
@@ -279,10 +242,6 @@ const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
   }
 }
 
-const isMod = computed(() =>
-  [UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
-)
-
 const handleRemoveFriend = async (playerToRemove: IUser): Promise<void> => {
   try {
     const res = await removeFriend(playerToRemove.nickname)
@@ -330,273 +289,130 @@ const handleEscape = (e: KeyboardEvent): void => {
   <div class="modal-container">
     <Transition name="fade-left">
       <div v-if="player" class="modal-card">
-        <div class="flex gap-2 w-full justify-between shrink-0">
-          <div v-if="userStore.user" class="">
-            <div
-              class="flex w-[100px] h-[100px] player-profile rounded-2xl! hover:bg-[var(--bg-light)]/40! hover:cursor-pointer"
-              @click="openChangeSkinModal"
-            >
-              <SkinViewer :skin="skinUrl" />
+        <div class="user-profile-header">
+          <div class="avatar-container" @click="openChangeSkinModal">
+            <SkinViewer :skin="skinUrl" />
+            <div class="edit-overlay">
+              <i class="fas fa-pen"></i>
             </div>
           </div>
-          <div class="flex w-full">
-            <div class="flex justify-between w-full">
-              <div class="flex flex-col">
-                <h1 class="font-bold text-lg">{{ player.nickname }}</h1>
-                <span
-                  :style="`
-                      background: var(--primary);
-                      color: var(--text-primary);
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                      flex-shrink: 0 !important;
-                      max-width: max-content !important;
-                      `"
-                  class="capitalize"
-                >
-                  {{ player.role }}
-                </span>
-              </div>
-            </div>
-            <div class="flex gap-2 flex-col">
-              <div class="nav-icon" @click="closeModal">
-                <i class="fa fa-times"></i>
-              </div>
-              <div v-if="onlyForAdmin(player)" class="flex flex-col gap-2">
-                <button
-                  v-if="!player?.isBanned"
-                  class="nav-icon"
-                  @click="$emit('ban-player', player)"
-                >
-                  <i :class="'fas fa-ban text-red-400'"></i>
-                </button>
 
-                <button v-else class="nav-icon" @click="$emit('unban-player', player)">
-                  <i :class="'fas fa-rotate-left text-green-400'"></i>
-                </button>
-
-                <button
-                  v-if="player?.accountType !== AccountType.MICROSOFT"
-                  class="nav-icon"
-                  @click="$emit('reset-password', player)"
-                >
-                  <i :class="'fas fa-key'"></i>
-                </button>
-              </div>
+          <div class="user-info">
+            <h1 class="username">{{ player.nickname }}</h1>
+            <div class="badges">
+              <span
+                class="role-badge"
+                :style="{ background: 'var(--primary)', color: 'var(--text-primary)' }"
+              >
+                {{ player.role }}
+              </span>
+              <span v-if="player.isBanned" class="status-badge banned">
+                {{ t('modals.userProfile.accountBlocked') }}
+              </span>
             </div>
+          </div>
+
+          <div class="header-actions">
+            <button class="nav-icon close-btn" @click="closeModal">
+              <i class="fa fa-times"></i>
+            </button>
           </div>
         </div>
-        <span
-          v-if="player.isBanned"
-          :style="`
-                      background: var(--primary);
-                      font-size: 0.6rem;
-                      color: var(--text-primary);
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      font-weight: 800;
-                      height: 1.2rem;
-                      margin-top: 4px;
-                      flex-shrink: 0 !important;
-                      max-width: max-content !important;
-                    `"
-          class="mx-auto"
-        >
-          {{ t('modals.userProfile.accountBlocked') }} {{ formattedBanTime }}
-        </span>
 
-        <div class="flex flex-col text-xs mt-2">
-          <div
-            v-if="isFriend(player)"
-            :style="`
-                      background: var(--text-secondary);
-                      color: black;
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                      flex-shrink: 0 !important;
-                      max-width: max-content !important;
-                    `"
-            class="mx-auto"
-          >
-            <i class="fas fa-user-friends"></i>
-            {{ t('modals.userProfile.areFriends') }}
+        <div class="user-stats-grid">
+          <div class="stat-item">
+            <i class="fas fa-clock"></i>
+            <span>{{ t('modals.userProfile.lastLogin') }}</span>
+            <strong>{{
+              player.lastLoginAt ? format(player.lastLoginAt, 'dd.MM.yyyy') : '-'
+            }}</strong>
           </div>
-          <div
-            v-if="hasFriendRequestFromMe(player)"
-            :style="`
-                      background: var(--text-secondary);
-                      color: black;
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                      flex-shrink: 0 !important;
-                      max-width: max-content !important;
-                    `"
-            class="mx-auto"
-          >
-            <i class="fas fa-user-friends"></i>
-            {{ t('modals.userProfile.friendRequestSent') }}
+
+          <div class="stat-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>{{ t('modals.userProfile.registered') }}</span>
+            <strong>{{ player.createdAt ? format(player.createdAt, 'dd.MM.yyyy') : '-' }}</strong>
           </div>
-          <template v-if="isMod">
-            <div
-              v-if="
-                userStore.user &&
-                !player.isBanned &&
-                getPlayerID(player) !== getPlayerID(userStore.user)
-              "
-              class="flex gap-2 my-2"
-            ></div>
-            <div class="flex gap-2 justify-center">
-              <div
-                v-if="player.lastLoginAt"
-                :style="`
-                    background: var(--bg-card);
-                    font-size: 0.6rem;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    margin-top: 4px;
-                    height: 1.2rem;
-                    font-weight: 800;
-                    flex-shrink: 0 !important;
-                    cursor: pointer;
-                    `"
-                class="mx-auto"
-              >
-                {{ t('modals.userProfile.lastLogin') }}
-                {{ format(player.lastLoginAt, 'dd.MM.yyyy, HH:mm') }}
-              </div>
-              <div
-                v-if="player.createdAt"
-                :style="`
-                    background: var(--bg-card);
-                    font-size: 0.6rem;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    margin-top: 4px;
-                    height: 1.2rem;
-                    font-weight: 800;
-                    flex-shrink: 0 !important;
-                    cursor: pointer;
-                    `"
-                class="mx-auto"
-              >
-                {{ t('modals.userProfile.registered') }}
-                {{ format(player.createdAt, 'dd.MM.yyyy, HH:mm') }}
-              </div>
-            </div>
-            <div
-              v-if="player.machineId"
-              :style="`
-                    background: var(--bg-card);
-                    font-size: 0.6rem;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    margin-top: 4px;
-                    height: 1.2rem;
-                    font-weight: 800;
-                    flex-shrink: 0 !important;
-                    max-width: max-content !important;
-                    cursor: pointer;
-                    `"
-              class="mx-auto"
-              @click="handleCopy(player.machineId)"
-            >
-              {{ player?.machineId }}
-            </div>
-            <div
-              v-else
-              :style="`
-                    background: var(--bg-card);
-                    font-size: 0.6rem;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    margin-top: 4px;
-                    height: 1.2rem;
-                    font-weight: 800;
-                    flex-shrink: 0 !important;
-                    max-width: max-content !important;
-                    cursor: pointer;
-                    `"
-              class="mx-auto"
-            >
-              {{ t('modals.userProfile.noHwid') }}
-            </div>
-          </template>
+
+          <div
+            v-if="player.machineId"
+            class="stat-item click-copy"
+            @click="handleCopy(player.machineId)"
+          >
+            <i class="fas fa-desktop"></i>
+            <span>HWID</span>
+            <strong>{{ player.machineId.substring(0, 8) }}...</strong>
+          </div>
         </div>
 
+        <div v-if="isAdmin && onlyForAdmin(player)" class="admin-actions">
+          <h4>Admin Actions</h4>
+          <div class="action-buttons">
+            <button
+              v-if="!player?.isBanned"
+              class="action-btn danger"
+              @click="$emit('ban-player', player)"
+            >
+              <i class="fas fa-ban"></i> Ban
+            </button>
+            <button v-else class="action-btn success" @click="$emit('unban-player', player)">
+              <i class="fas fa-rotate-left"></i> Unban
+            </button>
+
+            <button
+              v-if="player?.accountType !== AccountType.MICROSOFT"
+              class="action-btn warning"
+              @click="$emit('reset-password', player)"
+            >
+              <i class="fas fa-key"></i> Reset Pass
+            </button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Friend Requests -->
         <template v-if="player.friendRequests && userStore.user?.nickname === player.nickname">
-          <div
-            v-for="friend in friendRequests"
-            :key="friend.uuid"
-            class="flex gap-2 items-center justify-between px-4 py-2 bg-[var(--bg-card)] rounded-xl"
-          >
-            <div class="flex gap-2 items-center">
-              <div class="!relative">
-                <img
-                  v-if="friend.headUrl"
-                  :src="friend.headUrl"
-                  class="!w-10 !h-10 !shrink-0 rounded-full"
-                  alt="Avatar"
-                />
-                <div
-                  v-else
-                  class="!wfull !shrink-0 rounded-full overflow-hidden flex items-center justify-center"
-                >
-                  <i class="fas fa-user"></i>
+          <div v-if="friendRequests.length > 0" class="section-title">
+            <h3>Friend Requests</h3>
+            <span class="count">{{ friendRequests.length }}</span>
+          </div>
+
+          <div class="friend-requests-list">
+            <div v-for="friend in friendRequests" :key="friend.uuid" class="friend-request-item">
+              <div class="friend-info">
+                <div class="avatar-wrapper">
+                  <img :src="friend.headUrl || ''" class="friend-avatar" alt="Avatar" />
+                </div>
+                <div class="friend-details">
+                  <span class="friend-name">{{ friend.nickname }}</span>
+                  <span class="friend-role">{{ friend.role || 'Player' }}</span>
                 </div>
               </div>
-              {{ friend.nickname }}
-            </div>
-            <div
-              v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname"
-              class="flex gap-2"
-            >
-              <button
-                class="nav-icon !text-green-400"
-                @click.stop="handleAcceptFriendRequest(friend)"
-              >
-                <i :class="'fas fa-user-plus'" />
-              </button>
-              <button
-                class="nav-icon !text-red-400"
-                @click.stop="handleRejectFriendRequest(friend)"
-              >
-                <i :class="'fas fa-user-xmark'" />
-              </button>
+              <div class="request-actions">
+                <button
+                  class="icon-btn success"
+                  title="Accept"
+                  @click.stop="handleAcceptFriendRequest(friend)"
+                >
+                  <i class="fas fa-check"></i>
+                </button>
+                <button
+                  class="icon-btn danger"
+                  title="Reject"
+                  @click.stop="handleRejectFriendRequest(friend)"
+                >
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
             </div>
           </div>
         </template>
 
-        <h1 class="flex flex-wrap gap-2 my-2 text-lg font-black">
-          {{ t('modals.userProfile.friends') }}
-          <span
-            :style="`
-                      background: var(--text-secondary);
-                      font-size: 0.6rem;
-                      color: black;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      font-weight: 800;
-                      height: 1.2rem;
-                      margin-top: 4px;
-                      flex-shrink: 0 !important;
-                      max-width: max-content !important;
-                    `"
-          >
-            {{ player.friends?.length }}
-          </span>
-        </h1>
+        <div class="section-title mt-4">
+          <h3>{{ t('modals.userProfile.friends') }}</h3>
+          <span class="count">{{ player.friends?.length || 0 }}</span>
+        </div>
 
         <!-- Friends list -->
         <div class="flex flex-col gap-1 overflow-y-auto">
@@ -617,45 +433,54 @@ const handleEscape = (e: KeyboardEvent): void => {
             <div
               v-for="friend in friends"
               :key="friend.uuid"
-              class="flex gap-2 items-center justify-between px-4 py-2 bg-[var(--bg-card)] rounded-xl"
+              class="friend-item"
+              @click="userStore.updateSelectedProfile(friend)"
             >
-              <div class="flex gap-2 items-center">
-                <div class="!relative">
+              <div class="friend-info">
+                <div class="avatar-wrapper">
                   <img
                     v-if="friend.headUrl"
                     :src="friend.headUrl"
-                    class="!w-10 !h-10 !shrink-0 rounded-full"
+                    class="friend-avatar"
                     alt="Avatar"
                   />
-                  <div
-                    v-else
-                    class="!wfull !shrink-0 rounded-full overflow-hidden flex items-center justify-center"
-                  >
+                  <div v-else class="friend-avatar-placeholder">
                     <i class="fas fa-user"></i>
                   </div>
+                  <div class="status-indicator online"></div>
+                  <!-- Placeholder for status -->
                 </div>
-                {{ friend.nickname }}
+                <div class="friend-details">
+                  <span class="friend-name">{{ friend.nickname }}</span>
+                  <span class="friend-role">{{ friend.role || 'Player' }}</span>
+                </div>
               </div>
-              <div class="flex gap-1">
-                <button class="nav-icon" @click.stop="userStore.updateSelectedProfile(friend)">
-                  <i :class="'fas fa-user'" />
+
+              <div class="friend-actions">
+                <button
+                  v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname"
+                  class="icon-btn chat"
+                  title="Message"
+                  @click.stop="
+                    () => {
+                      chatsStore.addActiveChat(friend)
+                      closeModal()
+                    }
+                  "
+                >
+                  <i class="fa fa-comment"></i>
                 </button>
-                <template v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname">
-                  <button
-                    class="nav-icon"
-                    @click="
-                      () => {
-                        chatsStore.addActiveChat(friend)
-                        closeModal()
-                      }
-                    "
-                  >
-                    <i class="fa fa-comment"></i>
-                  </button>
-                  <button class="nav-icon !text-red-400" @click="handleRemoveFriend(friend)">
-                    <i :class="'fas fa-user-minus'" />
-                  </button>
-                </template>
+                <button
+                  v-if="userStore.user?.nickname === userStore.selectedProfile?.nickname"
+                  class="icon-btn remove"
+                  title="Remove Friend"
+                  @click.stop="handleRemoveFriend(friend)"
+                >
+                  <i class="fas fa-user-minus"></i>
+                </button>
+                <button class="icon-btn view" title="View Profile">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -679,13 +504,12 @@ const handleEscape = (e: KeyboardEvent): void => {
 <style scoped>
 .modal-container {
   position: absolute;
-  top: 54.5px;
+  top: 0;
   left: 0;
-  height: calc(100vh - 54.5px);
-  color: var(--text-primary);
-  display: flex;
-  align-items: end;
+  width: 100vw;
+  height: 100vh;
   z-index: 500;
+  pointer-events: none;
 }
 
 .error-message {
@@ -694,97 +518,446 @@ const handleEscape = (e: KeyboardEvent): void => {
 }
 
 .modal-card {
-  height: 100%;
-  width: 35vw;
+  pointer-events: auto;
+  position: absolute;
+  top: calc(60px + 1rem); /* Header height (60px) + margin */
+  left: 8rem; /* Sidebar width (7rem) + margin (1rem) */
+  height: calc(100vh - 60px - 2rem); /* Full height - header - top/bottom margins */
+  width: 25vw;
+  min-width: 350px;
+  padding: 0.75rem 1.5rem; /* Match Sidebar's my-3 (0.75rem) vertical spacing */
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 5px 10px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 24px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  transform-origin: left center;
+}
+
+/* User Profile Header */
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.avatar-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  background: var(--bg-dark);
+}
+
+.avatar-container:hover {
+  transform: scale(1.05);
+}
+
+.edit-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-container:hover .edit-overlay {
+  opacity: 1;
+}
+
+.user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.username {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.role-badge,
+.status-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.banned {
+  background: #ef4444; /* Red-500 */
+  color: white;
+}
+
+.header-actions {
+  align-self: flex-start;
+}
+
+.nav-icon.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.nav-icon.close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Stats Grid */
+.user-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-top-right-radius: 1rem;
-  border-bottom-right-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(24px);
+  gap: 0.25rem;
+  position: relative;
+  overflow: hidden;
 }
 
-.modal-header {
+.stat-item i {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  font-size: 1.5rem;
+  opacity: 0.1;
+  transform: rotate(-15deg);
+}
+
+.stat-item span {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-item strong {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.stat-item.click-copy {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.stat-item.click-copy:active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Admin Actions */
+.admin-actions {
+  margin-bottom: 1.5rem;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.admin-actions h4 {
+  color: #ef4444;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.action-btn.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.action-btn.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.action-btn.success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.action-btn.success:hover {
+  background: #22c55e;
+  color: white;
+}
+
+.action-btn.warning {
+  background: rgba(234, 179, 8, 0.1);
+  color: #eab308;
+}
+
+.action-btn.warning:hover {
+  background: #eab308;
+  color: black;
+}
+
+/* Section Dividers */
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 0 0 1.5rem 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.modal-content {
-  flex: 1;
-  margin-bottom: 1.5rem;
+.section-title h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.online-dot {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid var(--bg-dark);
+.count {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 99px;
+  font-weight: 600;
+}
+
+/* Friend Requests */
+.friend-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.friend-request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Friends List */
+.friend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.25rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.friend-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
+}
+
+.friend-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.friend-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--bg-dark);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.friend-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
+  border: 2px solid var(--bg-card);
+  background: #6b7280; /* Default gray */
 }
 
+.status-indicator.online {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.friend-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.friend-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.friend-role {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+.friend-actions {
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.friend-item:hover .friend-actions {
+  opacity: 1;
+}
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.icon-btn.chat:hover {
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary);
+}
+
+.icon-btn.remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.icon-btn.view:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Animations */
 .fade-left-enter-active,
 .fade-left-leave-active {
-  transition: all 0.5s cubic-bezier(0.075, 0.82, 0.165, 1);
-  transform: translateX(0%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-left-enter-from,
 .fade-left-leave-to {
-  transform: translateX(-100%);
+  transform: translateX(-15px) scaleX(0.9);
+  opacity: 0;
 }
 
-/* Skeleton styles */
-.skeleton-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-card);
+/* Scrollbar within modal */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
 }
 
-.skeleton-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 9999px;
-  background: var(--border-2);
-  opacity: 0.6;
-  animation: pulse 1.4s ease-in-out infinite;
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.skeleton-text {
-  height: 0.9rem;
-  border-radius: 0.25rem;
-  background: var(--border-2);
-  opacity: 0.6;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-.skeleton-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.skeleton-button {
-  height: 1.5rem;
-  border-radius: 0.375rem;
-  background: var(--border-2);
-  opacity: 0.6;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0.6;
-  }
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }
 </style>

@@ -19,117 +19,164 @@ const isBanned = computed(() => {
 })
 
 const banReason = computed(() => userStore.user?.banReason || t('modals.banned.noReason'))
+const banExpires = computed(() => userStore.user?.banEndDate)
 
 const acknowledgeBan = (): void => {
   modalVisible.value = false
 }
+
+const formatDate = (date: string | Date): string => {
+  if (!date) return ''
+  return new Date(date).toLocaleString()
+}
+
+const openDiscord = (): void => {
+  window.electron?.ipcRenderer?.send('open-external', 'https://discord.gg/pokegogo')
+}
 </script>
 
 <template>
-  <div
-    v-if="isBanned && modalVisible"
-    class="modal-container"
-    role="alert"
-    aria-modal="true"
-    aria-labelledby="ban-title"
-    aria-describedby="ban-desc"
-  >
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="launch-title">
-          <div class="nav-icon">
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+  <Teleport to="#modalsContainer">
+    <Transition name="fade">
+      <div v-if="isBanned && modalVisible" class="g-modal-overlay" role="alert" aria-modal="true">
+        <div class="g-card g-modal-card alert-theme">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box danger">
+                <i class="fas fa-ban"></i>
+              </div>
+              <h3>{{ t('modals.banned.title') }}</h3>
+            </div>
           </div>
-          <h2 id="ban-title">{{ t('modals.banned.title') }}</h2>
+
+          <div class="g-modal-content text-center">
+            <div class="ban-icon-large">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+
+            <h2 class="text-xl font-bold text-red-500 mb-2">
+              {{ t('modals.banned.header', 'Konto Zbanowane') }}
+            </h2>
+
+            <p class="text-gray-300 mb-4">
+              {{ t('modals.banned.desc') }}
+            </p>
+
+            <div v-if="banReason" class="ban-reason-box">
+              <span class="label">{{ t('modals.banned.reason') }}:</span>
+              <span class="reason">{{ banReason }}</span>
+            </div>
+
+            <div v-if="banExpires" class="ban-info-row">
+              <span class="label">{{ t('modals.banned.expires') }}:</span>
+              <span class="value">{{ formatDate(banExpires as string) }}</span>
+            </div>
+          </div>
+
+          <div class="g-modal-footer">
+            <button class="g-btn w-full" @click="openDiscord">
+              <i class="fab fa-discord"></i>
+              Discord
+            </button>
+            <button class="g-btn primary w-full" @click="acknowledgeBan">
+              <i class="fas fa-check"></i>
+              {{ t('modals.banned.understand') }}
+            </button>
+          </div>
         </div>
       </div>
-      <div class="modal-content">
-        <p class="ban-description">
-          {{ t('modals.banned.desc') }}
-        </p>
-        <p class="ban-reason">{{ banReason }}</p>
-      </div>
-      <button
-        type="button"
-        class="btn-primary"
-        aria-label="Rozumiem i zamykam informację o banie"
-        @click="acknowledgeBan"
-      >
-        {{ t('modals.banned.understand') }}
-      </button>
-    </div>
-  </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+/* Alert Theme Override */
+.alert-theme {
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 10px 40px rgba(239, 68, 68, 0.15);
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 420px;
-  padding: 1.5rem 2rem 1.25rem;
+.g-icon-box.danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ban-icon-large {
+  font-size: 3rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+  animation: pulse 2s infinite;
+  display: flex;
+  justify-content: center;
+}
+
+.ban-reason-box {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.ban-reason-box .label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
   font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
 }
 
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-  margin-bottom: 1.5rem;
-}
-
-.ban-description {
-  font-size: 1rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-}
-
-.ban-reason {
-  font-size: 1rem;
+.ban-reason-box .reason {
+  color: white;
   font-weight: 600;
-  color: var(--primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  user-select: text;
+  font-size: 1.1rem;
+}
+
+.ban-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.ban-info-row .label {
+  color: var(--text-secondary);
+}
+
+.ban-info-row .value {
+  color: white;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

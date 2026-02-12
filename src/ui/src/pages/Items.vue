@@ -1,21 +1,21 @@
-<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
 import { changeItemIndex, getItems, removeItem } from '@ui/api/endpoints'
 import AddItem from '@ui/components/modals/AddItem.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-const { t } = useI18n()
 
+const { t } = useI18n()
 const url = import.meta.env.RENDERER_VITE_API_URL
 const userStore = useUserStore()
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allItems = ref<any[]>([])
 const isLoadingItems = ref<boolean>(true)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const filteredItems = ref<any[]>([])
 const searchQuery = ref('')
-const noResultsVisible = ref(false)
 const addItemModalRef = ref()
 
 async function fetchItems(): Promise<void> {
@@ -27,27 +27,21 @@ async function fetchItems(): Promise<void> {
   if (res) {
     allItems.value = res
     filteredItems.value = [...allItems.value.sort((a, b) => (a.index > b.index ? 1 : -1))]
-    noResultsVisible.value = false
     isLoadingItems.value = false
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handleChangeItemIndex = async (item: any, step: number = 1): Promise<void> => {
   const res = await changeItemIndex(item.uuid, step)
-
   if (res) {
-    showToast(
-      `${t('items.toasts.indexChanged')} ${item.name} ` +
-        `z ${item.index} ` +
-        `na ${item.index + step}.`
-    )
     await fetchItems()
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handleRemoveItem = async (item: any): Promise<void> => {
   const res = await removeItem(item.uuid)
-
   if (res) {
     showToast(`${t('items.toasts.deleted')} ${item.name}.`)
     await fetchItems()
@@ -55,20 +49,21 @@ const handleRemoveItem = async (item: any): Promise<void> => {
 }
 
 watch(searchQuery, () => {
+  if (!searchQuery.value) {
+    filteredItems.value = [...allItems.value.sort((a, b) => (a.index > b.index ? 1 : -1))]
+    return
+  }
   filteredItems.value = allItems.value
     .sort((a, b) => (a.index > b.index ? 1 : -1))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter(
       (item: any) =>
         item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        item.serviceName.toLowerCase().includes(searchQuery.value.toLowerCase())
+        (item.desc && item.desc.toLowerCase().includes(searchQuery.value.toLowerCase()))
     )
-
-  if (!filteredItems.value?.length) {
-    noResultsVisible.value = true
-  } else {
-    noResultsVisible.value = false
-  }
 })
+
+const hasResults = computed(() => filteredItems.value && filteredItems.value.length > 0)
 
 onMounted(async () => {
   await fetchItems()
@@ -76,206 +71,425 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="users-container">
-    <div class="search-input-wrapper mb-2">
-      <i class="fas fa-search search-icon !text-[0.9rem] ml-3"></i>
-      <input
-        v-model="searchQuery"
-        type="text"
-        class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-        :placeholder="t('items.searchPlaceholder')"
-      />
-    </div>
+  <div class="items-layout">
+    <div class="items-header">
+      <div class="search-container">
+        <i class="fas fa-search"></i>
+        <input v-model="searchQuery" type="text" :placeholder="t('items.searchPlaceholder')" />
+      </div>
 
-    <div class="logs-table-wrapper">
-      <div v-if="isLoadingItems" class="loading-users">
-        <i :class="'fas fa-spinner fa-spin'"></i>
-        {{ t('items.loading') }}
-        <button class="btn-primary" style="max-width: 300px" @click="fetchItems">
-          {{ t('items.refresh') }}
+      <div class="actions-dock">
+        <button class="action-btn" :title="t('items.refresh')" @click="fetchItems">
+          <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoadingItems }"></i>
+        </button>
+        <div class="dock-divider"></div>
+        <button
+          class="action-btn highlight"
+          :title="t('items.add')"
+          @click="addItemModalRef?.openModal(null, 'add')"
+        >
+          <i class="fas fa-plus"></i>
         </button>
       </div>
-      <template v-else>
-        <div
-          v-if="noResultsVisible"
-          id="noResults"
-          class="no-results flex items-center justify-center h-full flex-col gap-2"
-        >
-          <i class="fas fa-search"></i>
-          <h3 class="text-lg">{{ t('items.noResultsTitle') }}</h3>
-          <p>{{ t('items.noResultsDesc') }}</p>
-        </div>
-        <table v-else class="logs-table select-none">
-          <thead>
-            <tr class="font-black text-[0.9rem]">
-              <th>{{ t('items.table.name') }}</th>
-              <th>{{ t('items.table.price') }}</th>
-              <th>{{ t('items.table.desc') }}</th>
-              <th>
-                <div class="relative flex flex-row-reverse gap-2 z-300">
-                  <button class="info-btn" @click="fetchItems">
-                    <i :class="'fas fa-refresh'"></i>
-                  </button>
-                  <button class="info-btn" @click="addItemModalRef?.openModal(null, 'add')">
-                    <i :class="'fas fa-plus'"></i>
-                  </button>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <template v-for="item in filteredItems" :key="item.uuid">
-              <tr>
-                <td>
-                  <div class="flex items-center gap-3">
-                    <div class="flex flex-col gap-1">
-                      <button
-                        v-if="item.index !== filteredItems[0].index"
-                        class="nav-icon"
-                        @click="handleChangeItemIndex(item, -1)"
-                      >
-                        <i class="fa fa-chevron-up"></i>
-                      </button>
-                      <img
-                        :src="
-                          item.src.includes('https://') || item.src.includes('blob')
-                            ? item.src
-                            : `${url}/items/image/${item.uuid}`
-                        "
-                        class="w-[30px] h-[30px]"
-                        @dragstart.prevent="null"
-                      />
-                      <button
-                        v-if="item.index !== filteredItems[filteredItems.length - 1].index"
-                        class="nav-icon"
-                        @click="handleChangeItemIndex(item, 1)"
-                      >
-                        <i class="fa fa-chevron-down"></i>
-                      </button>
-                    </div>
-                    <strong>{{ item.name }}</strong>
-                  </div>
-                </td>
-                <td>
-                  {{
-                    item?.price
-                      ? Number(item.price).toFixed(2) + ' PLN'
-                      : t('items.priceParams.none')
-                  }}
-                </td>
-                <td>
-                  <pre
-                    class="px-4 py-2 border-dashed border-[var(--border)] border rounded-xl max-w-3xl text-wrap"
-                    >{{ item.desc }}</pre
-                  >
-                </td>
-                <td>
-                  <div class="reverse">
-                    <button class="ban-btn" @click="handleRemoveItem(item)">
-                      <i :class="'fas fa-trash'"></i>
-                    </button>
-                    <button class="nav-icon" @click="addItemModalRef?.openModal(item, 'edit')">
-                      <i :class="'fas fa-pencil'"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </template>
     </div>
+
+    <div class="items-glass-panel">
+      <div v-if="isLoadingItems" class="loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>{{ t('items.loading') }}</span>
+      </div>
+
+      <div v-else-if="!hasResults" class="empty-state">
+        <div class="empty-icon"><i class="fas fa-box-open"></i></div>
+        <h3>{{ t('items.noResultsTitle') }}</h3>
+        <p>{{ t('items.noResultsDesc') }}</p>
+      </div>
+
+      <div v-else class="items-list custom-scrollbar">
+        <div v-for="(item, index) in filteredItems" :key="item.uuid" class="item-card">
+          <div class="item-visuals">
+            <div class="reorder-controls">
+              <button
+                class="reorder-btn"
+                :disabled="index === 0"
+                :class="{ invisible: index === 0 }"
+                @click.stop="handleChangeItemIndex(item, -1)"
+              >
+                <i class="fa fa-chevron-up"></i>
+              </button>
+              <button
+                class="reorder-btn"
+                :disabled="index === filteredItems.length - 1"
+                :class="{ invisible: index === filteredItems.length - 1 }"
+                @click.stop="handleChangeItemIndex(item, 1)"
+              >
+                <i class="fa fa-chevron-down"></i>
+              </button>
+            </div>
+
+            <div class="img-wrapper">
+              <img
+                :src="
+                  item.src.includes('https://') || item.src.includes('blob')
+                    ? item.src
+                    : `${url}/items/image/${item.uuid}`
+                "
+                alt="Item Image"
+                @dragstart.prevent
+              />
+            </div>
+          </div>
+
+          <div class="item-info">
+            <div class="item-header">
+              <h3 class="item-name">{{ item.name }}</h3>
+              <span class="price-badge">
+                {{
+                  item?.price ? Number(item.price).toFixed(2) + ' PLN' : t('items.priceParams.none')
+                }}
+              </span>
+            </div>
+            <div class="item-desc">{{ item.desc }}</div>
+          </div>
+
+          <div class="item-actions">
+            <button
+              class="icon-btn edit-btn"
+              :title="t('items.edit')"
+              @click.stop="addItemModalRef?.openModal(item, 'edit')"
+            >
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button
+              class="icon-btn delete-btn"
+              :title="t('items.delete')"
+              @click.stop="handleRemoveItem(item)"
+            >
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <AddItem ref="addItemModalRef" @refresh-data="fetchItems" />
   </div>
 </template>
 
 <style scoped>
-.loading-users {
+.items-layout {
+  width: 100%;
+  height: calc(100vh - 60px);
+  padding: 1rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header & Search - unchanged structure */
+.items-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.search-container {
+  display: flex;
+  align-items: center;
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 0.6rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: 320px;
+  transition: all 0.3s ease;
+}
+.search-container:focus-within {
+  background: rgba(20, 20, 25, 0.9);
+  border-color: rgba(var(--primary-rgb), 0.5);
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+}
+.search-container i {
+  color: var(--text-secondary);
+  margin-right: 0.8rem;
+}
+.search-container input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  width: 100%;
+}
+
+/* Actions Dock */
+.actions-dock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(20, 20, 25, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.action-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-}
-.users-container {
-  padding: 0.5rem;
-  height: calc(100vh - 54.5px);
-}
-.reverse {
-  display: flex;
-  flex-direction: row-reverse;
-  gap: 0.5rem;
-}
-.logs-table-wrapper {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-card);
-  position: relative;
-  height: calc(100vh - 109px);
-  overflow-y: auto;
-  border: 1px dashed var(--border);
-}
-.logs-table {
-  width: 100%;
-  height: calc(100vh - 157px);
-  border-collapse: collapse;
-}
-.logs-table th {
-  background: var(--bg-body);
-  padding: 0.5rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.logs-table td {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.logs-table tr {
-  background: var(--bg-card);
-}
-
-.logs-table tr:hover {
-  background: none;
-}
-
-.copy-btn {
-  margin-left: 0.4rem;
-  font-size: 0.7rem;
-  padding: 0.2rem 0.3rem;
-  border-radius: 0.3rem;
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.copy-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+.action-btn.highlight {
+  color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+.action-btn.highlight:hover {
+  background: var(--primary);
+  color: white;
+}
+.dock-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 0.5rem;
 }
 
-.online-dot {
-  bottom: 4px;
-  right: -2px;
-  width: 12px;
-  height: 12px;
-  border: 2px solid var(--bg-dark);
-  border-radius: 50%;
+/* Main Panel */
+.items-glass-panel {
+  flex: 1;
+  background: rgba(20, 20, 25, 0.4);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 }
-.no-results {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-muted);
+
+/* Loading & Empty */
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  color: white;
+  gap: 1rem;
 }
-.no-results i {
+.empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.empty-icon {
   font-size: 3rem;
-  opacity: 0.5;
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.1);
+}
+
+/* List */
+.items-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* --- CARD FIXES --- */
+.item-card {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  border-radius: 16px;
+  padding: 0.8rem;
+  gap: 1rem;
+
+  /* FIXED: Usunięto przesuwanie layoutu (transform), dodano tylko zmianę koloru */
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  position: relative; /* Context for absolute positioning if needed */
+}
+
+.item-card:hover {
+  background: rgba(255, 255, 255, 0.07); /* Jaśniejsze tło */
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  /* FIXED: Brak transform: translateX() aby elementy nie uciekały */
+}
+
+/* Visuals */
+.item-visuals {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.reorder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reorder-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reorder-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+.reorder-btn.invisible {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.img-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+.img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Info */
+.item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  overflow: hidden;
+}
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.item-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.price-badge {
+  font-size: 0.75rem;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+.item-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- ACTIONS FIX --- */
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+
+  /* FIXED: Domyślnie ukryte, ale płynne pojawianie się */
+  opacity: 0;
+  transform: translateX(10px);
+
+  /* Ważne: opóźnienie znikania (transition-delay), aby złapać myszkę */
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  transition-delay: 0.1s; /* Opóźnienie znikania */
+}
+
+.item-card:hover .item-actions {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0s; /* Natychmiastowe pojawianie się */
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  transform: scale(1.05);
+}
+.edit-btn:hover {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+}
+.delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 </style>

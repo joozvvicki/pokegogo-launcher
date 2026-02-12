@@ -2,13 +2,12 @@
 import { ref, reactive, computed } from 'vue'
 import { themes, main } from '@ui/assets/theme/themes'
 import useGeneralStore from '@ui/stores/general-store'
-
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const generalStore = useGeneralStore()
 
 // --- KONFIGURACJA UI ---
-// Definiujemy kategorie zakładek
 const categories = computed(() => ({
   colors: { label: t('theme.categories.colors'), icon: 'fas fa-palette' },
   backgrounds: { label: t('theme.categories.backgrounds'), icon: 'fas fa-image' },
@@ -18,22 +17,21 @@ const categories = computed(() => ({
   effects: { label: t('theme.categories.effects'), icon: 'fas fa-magic' }
 }))
 
-// Mapowanie kluczy zmiennych na czytelne nazwy i kategorie
-// To obejmuje WSZYSTKIE pola z twojego pliku themes.ts
+// Mapowanie kluczy (skrócone dla czytelności - to samo co u Ciebie)
 const propertyConfig = computed<
   Record<
     string,
     { label: string; category: keyof typeof categories.value; type?: 'textarea' | 'text' }
   >
 >(() => ({
-  // --- Paleta Główna ---
+  // ... (Tu wklej całą Twoją konfigurację propertyConfig z poprzedniego kodu)
+  // Paleta Główna
   name: { label: t('theme.labels.name'), category: 'effects', type: 'text' },
   primary: { label: t('theme.labels.primary'), category: 'colors' },
   primaryShop: { label: t('theme.labels.primaryShop'), category: 'colors' },
   primaryDark: { label: t('theme.labels.primaryDark'), category: 'colors' },
   primaryLight: { label: t('theme.labels.primaryLight'), category: 'colors' },
-
-  // --- Tła ---
+  // Tła
   bgDark: { label: t('theme.labels.bgDark'), category: 'backgrounds' },
   bgCard: { label: t('theme.labels.bgCard'), category: 'backgrounds' },
   bgLight: { label: t('theme.labels.bgLight'), category: 'backgrounds' },
@@ -47,16 +45,14 @@ const propertyConfig = computed<
     category: 'backgrounds',
     type: 'text'
   },
-
-  // --- Tekst ---
+  // Tekst
   textPrimary: { label: t('theme.labels.textPrimary'), category: 'text' },
   textSecondary: { label: t('theme.labels.textSecondary'), category: 'text' },
   textSecondaryAlt: { label: t('theme.labels.textSecondaryAlt'), category: 'text' },
   textMuted: { label: t('theme.labels.textMuted'), category: 'text' },
   breadcrumbsText: { label: t('theme.labels.breadcrumbsText'), category: 'text' },
   errorMessage: { label: t('theme.labels.errorMessage'), category: 'text' },
-
-  // --- UI Elements ---
+  // UI Elements
   border: { label: t('theme.labels.border'), category: 'ui' },
   border2: { label: t('theme.labels.border2'), category: 'ui' },
   borderPrimary: { label: t('theme.labels.borderPrimary'), category: 'ui' },
@@ -78,16 +74,14 @@ const propertyConfig = computed<
   banBtnText: { label: t('theme.labels.banBtnText'), category: 'ui' },
   toastError: { label: t('theme.labels.toastError'), category: 'ui' },
   toastWarning: { label: t('theme.labels.toastWarning'), category: 'ui' },
-
-  // --- Login & Form ---
+  // Login & Form
   loginTabBtnBg: { label: t('theme.labels.loginTabBtnBg'), category: 'login' },
   loginTabBtnHover: { label: t('theme.labels.loginTabBtnHover'), category: 'login' },
   loginInvalidBg: { label: t('theme.labels.loginInvalidBg'), category: 'login' },
   loginInvalidBorder: { label: t('theme.labels.loginInvalidBorder'), category: 'login' },
   btnMicrosoft: { label: t('theme.labels.btnMicrosoft'), category: 'login', type: 'textarea' },
   playerLogout: { label: t('theme.labels.playerLogout'), category: 'login' },
-
-  // --- Efekty & Inne ---
+  // Efekty
   gradientPrimary: {
     label: t('theme.labels.gradientPrimary'),
     category: 'effects',
@@ -110,10 +104,7 @@ const propertyConfig = computed<
   secondFloating: { label: t('theme.labels.secondFloating'), category: 'effects', type: 'text' }
 }))
 
-// --- LOGIKA KOMPONENTU ---
-
-// --- LOGIKA KOMPONENTU ---
-
+// --- STATE ---
 const isVisible = ref(false)
 const activeTab = ref<string>('colors')
 const customTheme = ref<Record<string, string> | null>(
@@ -127,16 +118,14 @@ const editingTheme = reactive<Record<string, string>>({
 
 const categorizedFields = computed(() => {
   const groups: Record<string, Array<{ key: string; label: string; type: string }>> = {}
-
   Object.keys(categories.value).forEach((k) => (groups[k] = []))
 
   Object.keys(editingTheme).forEach((key): void => {
     const config = propertyConfig.value[key]
-
     const category = config?.category || 'effects'
     const label = config?.label || key
-
     let type: string | undefined = config?.type
+
     if (!type) {
       const val = editingTheme[key]
       if (typeof val === 'string' && (val.includes('gradient') || val.length > 50))
@@ -149,10 +138,10 @@ const categorizedFields = computed(() => {
       groups[category].push({ key, label, type })
     }
   })
-
   return groups
 })
 
+// --- ACTIONS ---
 const open = (): void => {
   isVisible.value = true
 }
@@ -160,6 +149,12 @@ const close = (): void => {
   isVisible.value = false
 }
 
+const copyVarName = (key: string): void => {
+  navigator.clipboard.writeText(`var(--${key})`)
+  // Opcjonalnie: showToast('Skopiowano nazwę zmiennej')
+}
+
+// Helpers kolorów (te same co wcześniej)
 const isColor = (val: string): boolean => {
   if (typeof val !== 'string') return false
   return val.startsWith('#') || val.startsWith('rgb') || val.startsWith('rgba')
@@ -226,35 +221,26 @@ const updateLivePreview = (key: string, value: string): void => {
 const loadBaseTheme = (themeName: string): void => {
   const base = themes.find((t) => t.name === themeName) || main
   Object.assign(editingTheme, JSON.parse(JSON.stringify(base)))
-  editingTheme.name = 'custom' // Zawsze nadpisz nazwę na custom
-
+  editingTheme.name = 'custom'
   Object.entries(editingTheme).forEach(([k, v]): void => {
     if (typeof v === 'string') updateLivePreview(k, v)
   })
 }
-
-const generalStore = useGeneralStore()
 
 const saveAndClose = (): void => {
   generalStore.setCustomTheme(editingTheme)
   close()
 }
 
+// Import / Export
 const exportTheme = (): void => {
   try {
-    // 1. Konwersja obiektu motywu na tekst JSON (z wcięciami dla czytelności)
     const dataStr = JSON.stringify(editingTheme, null, 2)
-
-    // 2. Utworzenie Bloba (pliku w pamięci)
     const blob = new Blob([dataStr], { type: 'application/json' })
-
-    // 3. Utworzenie tymczasowego linku do pobrania
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.download = `theme-${editingTheme.name || 'custom'}.json`
-
-    // 4. Kliknięcie i posprzątanie
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -265,52 +251,33 @@ const exportTheme = (): void => {
 }
 
 const importTheme = (): void => {
-  // 1. Tworzymy dynamicznie input file
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'application/json'
-
-  // 2. Nasłuchujemy zmiany (wyboru pliku)
   input.onchange = (event: Event) => {
     const target = event.target as HTMLInputElement
     const file = target.files?.[0]
-
     if (!file) return
-
     const reader = new FileReader()
-
-    // 3. Po wczytaniu pliku
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string
         const parsedTheme = JSON.parse(content)
-
-        // Walidacja: czy to w ogóle jest obiekt?
         if (typeof parsedTheme !== 'object' || parsedTheme === null) {
           alert(t('theme.importErrorFmt'))
           return
         }
-
-        // 4. Aktualizacja stanu i podglądu CSS
         Object.assign(editingTheme, parsedTheme)
-
-        // Aplikujemy zmiany wizualne dla każdej właściwości
         Object.entries(parsedTheme).forEach(([key, value]) => {
-          if (typeof value === 'string') {
-            updateLivePreview(key, value)
-          }
+          if (typeof value === 'string') updateLivePreview(key, value)
         })
       } catch (err) {
-        console.error('Błąd parsowania JSON:', err)
+        console.error('JSON Error:', err)
         alert(t('theme.importErrorJson'))
       }
     }
-
-    // Rozpocznij czytanie pliku jako tekst
     reader.readAsText(file)
   }
-
-  // 5. Symulujemy kliknięcie, by otworzyć dialog systemowy
   input.click()
 }
 
@@ -319,127 +286,132 @@ defineExpose({ open })
 
 <template>
   <Teleport to="body">
-    <Transition name="slide-fade">
-      <div v-if="isVisible" class="theme-editor-wrapper">
+    <Transition name="slide-in">
+      <div v-if="isVisible" class="theme-editor-container">
         <div class="backdrop" @click="close"></div>
 
         <div class="editor-panel">
           <div class="panel-header">
-            <h3><i class="fas fa-swatchbook mr-2"></i> {{ t('theme.title') }}</h3>
-            <div class="flex gap-2">
-              <button class="nav-icon" @click="importTheme">
-                <i class="fas fa-upload"></i>
+            <div class="title-group">
+              <div class="icon-box">
+                <i class="fas fa-paint-roller"></i>
+              </div>
+              <div>
+                <h3>{{ t('theme.title') }}</h3>
+                <span class="subtitle">{{ t('theme.subtitle', 'Dostosuj wygląd') }}</span>
+              </div>
+            </div>
+
+            <div class="header-actions">
+              <button class="action-btn" :title="t('theme.import')" @click="importTheme">
+                <i class="fas fa-file-arrow-up"></i>
               </button>
-              <button class="nav-icon" @click="exportTheme">
-                <i class="fas fa-download"></i>
+              <button class="action-btn" :title="t('theme.export')" @click="exportTheme">
+                <i class="fas fa-file-arrow-down"></i>
               </button>
-              <button class="close-btn" @click="close"><i class="fas fa-times"></i></button>
+              <div class="divider"></div>
+              <button class="action-btn close" @click="close">
+                <i class="fas fa-xmark"></i>
+              </button>
             </div>
           </div>
 
-          <div class="presets-row">
-            <div class="flex gap-2 flex-wrap">
+          <div class="presets-section">
+            <span class="section-label">{{ t('theme.presets', 'Szablony') }}</span>
+            <div class="presets-list custom-scrollbar">
               <button
                 v-for="themeItem in themes"
                 :key="themeItem.name"
-                class="preset-btn"
-                :style="{ borderColor: themeItem.primary }"
+                class="preset-chip"
+                :class="{ active: false }"
                 @click="loadBaseTheme(themeItem.name)"
               >
+                <span class="color-dot" :style="{ background: themeItem.primary }"></span>
                 {{ themeItem.name }}
               </button>
             </div>
           </div>
 
-          <div class="tabs-nav">
+          <div class="tabs-container">
             <button
               v-for="(cat, key) in categories"
               :key="key"
               class="tab-btn"
               :class="{ active: activeTab === key }"
-              :title="cat.label"
               @click="activeTab = key"
             >
               <i :class="cat.icon"></i>
-              <span class="hidden sm:inline text-[10px] uppercase mt-1">{{
-                cat.label.split(' ')[0]
-              }}</span>
+              <span>{{ cat.label.split(' ')[0] }}</span>
             </button>
           </div>
 
-          <div class="editor-scroll-area custom-scrollbar">
-            <div
-              v-if="categorizedFields[activeTab]?.length === 0"
-              class="text-center text-[var(--text-muted)] mt-10"
-            >
-              {{ t('theme.noOptions') }}
+          <div class="content-area custom-scrollbar">
+            <div v-if="categorizedFields[activeTab]?.length === 0" class="empty-state">
+              <i class="fas fa-ghost"></i>
+              <p>{{ t('theme.noOptions') }}</p>
             </div>
 
-            <div
-              v-for="field in categorizedFields[activeTab]"
-              :key="field.key"
-              class="control-group"
-            >
-              <div class="label-row">
+            <div v-for="field in categorizedFields[activeTab]" :key="field.key" class="control-row">
+              <div class="control-header">
                 <label>{{ field.label }}</label>
-                <span class="var-name" :title="t('theme.tooltips.copyVar')" @click="(): void => {}"
-                  >--{{ field.key }}</span
+                <span
+                  class="var-code"
+                  title="Kopiuj nazwę zmiennej"
+                  @click="copyVarName(field.key)"
                 >
+                  --{{ field.key }}
+                </span>
               </div>
 
-              <div class="input-combo">
-                <div v-if="field.type === 'color'" class="color-controls">
-                  <div
-                    class="color-preview-wrapper"
-                    :style="{ backgroundColor: editingTheme[field.key] }"
-                  >
-                    <input
-                      type="color"
-                      :value="getHexPart(editingTheme[field.key])"
-                      @input="
-                        (e) => updateFromPicker(field.key, (e.target as HTMLInputElement).value)
-                      "
-                    />
-                  </div>
-                  <div class="alpha-slider-wrapper" :title="t('theme.tooltips.alpha')">
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      :value="getAlphaPart(editingTheme[field.key])"
-                      @input="
-                        (e) => updateFromSlider(field.key, (e.target as HTMLInputElement).value)
-                      "
-                    />
-                  </div>
+              <div v-if="field.type === 'color'" class="color-control-wrapper">
+                <div class="color-preview" :style="{ backgroundColor: editingTheme[field.key] }">
+                  <input
+                    type="color"
+                    :value="getHexPart(editingTheme[field.key])"
+                    @input="
+                      (e) => updateFromPicker(field.key, (e.target as HTMLInputElement).value)
+                    "
+                  />
                 </div>
-
-                <textarea
-                  v-if="field.type === 'textarea'"
-                  v-model="editingTheme[field.key]"
-                  rows="3"
-                  class="text-input"
-                  spellcheck="false"
-                  @input="updateLivePreview(field.key, editingTheme[field.key])"
-                ></textarea>
-
-                <input
-                  v-else
-                  v-model="editingTheme[field.key]"
-                  type="text"
-                  class="text-input"
-                  :placeholder="field.key"
-                  spellcheck="false"
-                  @input="updateLivePreview(field.key, editingTheme[field.key])"
-                />
+                <div class="slider-container">
+                  <span class="slider-label">Alpha</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    :value="getAlphaPart(editingTheme[field.key])"
+                    @input="
+                      (e) => updateFromSlider(field.key, (e.target as HTMLInputElement).value)
+                    "
+                  />
+                </div>
+                <div class="hex-value">{{ getHexPart(editingTheme[field.key]) }}</div>
               </div>
+
+              <textarea
+                v-else-if="field.type === 'textarea'"
+                v-model="editingTheme[field.key]"
+                class="glass-input textarea"
+                spellcheck="false"
+                rows="2"
+                @input="updateLivePreview(field.key, editingTheme[field.key])"
+              ></textarea>
+
+              <input
+                v-else
+                v-model="editingTheme[field.key]"
+                type="text"
+                class="glass-input"
+                spellcheck="false"
+                @input="updateLivePreview(field.key, editingTheme[field.key])"
+              />
             </div>
           </div>
 
           <div class="panel-footer">
-            <button class="btn-save" @click="saveAndClose">
-              <i class="fas fa-save"></i> {{ t('theme.saveClose') }}
+            <button class="save-btn" @click="saveAndClose">
+              <i class="fas fa-check"></i> {{ t('theme.saveClose') }}
             </button>
           </div>
         </div>
@@ -449,13 +421,13 @@ defineExpose({ open })
 </template>
 
 <style scoped>
-.theme-editor-wrapper {
+/* === Layout === */
+.theme-editor-container {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 2000;
   display: flex;
-  justify-content: flex-start;
-  font-family: sans-serif;
+  justify-content: flex-end; /* Panel po prawej */
 }
 
 .backdrop {
@@ -463,154 +435,295 @@ defineExpose({ open })
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
+  z-index: 0;
 }
 
 .editor-panel {
   position: relative;
+  z-index: 1;
   width: 420px;
-  max-width: 95vw;
+  max-width: 100vw;
   height: 100%;
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
-  box-shadow: 20px 0 50px rgba(0, 0, 0, 0.6);
+  background: var(--bg-card); /* Ciemne tło */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
 }
 
+/* === Header === */
 .panel-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid var(--border);
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--text-dark);
+}
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icon-box {
+  width: 40px;
+  height: 40px;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.close-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
   font-size: 1.2rem;
-  cursor: pointer;
-  padding: 4px;
-}
-.close-btn:hover {
-  color: var(--text-primary);
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
 }
 
-.presets-row {
-  color: var(--text-primary);
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border2);
-}
-
-.preset-btn {
-  padding: 4px 12px;
-  border: 1px solid;
-  border-radius: 20px;
-  background: transparent;
-  color: var(--text-primary);
+.subtitle {
   font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
   cursor: pointer;
-  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s;
 }
-.preset-btn:hover {
-  opacity: 1;
-  transform: scale(1.05);
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.action-btn.close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
-.tabs-nav {
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 0.2rem;
+}
+
+/* === Presets === */
+.presets-section {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
-  padding: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.presets-list {
+  display: flex;
+  gap: 0.6rem;
   overflow-x: auto;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem; /* miejsce na scrollbar */
+}
+
+.preset-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.preset-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* === Tabs === */
+.tabs-container {
+  display: flex;
+  padding: 0 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-x: auto;
 }
 
 .tab-btn {
   flex: 1;
   min-width: 60px;
-  padding: 12px 4px;
+  padding: 1rem 0.5rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
   transition: all 0.2s;
 }
-.tab-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-.tab-btn.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--primary);
-  background: linear-gradient(to top, var(--primary-shop) 0%, transparent 100%);
+
+.tab-btn i {
+  font-size: 1rem;
+  margin-bottom: 2px;
 }
 
-.editor-scroll-area {
+.tab-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.03);
+}
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* === Content Area === */
+.content-area {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
 }
 
-.control-group {
-  margin-bottom: 1.25rem;
+.empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+.empty-state i {
+  font-size: 2rem;
+  opacity: 0.5;
 }
 
-.label-row {
+.control-row {
+  margin-bottom: 1.5rem;
+}
+
+.control-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 6px;
-  font-size: 0.85rem;
-  color: var(--text-primary);
+  margin-bottom: 0.6rem;
 }
 
-.var-name {
+.control-header label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+}
+
+.var-code {
   font-family: monospace;
   font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  cursor: pointer;
+}
+.var-code:hover {
+  opacity: 1;
+  color: var(--primary);
+}
+
+/* Inputs */
+.glass-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
   color: var(--text-primary);
-  opacity: 0.5;
-  cursor: help;
+  font-family: monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s;
 }
 
-.input-combo {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
+.glass-input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+.glass-input.textarea {
+  resize: vertical;
+  min-height: 60px;
 }
 
-.color-controls {
+/* Color Control */
+.color-control-wrapper {
   display: flex;
-  gap: 6px;
   align-items: center;
-  flex-shrink: 0;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.color-preview-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+.color-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* Checkerboard for alpha */
   background-image:
-    linear-gradient(45deg, var(--bg-card) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--bg-card) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--bg-card) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--bg-card) 75%);
+    linear-gradient(45deg, #333 25%, transparent 25%),
+    linear-gradient(-45deg, #333 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #333 75%),
+    linear-gradient(-45deg, transparent 75%, #333 75%);
   background-size: 10px 10px;
   background-position:
     0 0,
@@ -618,113 +731,121 @@ defineExpose({ open })
     5px -5px,
     -5px 0px;
 }
-
-.color-preview-wrapper input[type='color'] {
-  opacity: 0;
+.color-preview input[type='color'] {
   position: absolute;
-  top: -5px;
-  left: -5px;
+  top: -50%;
+  left: -50%;
   width: 200%;
   height: 200%;
   cursor: pointer;
+  opacity: 0;
 }
 
-.alpha-slider-wrapper {
-  width: 50px;
+.slider-container {
+  flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
 }
-.alpha-slider-wrapper input[type='range'] {
+.slider-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.slider-container input[type='range'] {
   width: 100%;
   height: 4px;
-  background: var(--border);
   border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
   appearance: none;
   -webkit-appearance: none;
   outline: none;
 }
-.alpha-slider-wrapper input[type='range']::-webkit-slider-thumb {
+.slider-container input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--primary);
   cursor: pointer;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
-.text-input {
-  flex: 1;
-  width: 0; /* flex fix */
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-  padding: 8px 10px;
-  border-radius: 6px;
+.hex-value {
   font-family: monospace;
-  font-size: 0.8rem;
-  outline: none;
-  transition: all 0.2s;
-}
-.text-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-shop);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
+/* === Footer === */
 .panel-footer {
-  padding: 1.25rem;
-  border-top: 1px solid var(--border);
-  background: var(--bg-card);
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.btn-save {
+.save-btn {
   width: 100%;
-  padding: 12px;
-  background: var(--bg-card);
+  padding: 14px;
+  background: var(--gradient-primary);
   border: none;
-  border-radius: 8px;
-  color: #fff;
-  font-weight: 600;
+  border-radius: 16px;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-.btn-save:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadowGlow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
 }
 
-/* Animacje */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
+.save-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
+}
+
+/* === Animations === */
+.slide-in-enter-active,
+.slide-in-leave-active {
   transition: opacity 0.3s ease;
 }
-.slide-fade-enter-from,
-.slide-fade-leave-to {
+
+.slide-in-enter-from,
+.slide-in-leave-to {
   opacity: 0;
 }
-.slide-fade-enter-active .editor-panel,
-.slide-fade-leave-active .editor-panel {
-  transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+
+.slide-in-enter-active .editor-panel,
+.slide-in-leave-active .editor-panel {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.slide-fade-enter-from .editor-panel,
-.slide-fade-leave-to .editor-panel {
-  transform: translateX(-100%);
+
+.slide-in-enter-from .editor-panel,
+.slide-in-leave-to .editor-panel {
+  transform: translateX(100%);
 }
 
 /* Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
+  height: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(255, 255, 255, 0.2);
 }
 </style>

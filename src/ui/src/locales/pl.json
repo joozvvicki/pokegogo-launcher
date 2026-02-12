@@ -172,6 +172,12 @@
       "banned": "wyświetla graczy zbanowanych",
       "online": "wyświetla graczy, którzy są aktualnie aktywni"
     },
+    "filters": {
+      "title": "Filtry",
+      "clearAll": "Wyczyść wszystko"
+    },
+    "requestFriend": "Dodaj znajomego",
+    "removeFriend": "Usuń znajomego",
     "banned": "BANNED",
     "loading": "Ładowanie graczy...",
     "endOfResults": "Koniec wyników",
@@ -481,5 +487,8 @@
     "required": "To pole jest wymagane",
     "emailInvalid": "Nieprawidłowy adres email",
     "passwordMismatch": "Hasła muszą być identyczne"
+  },
+  "header": {
+    "changeLanguage": "Zmień język"
   }
 }
