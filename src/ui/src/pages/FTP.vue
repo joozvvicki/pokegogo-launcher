@@ -2,7 +2,7 @@
 import CreateFolderModal from '@ui/components/modals/CreateFolderModal.vue'
 import { useFTP } from '@ui/services/ftp-service'
 import { format } from 'date-fns'
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
@@ -35,11 +35,30 @@ const {
   handleUploadFolder,
   isTextFile,
   isImageFile,
-  isKnownFile,
   fileIsImportant,
   toggleImportant,
   handleZipFolder
 } = useFTP()
+
+const dragCounter = ref<number>(0)
+
+const onDragEnter = (): void => {
+  dragCounter.value++
+  dragActive.value = true
+}
+
+const onDragLeave = (): void => {
+  dragCounter.value--
+  if (dragCounter.value === 0) {
+    dragActive.value = false
+  }
+}
+
+const onDrop = (ev: DragEvent): void => {
+  dragCounter.value = 0
+  dragActive.value = false
+  handleDrop(ev)
+}
 
 onMounted(async () => {
   await getFolderContent()
@@ -74,10 +93,10 @@ onMounted(async () => {
         'drag-active': dragActive,
         'overflow-hidden': loadingStatuses
       }"
-      @dragenter.prevent="dragActive = true"
-      @dragover.prevent="dragActive = true"
-      @dragleave.prevent="dragActive = false"
-      @drop.prevent="handleDrop"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="onDragLeave"
+      @drop.prevent="onDrop"
     >
       <div v-if="loadingStatuses" class="loading-overlay">
         <i class="fa fa-spinner fa-spin"></i>
@@ -164,90 +183,97 @@ onMounted(async () => {
             </div>
           </template>
 
-          <div
-            v-else
-            v-for="file in filteredFiles"
-            :key="file.name"
-            class="file-row"
-            :class="{ 'is-directory': file.isDirectory }"
-            @click="
-              file.isDirectory
-                ? changeFolder(file.name)
-                : isTextFile(file.name)
-                  ? openTextFile(file.name)
-                  : isImageFile(file.name)
-                    ? openImageFile(file.name)
-                    : null
-            "
-          >
-            <div class="file-icon">
-              <template v-if="file.isDirectory">
-                <i v-if="file.status === 'zipped-dirty'" class="fa fa-box-open text-yellow-500"></i>
-                <i v-else-if="file.status === 'zipped'" class="fa fa-box text-green-400"></i>
-                <i v-else class="fa fa-folder"></i>
-              </template>
-              <template v-else>
-                <i v-if="file.name.endsWith('.zip')" class="fa fa-file-archive text-purple-400"></i>
-                <i v-else-if="isTextFile(file.name)" class="fa fa-file-code text-blue-400"></i>
-                <i v-else-if="isImageFile(file.name)" class="fa fa-file-image text-pink-400"></i>
-                <i v-else class="fa fa-file text-gray-400"></i>
-              </template>
-            </div>
+          <template v-else>
+            <div
+              v-for="file in filteredFiles"
+              :key="file.name"
+              class="file-row"
+              :class="{ 'is-directory': file.isDirectory }"
+              @click="
+                file.isDirectory
+                  ? changeFolder(file.name)
+                  : isTextFile(file.name)
+                    ? openTextFile(file.name)
+                    : isImageFile(file.name)
+                      ? openImageFile(file.name)
+                      : null
+              "
+            >
+              <div class="file-icon">
+                <template v-if="file.isDirectory">
+                  <i
+                    v-if="file.status === 'zipped-dirty'"
+                    class="fa fa-box-open text-yellow-500"
+                  ></i>
+                  <i v-else-if="file.status === 'zipped'" class="fa fa-box text-green-400"></i>
+                  <i v-else class="fa fa-folder"></i>
+                </template>
+                <template v-else>
+                  <i
+                    v-if="file.name.endsWith('.zip')"
+                    class="fa fa-file-archive text-purple-400"
+                  ></i>
+                  <i v-else-if="isTextFile(file.name)" class="fa fa-file-code text-blue-400"></i>
+                  <i v-else-if="isImageFile(file.name)" class="fa fa-file-image text-pink-400"></i>
+                  <i v-else class="fa fa-file text-gray-400"></i>
+                </template>
+              </div>
 
-            <div class="file-info">
-              <div class="file-name-wrapper">
-                <span class="file-name">{{ file.name }}</span>
-                <span v-if="file.flag === 'important'" class="badge important">{{
-                  t('ftp.flags.important')
-                }}</span>
-                <span v-else-if="file.flag === 'ignore'" class="badge ignore">{{
-                  t('ftp.flags.ignored')
+              <div class="file-info">
+                <div class="file-name-wrapper">
+                  <span class="file-name">{{ file.name }}</span>
+                  <span v-if="file.flag === 'important'" class="badge important">{{
+                    t('ftp.flags.important')
+                  }}</span>
+                  <span v-else-if="file.flag === 'ignore'" class="badge ignore">{{
+                    t('ftp.flags.ignored')
+                  }}</span>
+                </div>
+                <span v-if="file.status === 'zipped-dirty'" class="status-warning">{{
+                  t('ftp.warnings.zippedDirty')
                 }}</span>
               </div>
-              <span v-if="file.status === 'zipped-dirty'" class="status-warning">{{
-                t('ftp.warnings.zippedDirty')
-              }}</span>
-            </div>
 
-            <div class="file-meta">
-              <span class="file-date">
-                {{ file.modifiedAt ? format(new Date(file.modifiedAt), 'MMM dd HH:mm') : '' }}
-              </span>
+              <div class="file-meta">
+                <span class="file-date">
+                  {{ file.modifiedAt ? format(new Date(file.modifiedAt), 'MMM dd HH:mm') : '' }}
+                </span>
 
-              <div class="file-actions">
-                <button
-                  v-if="file.isDirectory"
-                  class="icon-btn"
-                  :title="t('ftp.tooltips.zipFolder')"
-                  @click.stop="handleZipFolder(file)"
-                >
-                  <i class="fa fa-box-open"></i>
-                </button>
+                <div class="file-actions">
+                  <button
+                    v-if="file.isDirectory"
+                    class="icon-btn"
+                    :title="t('ftp.tooltips.zipFolder')"
+                    @click.stop="handleZipFolder(file)"
+                  >
+                    <i class="fa fa-box-open"></i>
+                  </button>
 
-                <button
-                  v-if="!file.name.endsWith('.zip')"
-                  class="icon-btn star-btn"
-                  :class="{ active: fileIsImportant(file) }"
-                  @click.stop="toggleImportant(file)"
-                >
-                  <i :class="fileIsImportant(file) ? 'fa fa-star' : 'fa-regular fa-star'" />
-                </button>
+                  <button
+                    v-if="!file.name.endsWith('.zip')"
+                    class="icon-btn star-btn"
+                    :class="{ active: fileIsImportant(file) }"
+                    @click.stop="toggleImportant(file)"
+                  >
+                    <i :class="fileIsImportant(file) ? 'fa fa-star' : 'fa-regular fa-star'" />
+                  </button>
 
-                <button
-                  class="icon-btn"
-                  @click.stop="
-                    file.isDirectory ? downloadFolder(file.name) : downloadFile(file.name)
-                  "
-                >
-                  <i class="fa fa-download"></i>
-                </button>
+                  <button
+                    class="icon-btn"
+                    @click.stop="
+                      file.isDirectory ? downloadFolder(file.name) : downloadFile(file.name)
+                    "
+                  >
+                    <i class="fa fa-download"></i>
+                  </button>
 
-                <button class="icon-btn delete-btn" @click.stop="removeFile(file.name)">
-                  <i class="fa fa-trash" />
-                </button>
+                  <button class="icon-btn delete-btn" @click.stop="removeFile(file.name)">
+                    <i class="fa fa-trash" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </template>
 
@@ -740,6 +766,7 @@ onMounted(async () => {
   color: white;
   gap: 1rem;
   font-size: 1.2rem;
+  pointer-events: none;
 }
 
 .drop-overlay {
@@ -754,6 +781,7 @@ onMounted(async () => {
   border: 2px dashed var(--primary);
   border-radius: 24px;
   margin: 1rem;
+  pointer-events: none;
 }
 
 .drop-content {

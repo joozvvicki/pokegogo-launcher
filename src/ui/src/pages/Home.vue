@@ -303,7 +303,7 @@ onMounted(async () => {
 }
 
 .hero-title {
-  font-size: 3rem;
+  font-size: 2.5rem;
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 1rem;
@@ -313,7 +313,7 @@ onMounted(async () => {
 }
 
 .hero-desc {
-  font-size: 1.1rem;
+  font-size: 1rem;
   opacity: 0.8;
   margin-bottom: 1.5rem;
   line-height: 1.6;

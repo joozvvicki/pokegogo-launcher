@@ -162,7 +162,9 @@
     "types": {
       "mega": "MEGA",
       "normal": "Normal"
-    }
+    },
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "users": {
     "toasts": {
@@ -512,7 +514,10 @@
     "loading": "Loading..",
     "required": "This field is required",
     "emailInvalid": "Invalid email address",
-    "passwordMismatch": "Passwords must match"
+    "passwordMismatch": "Passwords must match",
+    "add": "Add",
+    "abort": "Abort",
+    "close": "Close"
   },
   "toasts": {
     "skinFetchError": "Failed to load skin from URL (HTTP Error/404):",

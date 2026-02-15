@@ -264,10 +264,17 @@ defineExpose({
                     <DatePicker
                       v-model="state.startDate"
                       :placeholder="t('changelog.placeholders.date')"
-                      class="g-input-wrapper w-full"
-                      :input-class="
-                        'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
-                      "
+                      class="w-full"
+                      fluid
+                      :pt="{
+                        root: { class: 'w-full' },
+                        input: {
+                          class: 'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
+                        },
+                        pcPanel: {
+                          root: { class: '!w-full' }
+                        }
+                      }"
                     />
                     <span v-if="v$.startDate.$error" class="text-xs text-red-500">{{
                       v$.startDate.$errors[0]?.$message
@@ -396,35 +403,6 @@ defineExpose({
 </template>
 
 <style scoped>
-.g-modal-content {
-  overflow-y: auto;
-  max-height: 75vh;
-  padding-right: 0.5rem;
-}
-
-/* DatePicker Overrides for Glass Theme */
-:deep(.p-datepicker) {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-}
-:deep(.p-datepicker-header) {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: white;
-}
-:deep(.p-datepicker table th) {
-  color: var(--text-secondary);
-}
-:deep(.p-datepicker table td > span.p-highlight) {
-  background: var(--primary);
-  color: white;
-}
-:deep(.p-datepicker table td > span:hover) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
 /* Transition */
 .fade-enter-active,
 .fade-leave-active {

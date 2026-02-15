@@ -482,97 +482,187 @@ body {
   position: fixed;
   top: 62.5px;
   right: 20px;
-  z-index: 1500;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
-  max-height: max-content;
-  gap: 10px;
-}
-
-.modals-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
 }
 
 .toast {
-  background: rgba(20, 20, 25, 0.85);
+  pointer-events: all;
+  background: rgba(15, 15, 20, 0.8);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1rem 1.2rem;
-  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   gap: 14px;
-  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 320px;
-  max-width: 400px;
+  min-width: 340px;
+  max-width: 420px;
   position: relative;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
   font-weight: 500;
   font-size: 0.9rem;
-  letter-spacing: 0.2px;
-  z-index: 1500;
   overflow: hidden;
+  animation: slideInRight 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  transition: all 0.3s ease;
+}
+
+.toast:hover {
+  transform: translateX(-4px);
+  background: rgba(20, 20, 25, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.toast .toast-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+}
+.toast.error .toast-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.toast.info .toast-icon {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
 }
 
 .toast .toast-body {
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.toast .toast-icon {
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.3));
+.toast .toast-message {
+  line-height: 1.4;
+}
+
+.toast .toast-close,
+.toast .toast-abort {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast .toast-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.toast .toast-abort {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  text-transform: uppercase;
+}
+
+.toast .toast-abort:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 .toast .toast-progress {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0px;
-  height: 4px;
+  bottom: 0;
+  height: 3px;
   background: rgba(255, 255, 255, 0.03);
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-  overflow: hidden;
 }
 
 .toast .toast-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), var(--text-secondary));
+  background: linear-gradient(90deg, var(--primary), #a855f7);
   width: 0%;
-  transition: width 0.15s linear;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.toast .toast-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(90deg, transparent, white);
+  opacity: 0.3;
+  filter: blur(4px);
+}
+
+.toast .toast-progress.indeterminate .toast-progress-fill {
+  width: 100%;
+  background: linear-gradient(90deg, var(--primary), #a855f7, var(--primary));
+  background-size: 200% 100%;
+  animation: indeterminateProgress 2s linear infinite;
+}
+
+@keyframes indeterminateProgress {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes slideInRight {
   from {
-    transform: translateX(100%);
+    transform: translateX(120%);
+    opacity: 0;
   }
   to {
     transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
   }
 }
 
 .toast.success {
-  border-color: rgba(var(--primary-rgb), 0.4);
+  border-left: 4px solid var(--primary);
 }
-
 .toast.error {
-  border-color: rgba(239, 68, 68, 0.4);
+  border-left: 4px solid #ef4444;
 }
-
 .toast.info {
-  border-color: rgba(59, 130, 246, 0.4);
+  border-left: 4px solid #3b82f6;
 }
 
 .ban-btn {
@@ -717,8 +807,10 @@ body {
   gap: 1.5rem;
 
   width: 90%;
-  max-width: 480px;
+  max-width: 650px;
+  max-height: 90vh;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 .g-card-header,
@@ -793,19 +885,24 @@ body {
 /* ... (skipping button styles) ... */
 
 /* DatePicker Global Overrides (Glass Theme) */
-/* Target the popup panel specifically to avoid messing up the input wrapper */
+
+/* 1. Panel/Popup container */
 .p-datepicker-panel {
-  background: var(--bg-dark) !important; /* Themed dark background */
-  border: 1px solid var(--border) !important; /* Themed border */
+  background: #161b22 !important; /* Solid dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 16px !important;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
   padding: 1rem !important;
   z-index: 9999 !important;
+  max-width: none !important;
+  min-width: 250px;
+  /* Width is handled by 'fluid' prop and pt: { pcPanel: { root: '!w-full' } } in components */
 }
 
+/* 2. Header and Title */
 .p-datepicker-header {
   background: transparent !important;
-  border-bottom: 1px solid var(--border2) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
   color: var(--text-primary) !important;
   padding-bottom: 0.5rem !important;
 }
@@ -815,6 +912,7 @@ body {
   font-weight: 600 !important;
 }
 
+/* 3. Calendar Table */
 .p-datepicker table th {
   color: var(--text-secondary) !important;
   font-weight: 500 !important;
@@ -828,35 +926,72 @@ body {
   transition: all 0.2s !important;
 }
 
+.p-datepicker-panel .p-datepicker-calendar td > span:hover,
+.p-datepicker-panel .p-datepicker-day:not(.p-highlight):hover,
 .p-datepicker table td > span:hover {
-  background: var(--bg-light) !important;
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.4) !important;
 }
 
-.p-datepicker table td > span.p-datepicker-today > span {
+/* 4. Selection and Today states */
+.p-datepicker-today > span,
+.p-datepicker-today > span > span {
   background: transparent !important;
   border: 1px solid var(--primary) !important;
   color: var(--primary) !important;
 }
 
-.p-datepicker table td > span.p-datepicker-selected {
+/* Fix selected day visibility (white text on primary background) */
+.p-datepicker-selected > span,
+.p-datepicker-selected > span:hover,
+.p-datepicker-selected > span > span,
+.p-highlight {
   background: var(--primary) !important;
   color: white !important;
+  font-weight: 700 !important;
   box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4) !important;
 }
 
+/* 5. Navigation buttons */
 .p-datepicker .p-datepicker-prev,
 .p-datepicker .p-datepicker-next {
   color: var(--text-secondary) !important;
   width: 2rem !important;
   height: 2rem !important;
   border-radius: 50% !important;
-  transition: all 0.2s !important;
 }
 
 .p-datepicker .p-datepicker-prev:hover,
 .p-datepicker .p-datepicker-next:hover {
-  background: var(--bg-light) !important;
+  background: rgba(var(--primary-rgb), 0.2) !important;
   color: var(--primary) !important;
+}
+
+/* 6. Input Root (when not opened) */
+.p-datepicker:not(.p-datepicker-panel) {
+  display: inline-flex !important;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.p-datepicker:not(.p-datepicker-panel) .p-inputtext,
+.p-datepicker:not(.p-datepicker-panel) .g-input {
+  flex: 1;
+  min-width: 0;
+  width: 100% !important;
+  padding: 0.8rem 1rem !important;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 16px !important;
+  color: var(--text-primary) !important;
+}
+
+.p-datepicker:not(.p-datepicker-panel) .p-inputtext:focus,
+.p-datepicker:not(.p-datepicker-panel) .g-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1) !important;
 }
 
 /* Global Button Styles */
@@ -949,92 +1084,8 @@ body {
   z-index: 10000 !important;
 }
 
-/* DatePicker Input Wrapper Fix */
-.p-datepicker:not(.p-datepicker-panel) {
-  display: inline-flex !important;
-  align-items: center;
-  position: relative;
-  width: 100%; /* Ensure root takes full width */
-}
-
-/* Ensure input shrinks to fit when clear icon is present */
-.p-datepicker:not(.p-datepicker-panel) .p-inputtext,
-.p-datepicker:not(.p-datepicker-panel) .g-input {
-  flex: 1;
-  min-width: 0;
-  width: auto !important; /* Override 100% width to allow flex sizing */
-}
-
-/* Adjust clear icon positioning if necessary */
-.p-datepicker-clear-icon {
-  margin-left: -2rem; /* Pull icon over input if needed, or rely on flex */
-  z-index: 1;
-  color: var(--text-secondary);
-}
-
-/* DatePicker Global Overrides (Glass Theme) */
-/* Target the popup panel specifically to avoid messing up the input wrapper */
-.p-datepicker-panel {
-  background: #161b22 !important; /* Solid dark background to fix transparency */
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
-  padding: 1rem !important;
-  z-index: 9999 !important;
-}
-
-.p-datepicker-header {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-  color: var(--text-primary) !important;
-  padding-bottom: 0.5rem !important;
-}
-
-.p-datepicker-title {
-  color: var(--text-primary) !important;
-  font-weight: 600 !important;
-}
-
-.p-datepicker table th {
-  color: var(--text-secondary) !important;
-  font-weight: 500 !important;
-}
-
-.p-datepicker table td > span {
-  color: var(--text-primary) !important;
-  width: 2.5rem !important;
-  height: 2.5rem !important;
-  border-radius: 50% !important;
-  transition: all 0.2s !important;
-}
-
-.p-datepicker table td > span:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-.p-datepicker table td > span.p-datepicker-today > span {
-  background: transparent !important;
-  border: 1px solid var(--primary) !important;
-  color: var(--primary) !important;
-}
-
-.p-datepicker table td > span.p-datepicker-selected {
-  background: var(--primary) !important;
-  color: white !important;
-  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4) !important;
-}
-
-.p-datepicker .p-datepicker-prev,
-.p-datepicker .p-datepicker-next {
-  color: var(--text-secondary) !important;
-  width: 2rem !important;
-  height: 2rem !important;
-  border-radius: 50% !important;
-  transition: all 0.2s !important;
-}
-
-.p-datepicker .p-datepicker-prev:hover,
-.p-datepicker .p-datepicker-next:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: var(--primary) !important;
+.g-modal-content {
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  padding: 0.5rem;
 }

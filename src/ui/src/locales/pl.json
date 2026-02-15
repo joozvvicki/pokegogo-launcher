@@ -162,7 +162,9 @@
     "types": {
       "mega": "MEGA",
       "normal": "Normalny"
-    }
+    },
+    "save": "Zapisz",
+    "cancel": "Anuluj"
   },
   "users": {
     "toasts": {
@@ -512,7 +514,10 @@
     "loading": "Ładowanie..",
     "required": "To pole jest wymagane",
     "emailInvalid": "Nieprawidłowy adres email",
-    "passwordMismatch": "Hasła muszą być identyczne"
+    "passwordMismatch": "Hasła muszą być identyczne",
+    "add": "Dodaj",
+    "abort": "Przerwij",
+    "close": "Zamknij"
   },
   "toasts": {
     "skinFetchError": "Nie udało się załadować skina z URL (HTTP Error/404):",

@@ -84,32 +84,42 @@ export const showToast = (message: string, type = 'success'): void => {
 
   const icon = type === 'success' ? 'check-circle' : 'exclamation-circle'
   toast.innerHTML = `
-        <i class="fas fa-${icon} text-xl toast-icon" style="color: ${
-          type === 'success' ? 'var(--primary)' : '#ef4444'
-        }"></i>
-        <div class="toast-body">
-            <span>${message}</span>
+        <div class="toast-icon">
+          <i class="fas fa-${icon} text-lg"></i>
         </div>
+        <div class="toast-body">
+            <span class="toast-message">${message}</span>
+        </div>
+        <button class="toast-close">
+          <i class="fas fa-times"></i>
+        </button>
     `
 
+  const closeHandler = (): void => {
+    toast.style.animation = 'slideOutRight 0.3s ease forwards'
+    setTimeout(() => {
+      toast.remove()
+    }, 300)
+  }
+
+  toast.querySelector('.toast-close')?.addEventListener('click', closeHandler)
   toastContainer.appendChild(toast)
 
   setTimeout(() => {
-    toast.style.animation = 'slideOutRight 0.3s ease'
-    setTimeout(() => {
-      toast.remove()
-    }, TOAST_DURATION * 1.5)
+    if (toast.parentElement) closeHandler()
   }, TOAST_DURATION)
 }
 
 // Progress toast: returns an updater and a closer
 export const showProgressToast = (
   initialMessage: string,
-  type: 'success' | 'info' | 'error' = 'info'
+  type: 'success' | 'info' | 'error' = 'info',
+  onAbort?: () => void
 ): {
   update: (msg: string) => void
   updateProgress: (current: number, total: number, message?: string) => void
-  close: (finalMessage?: string, finalType?: 'success' | 'error') => void
+  close: (finalMessage?: string, finalType?: 'success' | 'error', duration?: number) => void
+  setIndeterminate: (val: boolean) => void
 } | null => {
   const toastContainer = document.getElementById('toastContainer')
   if (toastContainer === null) return null
@@ -124,18 +134,38 @@ export const showProgressToast = (
     type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'
 
   toast.innerHTML = `
-    <i class="fas fa-${icon} text-xl toast-icon" style="color: ${
-      type === 'success' ? 'var(--primary)' : type === 'error' ? '#ef4444' : 'var(--primary)'
-    }"></i>
+    <div class="toast-icon">
+      <i class="fas fa-${icon} text-lg"></i>
+    </div>
     <div class="toast-body">
       <span class="toast-message">${initialMessage}</span>
     </div>
+    ${
+      onAbort
+        ? `<button class="toast-abort">${i18n.global.t('general.abort')}</button>`
+        : `<button class="toast-close"><i class="fas fa-times"></i></button>`
+    }
     <div class="toast-progress" aria-hidden="true">
       <div class="toast-progress-fill" style="width: 0%"></div>
     </div>
   `
 
+  const closeHandler = (): void => {
+    toast.style.animation = 'slideOutRight 0.3s ease forwards'
+    setTimeout(() => {
+      toast.remove()
+    }, 300)
+  }
+
   toastContainer.appendChild(toast)
+
+  if (onAbort) {
+    toast.querySelector('.toast-abort')?.addEventListener('click', () => {
+      onAbort()
+    })
+  } else {
+    toast.querySelector('.toast-close')?.addEventListener('click', closeHandler)
+  }
 
   const update = (msg: string): void => {
     const span = toast.querySelector('.toast-message')
@@ -151,19 +181,50 @@ export const showProgressToast = (
     if (span) span.textContent = `${message?.length ? message + ' ' : ''}${current}/${total}`
   }
 
-  const close = (finalMessage?: string): void => {
+  const close = (
+    finalMessage?: string,
+    finalType?: 'success' | 'error',
+    duration?: number
+  ): void => {
+    if (finalType) {
+      toast.className = `toast ${finalType}`
+    }
+
     if (finalMessage) {
       const span = toast.querySelector('.toast-message')
       if (span) span.textContent = finalMessage
+      // Switch icon to check if success or exclamation if error
+      const iconEl = toast.querySelector('.toast-icon i')
+      if (iconEl) {
+        iconEl.className =
+          finalType === 'error'
+            ? 'fas fa-exclamation-circle text-lg'
+            : 'fas fa-check-circle text-lg'
+      }
+      // Remove abort button on close
+      const abortBtn = toast.querySelector('.toast-abort')
+      if (abortBtn) abortBtn.remove()
     }
 
-    toast.style.animation = 'slideOutRight 0.3s ease'
     setTimeout(() => {
-      toast.remove()
-    }, TOAST_DURATION)
+      if (toast.parentElement) closeHandler()
+    }, duration ?? TOAST_DURATION)
   }
 
-  return { update, updateProgress, close }
+  const setIndeterminate = (val: boolean): void => {
+    const progressEl = toast.querySelector('.toast-progress') as HTMLElement | null
+    if (progressEl) {
+      if (val) {
+        progressEl.classList.add('indeterminate')
+        const fill = progressEl.querySelector('.toast-progress-fill') as HTMLElement | null
+        if (fill) fill.style.width = '100%'
+      } else {
+        progressEl.classList.remove('indeterminate')
+      }
+    }
+  }
+
+  return { update, updateProgress, close, setIndeterminate }
 }
 
 export const calculateValueFromPercentage = (

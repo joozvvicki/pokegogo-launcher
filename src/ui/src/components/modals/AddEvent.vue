@@ -289,10 +289,14 @@ defineExpose({
                   v-model="state.startDate"
                   :placeholder="t('events.placeholders.date')"
                   class="w-full"
+                  fluid
                   :pt="{
                     root: { class: 'w-full' },
                     input: {
                       class: 'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
                     }
                   }"
                 />
@@ -308,10 +312,14 @@ defineExpose({
                   v-model="state.endDate"
                   :placeholder="t('events.placeholders.date')"
                   class="w-full"
+                  fluid
                   :pt="{
                     root: { class: 'w-full' },
                     input: {
                       class: 'g-input w-full ' + (v$.endDate?.$error ? '!border-red-500' : '')
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
                     }
                   }"
                   show-clear
@@ -342,15 +350,6 @@ defineExpose({
 </template>
 
 <style scoped>
-.g-modal-content {
-  overflow-y: auto;
-  max-height: 70vh;
-  padding-right: 0.5rem;
-}
-
-/* DatePicker Overrides for Glass Theme */
-/* Moved to base.css because DatePicker uses appendTo="body" */
-
 /* Transition */
 .fade-enter-active,
 .fade-leave-active {

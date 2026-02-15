@@ -221,8 +221,17 @@ defineExpose({
                 <DatePicker
                   v-model="banTime"
                   :placeholder="t('modals.banPlayer.datePlaceholder')"
-                  class="g-input-wrapper w-full"
-                  :input-class="'g-input w-full'"
+                  class="w-full"
+                  fluid
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full'
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
+                    }
+                  }"
                   show-time
                   hour-format="24"
                 />
@@ -267,35 +276,6 @@ defineExpose({
 </template>
 
 <style scoped>
-.g-modal-content {
-  overflow-y: auto;
-  max-height: 75vh;
-  padding-right: 0.5rem;
-}
-
-/* DatePicker Overrides */
-:deep(.p-datepicker) {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-}
-:deep(.p-datepicker-header) {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: white;
-}
-:deep(.p-datepicker table th) {
-  color: var(--text-secondary);
-}
-:deep(.p-datepicker table td > span.p-highlight) {
-  background: var(--primary);
-  color: white;
-}
-:deep(.p-datepicker table td > span:hover) {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
 /* Transition */
 .fade-enter-active,
 .fade-leave-active {

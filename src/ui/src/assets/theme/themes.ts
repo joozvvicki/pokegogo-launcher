@@ -161,81 +161,82 @@ export const kuromi = {
 
 export const main = {
   name: 'main',
-  // Primary Accent Palette (Cyan/Blue)
-  primary: '#00dfff',
-  primaryRgb: '0, 223, 255',
-  primaryShop: '#00dfff50',
-  primaryDark: '#00b3cc',
-  primaryLight: '#e0ffff',
+  // Primary Accent Palette (Soft Spring Pink)
+  primary: '#ffb7c5',
+  primaryRgb: '255, 183, 197',
+  primaryShop: '#ffb7c550',
+  primaryDark: '#ff9cb0',
+  primaryLight: '#fff0f5',
 
   // Backgrounds
   bgDark: '#0D1117',
   bgCard: 'rgba(22, 27, 34, 0.6)',
   bgLight: 'rgba(255, 255, 255, 0.05)',
   bgBody: '#0D1117',
-  bgPrimary: 'rgba(0, 223, 255, 0.1)',
+  bgPrimary: 'rgba(255, 183, 197, 0.1)',
   bgInput: 'rgba(0, 0, 0, 0.2)',
   loadingOverlay: 'rgba(0, 0, 0, 0.95)',
 
   // Text Colors
   textPrimary: '#ffffff',
   textSecondary: '#e6edf3',
-  textSecondaryAlt: '#00dfff',
+  textSecondaryAlt: '#ffb7c5',
   textMuted: '#8b949e',
   breadcrumbsText: '#e6edf3',
   errorMessage: '#ff6b6b',
 
   // Borders
-  border: 'rgba(0, 223, 255, 0.3)',
+  border: 'rgba(255, 183, 197, 0.3)',
   border2: 'rgba(255, 255, 255, 0.1)',
-  borderPrimary: 'rgba(0, 223, 255, 0.5)',
+  borderPrimary: 'rgba(255, 183, 197, 0.5)',
 
   // UI Elements
   newsItem: 'rgba(22, 27, 34, 0.8)',
-  newsItemHover: 'rgba(0, 223, 255, 0.1)',
-  btnHover: 'rgba(0, 223, 255, 0.2)',
-  btnGlow: 'rgba(0, 223, 255, 0.4)',
+  newsItemHover: 'rgba(255, 183, 197, 0.1)',
+  btnHover: 'rgba(255, 183, 197, 0.2)',
+  btnGlow: 'rgba(255, 183, 197, 0.4)',
   footerHover: 'rgba(255, 255, 255, 0.1)',
-  shopItem: `linear-gradient(180deg, rgba(0, 223, 255, 0.1) 0%, transparent 100%)`,
+  shopItem: `linear-gradient(180deg, rgba(255, 183, 197, 0.1) 0%, transparent 100%)`,
 
   // Special/Accent Colors
   banBtn: 'rgba(239, 68, 68, 0.2)',
   banBtnText: '#ff6b6b',
-  statusPulse: '#00dfff',
+  statusPulse: '#ffb7c5',
   toastError: '#ff6b6b',
   toastWarning: '#fbbf24',
 
   // Navigation
   navIcon: '#e6edf3',
-  tagDark: 'rgba(0, 223, 255, 0.2)',
+  tagDark: 'rgba(255, 183, 197, 0.2)',
   navItem: 'transparent',
-  navItemHoverNavIcon: '#00dfff',
-  navItemActive: 'rgba(0, 223, 255, 0.15)',
+  navItemHoverNavIcon: '#ffb7c5',
+  navItemActive: 'rgba(255, 183, 197, 0.15)',
 
   // Login/Form
   loginTabBtnBg: 'rgba(255, 255, 255, 0.05)',
   loginTabBtnHover: 'rgba(255, 255, 255, 0.1)',
   loginInvalidBg: 'rgba(255, 107, 107, 0.1)',
   loginInvalidBorder: 'rgba(255, 107, 107, 0.3)',
-  btnMicrosoft: 'linear-gradient(90deg, #00dfff, #0099cc)',
+  btnMicrosoft: 'linear-gradient(90deg, #ffb7c5, #ffd1dc)',
   playerLogout: '#ff6b6b',
 
   // Effects & Utilities
-  gradientPrimary: 'linear-gradient(135deg, #0099cc 0%, #00dfff 100%)',
+  gradientPrimary: 'linear-gradient(135deg, #ff9cb0 0%, #ffb7c5 100%)',
   gradientBanned: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
-  shadowGlow: '0 0 20px rgba(0, 223, 255, 0.4)',
+  shadowGlow: '0 0 20px rgba(255, 183, 197, 0.4)',
   shadowCard: '0 8px 24px rgba(0, 0, 0, 0.4)',
-  gradientOverlay: `radial-gradient(circle at 50% 50%, rgba(0, 223, 255, 0.15), transparent 70%)`,
+  gradientOverlay: `radial-gradient(circle at 50% 50%, rgba(255, 183, 197, 0.15), transparent 70%)`,
 
   // Static Properties
   borderRadius: '16px',
   borderRadiusSmall: '8px',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
 
-  vignetteColor: 'rgba(13, 17, 23, 0.9)',
-  backgroundImage: null,
-  firstFloating: '❄️',
-  secondFloating: '⚡'
+  vignetteColor: 'rgba(13, 17, 23, 0.8)',
+  backgroundImage:
+    'https://axenthost.com/img/articles/minecraft-cherry-blossom/minecraft-cherry-blossom-biome.webp',
+  firstFloating: '🌸',
+  secondFloating: '🐝'
 }
 
 export const themes = [
