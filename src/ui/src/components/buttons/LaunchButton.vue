@@ -5,18 +5,20 @@ import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { createParticles, refreshMicrosoftToken, showToast } from '@ui/utils'
 import { differenceInMilliseconds, intervalToDuration, parseISO } from 'date-fns'
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const generalStore = useGeneralStore()
 
-const states = reactive({
-  start: 'Uruchamianie..',
-  'java-install': 'Instalowanie Javy..',
-  'files-verify': 'Weryfikowanie plików..',
-  'minecraft-start': 'Uruchamianie gry..',
-  'minecraft-started': 'Minecraft jest uruchomiony...',
-  'minecraft-closed': 'Minecraft został zamknięty.'
-})
+const states = computed<Record<string, string>>(() => ({
+  start: t('launcher.launchButton.states.start'),
+  'java-install': t('launcher.launchButton.states.javaInstall'),
+  'files-verify': t('launcher.launchButton.states.filesVerify'),
+  'minecraft-start': t('launcher.launchButton.states.minecraftStart'),
+  'minecraft-started': t('launcher.launchButton.states.minecraftStarted'),
+  'minecraft-closed': t('launcher.launchButton.states.minecraftClosed')
+}))
 
 const userStore = useUserStore()
 
@@ -49,7 +51,7 @@ const handleToggleGame = async (e: Event): Promise<void> => {
     }
   } catch (err) {
     LOGGER.with('Launch State').err((err as Error).toString())
-    showToast('Wystąpił błąd podczas uruchamiania gry.', 'error')
+    showToast(t('launcher.launchButton.errors.generic'), 'error')
   }
 }
 
@@ -59,14 +61,14 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
   let mcToken = localStorage.getItem('mcToken')
 
   if (userStore.user?.accountType === 'microsoft' && mcToken?.includes('exp')) {
-    LOGGER.with('Launch State').log('Weryfikacja tokenu MC..')
+    LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenVerify'))
     const exp = parseInt(JSON.parse(mcToken as string).exp)
     const now = new Date().getTime()
 
     LOGGER.with('Launch State').log(`${now} ${exp}`)
 
     if (now >= exp) {
-      LOGGER.with('Launch State').log('Odświeżanie tokenu MC..')
+      LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenRefreshing'))
       try {
         const res = await refreshMicrosoftToken(
           localStorage.getItem(`msToken:${userStore.user?.nickname}`)
@@ -79,10 +81,10 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
           mcToken = res.mcToken
         }
 
-        LOGGER.with('Launch State').success('MC Token został odświeżony.')
+        LOGGER.with('Launch State').success(t('launcher.launchButton.errors.tokenRefreshed'))
       } catch (err: unknown) {
         LOGGER.with('Launch State').err('Błąd odświażania tokenu.', `${err}`)
-        showToast('Błąd odświeżania tokenu MC. Spróbuj ponownie za chwilę.')
+        showToast(t('launcher.launchButton.errors.tokenRefreshError'))
 
         generalStore.setCurrentState('start')
         return
@@ -108,7 +110,7 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
 }
 
 const state = computed(() => {
-  return states[generalStore.currentState]
+  return states.value[generalStore.currentState]
 })
 
 const handleKillGame = async (): Promise<void> => {
@@ -131,7 +133,7 @@ const formattedBanTime = computed(() => {
   const banEndDateString = userStore.user?.banEndDate as string | null
 
   if (!banEndDateString?.length) {
-    return 'Permanentnie'
+    return t('launcher.launchButton.ban.perm')
   }
 
   const banEndDate = parseISO(banEndDateString)
@@ -139,7 +141,7 @@ const formattedBanTime = computed(() => {
 
   if (remainingMs <= 0) {
     clearInterval(timerInterval)
-    return 'Blokada zakończyła się'
+    return t('launcher.launchButton.ban.ended')
   }
 
   const duration = intervalToDuration({
@@ -152,7 +154,7 @@ const formattedBanTime = computed(() => {
   const minutes = pad(duration.minutes || 0)
   const seconds = pad(duration.seconds || 0)
 
-  return `Pozostało: ${hours}:${minutes}:${seconds}`
+  return t('launcher.launchButton.ban.remaining', { time: `${hours}:${minutes}:${seconds}` })
 })
 
 window.electron?.ipcRenderer?.on('launch:change-state', async (_event, state: string) => {
@@ -160,7 +162,10 @@ window.electron?.ipcRenderer?.on('launch:change-state', async (_event, state: st
   generalStore.setCurrentState(parsedState)
 
   if (parsedState === 'minecraft-start') {
-    window.discord.setActivity(`W PokeGoGo Launcher`, 'Uruchamiam grę..')
+    window.discord.setActivity(
+      `W PokeGoGo Launcher`,
+      t('launcher.launchButton.states.minecraftStart')
+    )
   }
 
   if (parsedState === 'minecraft-started') {
@@ -238,7 +243,7 @@ onUnmounted(() => {
             <i class="fas fa-exclamation-triangle text-2xl"></i>
             <div class="flex flex-col">
               <span class="title" :class="{ 'mb-2': userStore.user?.banEndDate }">
-                Twoje konto zostało zablokowane
+                {{ t('launcher.launchButton.ban.bannedTitle') }}
               </span>
               <span class="text-[0.7rem] text-black">
                 {{ userStore.user?.banEndDate ? formattedBanTime : '' }}
@@ -247,7 +252,7 @@ onUnmounted(() => {
           </template>
           <template v-else>
             <i class="fas fa-play"></i>
-            <span>URUCHOM GRĘ</span>
+            <span>{{ t('launcher.launchButton.actions.launch') }}</span>
           </template>
         </div>
       </template>
@@ -261,7 +266,9 @@ onUnmounted(() => {
           <i v-if="currentState !== 'start'" class="fas fa-spinner fa-spin"></i>
           <span>{{ state }}</span>
         </div>
-        <span v-if="generalStore.isOpeningGame" class="info">Kliknij, aby przerwać</span>
+        <span v-if="generalStore.isOpeningGame" class="info">{{
+          t('launcher.launchButton.actions.abort')
+        }}</span>
       </div>
     </button>
     <Transition name="slide-down">

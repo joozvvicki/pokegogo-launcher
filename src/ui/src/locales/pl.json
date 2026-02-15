@@ -531,5 +531,34 @@
   },
   "header": {
     "changeLanguage": "Zmień język"
+  },
+  "launcher": {
+    "launchButton": {
+      "states": {
+        "start": "Uruchamianie..",
+        "javaInstall": "Instalowanie Javy..",
+        "filesVerify": "Weryfikowanie plików..",
+        "minecraftStart": "Uruchamianie gry..",
+        "minecraftStarted": "Minecraft jest uruchomiony...",
+        "minecraftClosed": "Minecraft został zamknięty."
+      },
+      "ban": {
+        "bannedTitle": "Twoje konto zostało zablokowane",
+        "perm": "Permanentnie",
+        "ended": "Blokada zakończyła się",
+        "remaining": "Pozostało: {time}"
+      },
+      "actions": {
+        "launch": "URUCHOM GRĘ",
+        "abort": "Kliknij, aby przerwać"
+      },
+      "errors": {
+        "generic": "Wystąpił błąd podczas uruchamiania gry.",
+        "tokenVerify": "Weryfikacja tokenu MC..",
+        "tokenRefreshing": "Odświeżanie tokenu MC..",
+        "tokenRefreshed": "MC Token został odświeżony.",
+        "tokenRefreshError": "Błąd odświeżania tokenu MC. Spróbuj ponownie za chwilę."
+      }
+    }
   }
 }

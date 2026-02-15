@@ -531,5 +531,34 @@
   },
   "header": {
     "changeLanguage": "Change Language"
+  },
+  "launcher": {
+    "launchButton": {
+      "states": {
+        "start": "Launching..",
+        "javaInstall": "Installing Java..",
+        "filesVerify": "Verifying files..",
+        "minecraftStart": "Starting game..",
+        "minecraftStarted": "Minecraft is running...",
+        "minecraftClosed": "Minecraft has been closed."
+      },
+      "ban": {
+        "bannedTitle": "Your account has been blocked",
+        "perm": "Permanently",
+        "ended": "Ban has ended",
+        "remaining": "Remaining: {time}"
+      },
+      "actions": {
+        "launch": "LAUNCH GAME",
+        "abort": "Click to abort"
+      },
+      "errors": {
+        "generic": "An error occurred while starting the game.",
+        "tokenVerify": "MC token verification..",
+        "tokenRefreshing": "MC token refreshing..",
+        "tokenRefreshed": "MC token has been refreshed.",
+        "tokenRefreshError": "MC token refresh error. Please try again in a moment."
+      }
+    }
   }
 }
