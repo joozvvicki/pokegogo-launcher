@@ -1089,3 +1089,62 @@ body {
   max-height: calc(90vh - 120px);
   padding: 0.5rem;
 }
+/* Extreme Compact DatePicker for Modals */
+.extreme-compact-datepicker {
+  padding: 0.2rem !important;
+  border-radius: 12px !important;
+  width: auto !important;
+  min-width: 200px !important;
+  background: #161b22 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+  margin-top: 4px !important;
+  z-index: 10001 !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-header {
+  padding: 0.15rem !important;
+  font-size: 0.7rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-title {
+  font-size: 0.7rem !important;
+  line-height: normal !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-prev,
+.extreme-compact-datepicker .p-datepicker-next {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+.extreme-compact-datepicker table {
+  font-size: 0.65rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-day {
+  width: 1.4rem !important;
+  height: 1.4rem !important;
+  padding: 0 !important;
+}
+
+.extreme-compact-datepicker table td > span {
+  width: 1.4rem !important;
+  height: 1.4rem !important;
+  font-size: 0.65rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-time-picker {
+  padding: 0.15rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  gap: 0.15rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-hour-picker,
+.extreme-compact-datepicker .p-datepicker-minute-picker,
+.extreme-compact-datepicker .p-datepicker-second-picker {
+  font-size: 0.7rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-buttonbar {
+  padding: 0.15rem !important;
+}

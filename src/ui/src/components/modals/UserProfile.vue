@@ -286,7 +286,8 @@ const handleEscape = (e: KeyboardEvent): void => {
 </script>
 
 <template>
-  <div class="modal-container">
+  <div class="modal-container" :class="{ active: player }">
+    <div v-if="player" class="modal-overlay" @click="closeModal"></div>
     <Transition name="fade-left">
       <div v-if="player" class="modal-card">
         <div class="user-profile-header">
@@ -346,17 +347,17 @@ const handleEscape = (e: KeyboardEvent): void => {
         </div>
 
         <div v-if="isAdmin && onlyForAdmin(player)" class="admin-actions">
-          <h4>Admin Actions</h4>
+          <h4>{{ t('modals.userProfile.adminActions') }}</h4>
           <div class="action-buttons">
             <button
               v-if="!player?.isBanned"
               class="action-btn danger"
               @click="$emit('ban-player', player)"
             >
-              <i class="fas fa-ban"></i> Ban
+              <i class="fas fa-ban"></i> {{ t('modals.userProfile.ban') }}
             </button>
             <button v-else class="action-btn success" @click="$emit('unban-player', player)">
-              <i class="fas fa-rotate-left"></i> Unban
+              <i class="fas fa-rotate-left"></i> {{ t('modals.userProfile.unban') }}
             </button>
 
             <button
@@ -364,7 +365,7 @@ const handleEscape = (e: KeyboardEvent): void => {
               class="action-btn warning"
               @click="$emit('reset-password', player)"
             >
-              <i class="fas fa-key"></i> Reset Pass
+              <i class="fas fa-key"></i> {{ t('modals.userProfile.resetPass') }}
             </button>
           </div>
         </div>
@@ -374,7 +375,7 @@ const handleEscape = (e: KeyboardEvent): void => {
         <!-- Friend Requests -->
         <template v-if="player.friendRequests && userStore.user?.nickname === player.nickname">
           <div v-if="friendRequests.length > 0" class="section-title">
-            <h3>Friend Requests</h3>
+            <h3>{{ t('modals.userProfile.friendRequestsTitle') }}</h3>
             <span class="count">{{ friendRequests.length }}</span>
           </div>
 
@@ -503,13 +504,25 @@ const handleEscape = (e: KeyboardEvent): void => {
 
 <style scoped>
 .modal-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   z-index: 500;
   pointer-events: none;
+}
+
+.modal-container.active {
+  pointer-events: auto;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2); /* Subtle dimming */
+  backdrop-filter: blur(2px);
+  z-index: -1;
 }
 
 .error-message {
@@ -552,6 +565,7 @@ const handleEscape = (e: KeyboardEvent): void => {
 .avatar-container {
   width: 80px;
   height: 80px;
+  min-width: 80px;
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -590,8 +604,14 @@ const handleEscape = (e: KeyboardEvent): void => {
 .username {
   font-size: 1.5rem;
   font-weight: 800;
+  max-width: 150px;
+  overflow: hidden;
   color: var(--text-primary);
   line-height: 1;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .badges {

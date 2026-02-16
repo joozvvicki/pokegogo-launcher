@@ -337,14 +337,17 @@
       "successUnban": "Successfully unbanned user",
       "titleBan": "Ban player",
       "titleUnban": "Unban player",
+      "type": "Ban Type",
       "hwid": "HWID",
       "nick": "Nick",
+      "duration": "Ban Duration",
       "temp": "Temporary",
       "perm": "Permban",
       "endTime": "Ban end time",
       "datePlaceholder": "Select date",
       "reason": "Ban reason",
       "reasonPlaceholder": "Enter ban reason",
+      "confirmUnban": "Are you sure you want to unban {player}?",
       "ban": "Ban",
       "unban": "Unban",
       "cancel": "Cancel"
@@ -352,7 +355,10 @@
     "banned": {
       "noReason": "No detailed reason.",
       "title": "You have been banned",
+      "header": "Account Banned",
       "desc": "Your account has been blocked. Details regarding the reason for the block below:",
+      "reason": "Reason",
+      "expires": "Expires",
       "understand": "I understand"
     },
     "changeSkin": {
@@ -409,7 +415,12 @@
       "lastLogin": "Last login:",
       "registered": "Registered:",
       "noHwid": "No HWID",
+      "adminActions": "Admin Actions",
+      "ban": "Ban",
+      "unban": "Unban",
+      "resetPass": "Reset Pass",
       "friends": "Friends",
+      "friendRequestsTitle": "Friend Requests",
       "noFriendsUser": "Currently you have no friends.",
       "noFriendsPlayer": "Currently player has no friends."
     },
@@ -418,6 +429,7 @@
       "title": "Fixing files",
       "warning": "Remember not to close the launcher during file verification.",
       "finish": "Finish",
+      "verifying": "Verifying...",
       "stop": "Stop verifying",
       "start": "Start verification"
     }

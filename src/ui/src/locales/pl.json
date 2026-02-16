@@ -337,14 +337,17 @@
       "successUnban": "Pomyślnie odbanowano użytkownika",
       "titleBan": "Zbanuj gracza",
       "titleUnban": "Odbanuj gracza",
+      "type": "Typ blokady",
       "hwid": "HWID",
       "nick": "Nick",
+      "duration": "Czas trwania",
       "temp": "Czasowy",
       "perm": "Permban",
       "endTime": "Czas zakończenia bana",
       "datePlaceholder": "Wybierz datę",
       "reason": "Powód bana",
       "reasonPlaceholder": "Wpisz powód bana",
+      "confirmUnban": "Czy na pewno chcesz odbanować gracza {player}?",
       "ban": "Zbanuj",
       "unban": "Odbanuj",
       "cancel": "Anuluj"
@@ -352,7 +355,10 @@
     "banned": {
       "noReason": "Brak szczegółowego powodu.",
       "title": "Zostałeś zbanowany",
+      "header": "Konto Zbanowane",
       "desc": "Twoje konto zostało zablokowane. Szczegóły dotyczące powodu blokady poniżej:",
+      "reason": "Powód",
+      "expires": "Wygasa",
       "understand": "Rozumiem"
     },
     "changeSkin": {
@@ -409,7 +415,12 @@
       "lastLogin": "Ost. logowanie:",
       "registered": "Zarejestrowano:",
       "noHwid": "Brak HWID",
+      "adminActions": "Akcje Administratora",
+      "ban": "Banuj",
+      "unban": "Odbanuj",
+      "resetPass": "Resetuj Hasło",
       "friends": "Znajomi",
+      "friendRequestsTitle": "Zaproszenia do znajomych",
       "noFriendsUser": "Aktualnie nie masz żadnych znajomych.",
       "noFriendsPlayer": "Aktualnie gracz nie ma żadnych znajomych."
     },
@@ -418,6 +429,7 @@
       "title": "Naprawianie plików",
       "warning": "Pamiętaj, aby nie zamykać launchera podczas weryfikacji plików.",
       "finish": "Zakończ",
+      "verifying": "Weryfikacja w toku...",
       "stop": "Przerwij weryfikowanie",
       "start": "Rozpocznij weryfikacje"
     }

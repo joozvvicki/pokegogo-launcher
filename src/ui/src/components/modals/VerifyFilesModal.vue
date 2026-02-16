@@ -32,12 +32,6 @@ const openModal = (): void => {
   })
 }
 
-const cancelVerifying = async (): Promise<void> => {
-  await window.electron?.ipcRenderer?.invoke('launch:exit-verify', 'verify:log')
-  isVerifying.value = false
-  currentLog.value = t('modals.verifyFiles.cancelled', 'Anulowano przez użytkownika.')
-}
-
 const verifyFiles = async (): Promise<void> => {
   isVerifying.value = true
   currentLog.value = t('modals.verifyFiles.starting', 'Inicjalizacja...')
@@ -58,9 +52,8 @@ const verifyFiles = async (): Promise<void> => {
 }
 
 const handleExit = async (): Promise<void> => {
-  if (isVerifying.value) {
-    await cancelVerifying()
-  }
+  if (isVerifying.value) return
+
   // Remove listener to prevent memory leaks or duplicate listeners
   window.electron?.ipcRenderer?.removeAllListeners('verify:log')
   modalVisible.value = false
@@ -84,7 +77,7 @@ defineExpose({
               </div>
               <h3>{{ t('modals.verifyFiles.title') }}</h3>
             </div>
-            <button class="g-close-btn" @click="handleExit">
+            <button v-if="!isVerifying && !isEnd" class="g-close-btn" @click="handleExit">
               <i class="fa fa-times" />
             </button>
           </div>
@@ -122,9 +115,13 @@ defineExpose({
               {{ t('modals.verifyFiles.finish') }}
             </button>
 
-            <button v-else-if="isVerifying" class="g-btn danger w-full" @click="cancelVerifying">
-              <i class="fa fa-stop"></i>
-              {{ t('modals.verifyFiles.stop') }}
+            <button
+              v-else-if="isVerifying"
+              class="g-btn primary w-full opacity-50 cursor-not-allowed"
+              disabled
+            >
+              <i class="fa fa-spinner fa-spin"></i>
+              {{ t('modals.verifyFiles.verifying') }}
             </button>
 
             <button v-else class="g-btn primary w-full" @click="verifyFiles">
