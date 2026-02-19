@@ -1,8 +1,10 @@
 export class DiscordService {
   private webhookUrl: string
+  private logWebhookUrl: string
 
   constructor() {
     this.webhookUrl = import.meta.env.VITE_DISCORD_ERROR_URL
+    this.logWebhookUrl = import.meta.env.VITE_DISCORD_ERROR_URL
   }
 
   async sendError(title: string, details: any, user?: string): Promise<void> {
@@ -48,6 +50,36 @@ export class DiscordService {
       })
     } catch (error) {
       console.error('Failed to send error to Discord:', error)
+    }
+  }
+
+  async sendLog(title: string, fields: { name: string; value: string }[]): Promise<void> {
+    if (!this.logWebhookUrl) return
+
+    const embeds = [
+      {
+        title: `📝 ${title}`,
+        color: 3447003, // Blue color
+        fields: [
+          ...fields,
+          {
+            name: 'Time',
+            value: new Date().toISOString()
+          }
+        ]
+      }
+    ]
+
+    try {
+      await fetch(this.logWebhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ embeds })
+      })
+    } catch (error) {
+      console.error('Failed to send log to Discord:', error)
     }
   }
 

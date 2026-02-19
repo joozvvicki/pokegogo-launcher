@@ -6,6 +6,7 @@ import useUserStore from '@ui/stores/user-store'
 import { UserRole } from '@ui/types/app'
 import { showToast } from '@ui/utils'
 import DatePicker from 'primevue/datepicker'
+import { discordLogger } from '@ui/services/discord-service'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -81,6 +82,18 @@ const banUser = async (): Promise<void> => {
 
   if (res) {
     await emits('refreshData')
+
+    await discordLogger.sendLog('Player Banned', [
+      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+      { name: 'Target', value: playerData.value.nickname },
+      { name: 'Type', value: banType.value },
+      {
+        name: 'Duration',
+        value: isPermanentBan.value ? 'Permanent' : banTime.value?.toLocaleString() || 'Unknown'
+      },
+      { name: 'Reason', value: banReasonInput.value.trim() }
+    ])
+
     modalVisible.value = false
     showToast(
       isPermanentBan.value
@@ -103,6 +116,12 @@ const unbanUser = async (): Promise<void> => {
 
   if (res) {
     await emits('refreshData')
+
+    await discordLogger.sendLog('Player Unbanned', [
+      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+      { name: 'Target', value: playerData.value.nickname }
+    ])
+
     showToast(`${t('modals.banPlayer.successUnban')} ${playerData.value.nickname}`)
     handleCancel()
   }
