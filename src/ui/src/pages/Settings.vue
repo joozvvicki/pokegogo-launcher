@@ -944,14 +944,16 @@ input:checked + .slider:before {
 }
 
 .lang-toggles button.active {
-  background: var(--bg-card);
-  color: var(--text-primary);
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.2);
 }
 
 .divider {
   width: 1px;
-  height: 12px;
+  height: 16px;
   background: rgba(255, 255, 255, 0.1);
-  margin: 0 2px;
+  margin: 0 4px;
 }
 </style>

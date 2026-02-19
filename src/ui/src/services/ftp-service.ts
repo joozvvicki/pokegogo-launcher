@@ -71,12 +71,8 @@ export const useFTP = (): FTPService => {
   const inputFile = ref<HTMLInputElement | null>(null)
   const inputFolder = ref<HTMLInputElement | null>(null)
 
-  const getFolderContent = async (folder: string = ''): Promise<void> => {
+  const getFolderContent = async (folderPath: string = ''): Promise<void> => {
     loadingStatuses.value = true
-    const folderPath =
-      currentFolder.value.length && !currentFolder.value.endsWith(folder)
-        ? currentFolder.value + '/' + folder
-        : folder
 
     try {
       const res = await window.electron.ipcRenderer?.invoke(FTPChannel.LIST_FILES, folderPath)
@@ -98,7 +94,8 @@ export const useFTP = (): FTPService => {
   }
 
   const changeFolder = async (name: string): Promise<void> => {
-    await getFolderContent(name)
+    const newPath = currentFolder.value ? `${currentFolder.value}/${name}` : name
+    await getFolderContent(newPath)
   }
 
   const createFolder = async (newFolder: string): Promise<void> => {
@@ -562,7 +559,7 @@ export const useFTP = (): FTPService => {
         if (isAborted) {
           await getFolderContent(currentFolder.value)
         } else {
-          if (succeeded > 0) await getFolderContent()
+          if (succeeded > 0) await getFolderContent(currentFolder.value)
           progress?.updateProgress(succeeded, files.length)
           progress?.close(`Wysłano pliki: ${succeeded}/${files.length}`, 'success')
         }

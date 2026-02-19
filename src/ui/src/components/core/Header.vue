@@ -29,8 +29,9 @@ const toggleAdminMenu = (): void => {
 }
 
 const toggleLocale = (): void => {
-  locale.value = locale.value === 'en' ? 'pl' : 'en'
-  localStorage.setItem('locale', locale.value)
+  const newLocale = locale.value === 'en' ? 'pl' : 'en'
+  locale.value = newLocale
+  generalStore.setLanguage(newLocale)
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
