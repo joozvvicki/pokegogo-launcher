@@ -520,8 +520,6 @@ const handleEscape = (e: KeyboardEvent): void => {
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.2); /* Subtle dimming */
-  backdrop-filter: blur(2px);
   z-index: -1;
 }
 

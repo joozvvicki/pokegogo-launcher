@@ -364,7 +364,9 @@ onUnmounted(() => {
           <div
             v-if="
               userStore.user?.enableUpdateChannel ||
-              [UserRole.DEV, UserRole.ADMIN].includes(userStore.user?.role ?? UserRole.USER)
+              [UserRole.HELPER, UserRole.MODERATOR, UserRole.DEV, UserRole.ADMIN].includes(
+                userStore.user?.role ?? UserRole.USER
+              )
             "
             class="setting-item row"
           >
