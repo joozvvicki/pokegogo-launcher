@@ -375,7 +375,7 @@ onUnmounted(() => {
 
 /* Adjusted typography for running state */
 .launch-running .title {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.5px;
   margin-bottom: 4px; /* Space between title and info */
