@@ -402,7 +402,7 @@
       "none": "None",
       "perm": "Permanently",
       "banEnded": "Ban ended",
-      "remaining": "Remaining: ",
+      "remaining": "Remaining: {time}",
       "friendRequestAccepted": "Accepted friend request from {nickname}",
       "friendRequestAcceptFailed": "Failed to accept friend request from {nickname}",
       "friendRequestRejected": "Rejected friend request from {nickname}",

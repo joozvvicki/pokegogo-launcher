@@ -402,7 +402,7 @@
       "none": "Brak",
       "perm": "Permanentnie",
       "banEnded": "Blokada zakończyła się",
-      "remaining": "Pozostało: ",
+      "remaining": "Pozostało: {time}",
       "friendRequestAccepted": "Zaakceptowano zaproszenie od {nickname}",
       "friendRequestAcceptFailed": "Nie udało się zaakceptować zaproszenia od {nickname}",
       "friendRequestRejected": "Odrzucono zaproszenie od {nickname}",

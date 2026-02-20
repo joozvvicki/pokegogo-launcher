@@ -4,7 +4,7 @@
 import { IUser } from '@ui/env'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
-import { format } from 'date-fns'
+import { differenceInMilliseconds, format, intervalToDuration, parseISO } from 'date-fns'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
@@ -190,6 +190,36 @@ const onlyForAdmin = (player: IUser): boolean => {
 const now = ref(new Date())
 const timerInterval = ref<number | undefined>(undefined)
 
+const pad = (num: number): string => String(num).padStart(2, '0')
+
+const formattedBanTime = computed(() => {
+  const banEndDateString = player.value?.banEndDate
+
+  if (!banEndDateString) {
+    return t('modals.userProfile.perm')
+  }
+
+  const banEndDate =
+    typeof banEndDateString === 'string' ? parseISO(banEndDateString) : banEndDateString
+  const remainingMs = differenceInMilliseconds(banEndDate, now.value)
+
+  if (remainingMs <= 0) {
+    return t('modals.userProfile.banEnded')
+  }
+
+  const duration = intervalToDuration({
+    start: now.value,
+    end: banEndDate
+  })
+
+  const totalHours = (duration.days || 0) * 24 + (duration.hours || 0)
+  const hours = pad(totalHours)
+  const minutes = pad(duration.minutes || 0)
+  const seconds = pad(duration.seconds || 0)
+
+  return t('modals.userProfile.remaining', { time: `${hours}:${minutes}:${seconds}` })
+})
+
 const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
   try {
     const res = await acceptFriendRequest(player.nickname)
@@ -290,6 +320,16 @@ const handleEscape = (e: KeyboardEvent): void => {
     <div v-if="player" class="modal-overlay" @click="closeModal"></div>
     <Transition name="fade-left">
       <div v-if="player" class="modal-card">
+        <Transition name="slide-up">
+          <div v-if="player.isBanned" class="ban-status-banner mb-2 w-full!">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span class="ban-title">{{ t('modals.userProfile.accountBlocked') }}:</span>
+            <span class="ban-timer">{{
+              player.banEndDate ? formattedBanTime : t('modals.userProfile.perm')
+            }}</span>
+          </div>
+        </Transition>
+
         <div class="user-profile-header">
           <div class="avatar-container" @click="openChangeSkinModal">
             <SkinViewer :skin="skinUrl" />
@@ -306,9 +346,6 @@ const handleEscape = (e: KeyboardEvent): void => {
                 :style="{ background: 'var(--primary)', color: 'var(--text-primary)' }"
               >
                 {{ player.role }}
-              </span>
-              <span v-if="player.isBanned" class="status-badge banned">
-                {{ t('modals.userProfile.accountBlocked') }}
               </span>
             </div>
           </div>
@@ -629,8 +666,66 @@ const handleEscape = (e: KeyboardEvent): void => {
 }
 
 .status-badge.banned {
-  background: #ef4444; /* Red-500 */
+  display: none; /* Removed in favor of banner */
+}
+
+/* Ban Status Banner */
+.ban-status-banner {
+  margin-top: 0.5rem;
+  background: var(--gradient-banned);
+  border-radius: 20px;
+  padding: 0.3rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: fit-content;
+  animation: pulse-glow-banned 2s infinite;
+}
+
+.ban-status-banner i {
+  font-size: 0.9rem;
   color: white;
+}
+
+.ban-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: white;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ban-timer {
+  font-size: 0.7rem;
+  color: white;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@keyframes pulse-glow-banned {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 .header-actions {
