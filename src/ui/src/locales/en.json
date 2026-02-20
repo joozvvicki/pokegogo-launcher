@@ -422,7 +422,8 @@
       "friends": "Friends",
       "friendRequestsTitle": "Friend Requests",
       "noFriendsUser": "Currently you have no friends.",
-      "noFriendsPlayer": "Currently player has no friends."
+      "noFriendsPlayer": "Currently player has no friends.",
+      "banReason": "Reason"
     },
     "verifyFiles": {
       "checkEnded": "Check completed",

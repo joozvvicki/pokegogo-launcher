@@ -323,10 +323,18 @@ const handleEscape = (e: KeyboardEvent): void => {
         <Transition name="slide-up">
           <div v-if="player.isBanned" class="ban-status-banner mb-2 w-full!">
             <i class="fas fa-exclamation-triangle"></i>
-            <span class="ban-title">{{ t('modals.userProfile.accountBlocked') }}:</span>
-            <span class="ban-timer">{{
-              player.banEndDate ? formattedBanTime : t('modals.userProfile.perm')
-            }}</span>
+            <div class="ban-content">
+              <div class="ban-header">
+                <span class="ban-title">{{ t('modals.userProfile.accountBlocked') }}</span>
+                <span class="ban-timer">{{
+                  player.banEndDate ? formattedBanTime : t('modals.userProfile.perm')
+                }}</span>
+              </div>
+              <div v-if="player.banReason" class="ban-reason">
+                <span class="reason-label">{{ t('modals.userProfile.banReason') }}:</span>
+                <span class="reason-text">{{ player.banReason }}</span>
+              </div>
+            </div>
           </div>
         </Transition>
 
@@ -673,24 +681,37 @@ const handleEscape = (e: KeyboardEvent): void => {
 .ban-status-banner {
   margin-top: 0.5rem;
   background: var(--gradient-banned);
-  border-radius: 20px;
-  padding: 0.3rem 0.8rem;
+  border-radius: 12px; /* Slightly less rounded for header look */
+  padding: 0.5rem 1rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  width: fit-content;
+  width: 100%;
   animation: pulse-glow-banned 2s infinite;
 }
 
 .ban-status-banner i {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   color: white;
 }
 
+.ban-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ban-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .ban-title {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 800;
   text-transform: uppercase;
   color: white;
@@ -703,6 +724,24 @@ const handleEscape = (e: KeyboardEvent): void => {
   color: white;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.ban-reason {
+  font-size: 0.6rem;
+  display: flex;
+  gap: 4px;
+}
+
+.reason-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.reason-text {
+  color: white;
+  font-weight: 500;
+  word-break: break-all;
 }
 
 @keyframes pulse-glow-banned {

@@ -422,7 +422,8 @@
       "friends": "Znajomi",
       "friendRequestsTitle": "Zaproszenia do znajomych",
       "noFriendsUser": "Aktualnie nie masz żadnych znajomych.",
-      "noFriendsPlayer": "Aktualnie gracz nie ma żadnych znajomych."
+      "noFriendsPlayer": "Aktualnie gracz nie ma żadnych znajomych.",
+      "banReason": "Powód"
     },
     "verifyFiles": {
       "checkEnded": "Sprawdzanie zakończone",
