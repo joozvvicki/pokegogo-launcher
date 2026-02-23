@@ -86,13 +86,9 @@ export const useLauncherService = (): {
       // ignore
     }
 
-    // Fallback logic
+    // Fallback logic for safety (should be handled by main process now)
     if (!machineData?.machineId) {
-      if (generalStore.settings.machineId) {
-        machineData.machineId = generalStore.settings.machineId
-      } else {
-        machineData.machineId = self.crypto.randomUUID()
-      }
+      machineData.machineId = generalStore.settings.machineId || 'unknown-device'
     }
 
     if (machineData) {

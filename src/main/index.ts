@@ -4,7 +4,7 @@ import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
 import { createTray } from './services/tray-service'
-import { ensureDir } from './utils'
+import { ensureDir, getPersistentMachineId } from './utils'
 import { useFTPService } from './services/ftp-service'
 import { join } from 'path'
 import discordRpc, { type RP } from 'discord-rich-presence'
@@ -97,6 +97,11 @@ if (!gotTheLock) {
           hwid = await machineId()
         } catch (err) {
           Logger.warn('Failed to get machineId:', err)
+        }
+
+        if (!hwid) {
+          Logger.log('HWID not found, using persistent fallback')
+          hwid = getPersistentMachineId()
         }
         const addr = await address()
         return {
