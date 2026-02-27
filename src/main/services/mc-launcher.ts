@@ -120,7 +120,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   const baseDir = app.getPath('userData')
   const minecraftDir = path.join(baseDir, 'instances', settings.gameMode.toLowerCase())
   const client = new Client()
-  const javaVersion = getJavaVersionByMode(settings.gameMode)
+  const javaVersion = getJavaVersionByMode(settings.gameMode.toLowerCase())
   const javaPath = resolveJavaPath(baseDir, javaVersion)
 
   let mcOpened = false
@@ -138,8 +138,8 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     Logger.log('PokeGoGo Launcher > MC Starting')
     window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
 
-    const baseVersion = getBaseVersionByMode(settings.gameMode)
-    const customVersion = getCustomVersionByMode(settings.gameMode)
+    const baseVersion = getBaseVersionByMode(settings.gameMode.toLowerCase())
+    const customVersion = getCustomVersionByMode(settings.gameMode.toLowerCase())
 
     Logger.log('MC root dir:', minecraftDir)
     Logger.log('MC javaPath:', javaPath)
