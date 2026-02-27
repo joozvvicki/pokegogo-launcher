@@ -1,5 +1,6 @@
 import { Authenticator, Client } from 'minecraft-launcher-core'
 import path, { join } from 'path'
+import { readFileSync } from 'fs'
 import { app, BrowserWindow, screen } from 'electron'
 import os from 'os'
 import Logger from 'electron-log'
@@ -46,6 +47,11 @@ const getCustomVersionByMode = (mode: string): string | undefined => {
   return undefined
 }
 
+const getJavaVersionByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '17'
+  return '21'
+}
+
 export type DisplayMode = 'Pełny ekran' | 'Okno'
 
 export interface MinecraftSettings {
@@ -70,17 +76,18 @@ export interface MinecraftInstance {
   stop: () => Promise<void>
 }
 
-function resolveJavaPath(baseDir: string): string {
+function resolveJavaPath(baseDir: string, version: string): string {
   const plt = os.platform()
+  const folderName = version === '17' ? 'jdk-17.0.12' : 'jdk-21.0.8'
 
   return join(
     baseDir,
     'java',
     plt === 'win32'
-      ? 'jdk-21.0.8/bin/java.exe'
+      ? `${folderName}/bin/java.exe`
       : plt === 'darwin'
-        ? 'jdk-21.0.8.jdk/Contents/Home/bin/java'
-        : 'jdk-21.0.8/bin/java'
+        ? `${folderName}.jdk/Contents/Home/bin/java`
+        : `${folderName}/bin/java`
   )
 }
 
@@ -113,7 +120,8 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   const baseDir = app.getPath('userData')
   const minecraftDir = path.join(baseDir, 'instances', settings.gameMode.toLowerCase())
   const client = new Client()
-  const javaPath = resolveJavaPath(baseDir)
+  const javaVersion = getJavaVersionByMode(settings.gameMode)
+  const javaPath = resolveJavaPath(baseDir, javaVersion)
 
   let mcOpened = false
   let childProcess: ChildProcessWithoutNullStreams | null = null
@@ -170,17 +178,39 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       window.show()
     })
 
+    let customArgs: string[] = [`-DaccessToken=${accessToken}`]
+
+    if (settings.gameMode === 'fantasy' && customVersion) {
+      const versionJsonPath = join(minecraftDir, 'versions', customVersion, `${customVersion}.json`)
+      try {
+        const versionJson = JSON.parse(readFileSync(versionJsonPath, 'utf-8'))
+        if (versionJson.arguments && versionJson.arguments.jvm) {
+          const separator = process.platform === 'win32' ? ';' : ':'
+          const jvmArgs = versionJson.arguments.jvm
+            .filter((arg: any) => typeof arg === 'string')
+            .map((arg: string) => {
+              return arg
+                .replace(/\${library_directory}/g, join(minecraftDir, 'libraries'))
+                .replace(/\${classpath_separator}/g, separator)
+                .replace(/\${version_name}/g, customVersion)
+            })
+          customArgs = [...customArgs, ...jvmArgs]
+        }
+      } catch (e) {
+        Logger.error('PokeGoGo Launcher > Error parsing version JSON for JVM args:', e)
+      }
+    }
+
     try {
       childProcess = await client.launch({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
+        // @ts-ignore: MCLC types might be incomplete or mismatching
         authorization,
         root: minecraftDir,
         javaPath,
         version: {
-          number: baseVersion, // '1.20.1' lub '1.21.1'
+          number: baseVersion,
           type: 'release',
-          custom: customVersion // '1.20.1-forge-47.4.10' albo '1.21.1-fabric' albo undefined
+          custom: customVersion
         },
         window: {
           width,
@@ -191,16 +221,13 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
           max: `${settings.ram}G`,
           min: `4G`
         },
-        customArgs: [`-DaccessToken=${accessToken}`]
+        customArgs
       })
 
       Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
 
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
       mcOpened = true
-
-      // NA RAZIE NIE CHOWAJ OKNA, ŻEBY ZOBACZYĆ CO SIĘ DZIEJE
-      // if (plt !== 'darwin') window.hide()
     } catch (e) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))

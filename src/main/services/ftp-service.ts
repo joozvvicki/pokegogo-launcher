@@ -522,9 +522,22 @@ export const useFTPService = (): {
 
         await mkdir(tempDir, { recursive: true })
 
-        // downloadDir nie ma wbudowanego progress callback w tej wersji biblioteki,
-        // więc symulujemy start.
-        await client.downloadDir(fullRemotePath, tempDir)
+        // Download manually to get granular progress (0% - 30%)
+        const downloadQueue = await buildDownloadQueue(client, fullRemotePath, tempDir)
+        const totalFiles = downloadQueue.length
+
+        for (let i = 0; i < totalFiles; i++) {
+          if (activeOperationAborted) throw new Error('ABORTED')
+          const task = downloadQueue[i]
+
+          const downloadPercent = (i / totalFiles) * 30
+          sendProgress(
+            downloadPercent,
+            `Pobieranie plików (${i + 1}/${totalFiles}): ${basename(task.remote)}`
+          )
+
+          await client.get(task.remote, task.local)
+        }
 
         sendProgress(30, 'Pakowanie plików...')
 
