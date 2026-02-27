@@ -108,7 +108,9 @@ onUnmounted(() => {
       </div>
       <div class="flex flex-col ml-2">
         <h1>PokeGoGo</h1>
-        <div class="applogo-badge">{{ generalStore.settings.updateChannel }}</div>
+        <div class="applogo-badge">
+          {{ generalStore.appVersion }}
+        </div>
       </div>
     </div>
 
