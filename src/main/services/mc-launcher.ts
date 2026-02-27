@@ -34,14 +34,16 @@ const nonPremiumToMCLC = async (json: string): Promise<unknown> => {
   }
 }
 
-const getGameVersionByMode = (mode: string): string => {
-  if (mode === 'fantasy') return '1.20.1-47.4.10'
-  return '1.21.1'
+const getBaseVersionByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '1.20.1' // vanilla baza pod Forge
+  if (mode === 'pokemons') return '1.21.1' // vanilla baza pod Fabric
+  return '1.21.1' // fallback
 }
 
-const getVersionNumberByMode = (mode: string): string => {
-  if (mode === 'fantasy') return '1.20.1'
-  return '1.21.1'
+const getCustomVersionByMode = (mode: string): string | undefined => {
+  if (mode === 'fantasy') return '1.20.1-forge-47.4.10' // pełne ID Forge (lokalny profil)
+  if (mode === 'pokemons') return '1.21.1-fabric' // pełne ID Fabric (lokalny profil)
+  return undefined
 }
 
 export type DisplayMode = 'Pełny ekran' | 'Okno'
@@ -108,7 +110,6 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   } catch {
     // ignore
   }
-  const plt = os.platform()
   const baseDir = app.getPath('userData')
   const minecraftDir = path.join(baseDir, 'instances', settings.gameMode.toLowerCase())
   const client = new Client()
@@ -129,51 +130,32 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     Logger.log('PokeGoGo Launcher > MC Starting')
     window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
 
-    childProcess = await client.launch({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      authorization,
-      root: minecraftDir,
-      javaPath,
-      version: {
-        number: getVersionNumberByMode(settings.gameMode),
-        type: 'release',
-        custom: getGameVersionByMode(settings.gameMode)
-      },
-      window: {
-        width,
-        height,
-        fullscreen
-      },
-      memory: {
-        max: `${settings.ram}G`,
-        min: `4G`
-      },
-      customArgs: [`-DaccessToken=${accessToken}`]
-    })
+    const baseVersion = getBaseVersionByMode(settings.gameMode)
+    const customVersion = getCustomVersionByMode(settings.gameMode)
 
-    // Immediately signal that the game has started (process exists)
-    // This allows the launcher to "know" it's running even before log output
-    window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
-    mcOpened = true
-    if (plt !== 'darwin') window.hide()
+    Logger.log('MC root dir:', minecraftDir)
+    Logger.log('MC javaPath:', javaPath)
+    Logger.log('MC baseVersion:', baseVersion)
+    Logger.log('MC customVersion:', customVersion)
 
+    // LISTENERY ZANIM ODPALISZ launch
     client.on('debug', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Debug > ', data)
+      Logger.log('MC DEBUG:', data)
     })
 
     client.on('data', (data) => {
+      Logger.log('MC STDOUT:', String(data))
       window.webContents.send('launch:show-log', data)
 
       if (typeof data === 'string') {
-        // Send error logs to Discord
         if (data.includes('[Error]') || data.includes('Exception') || data.includes('FATAL')) {
           discordLogger.sendError('Game Client Error', data, nickname)
         }
       }
+    })
 
-      // We don't need to spam minecraft-start anymore since we set it to started above
-      // But if we want to support "re-showing" if it crashes early, handle that in 'close'
+    client.on('error', (err) => {
+      Logger.error('MC ERROR event:', err)
     })
 
     client.on('close', (code) => {
@@ -188,7 +170,42 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       window.show()
     })
 
-    Logger.log('PokeGoGo Launcher > PID ' + childProcess?.pid + ' started')
+    try {
+      childProcess = await client.launch({
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        authorization,
+        root: minecraftDir,
+        javaPath,
+        version: {
+          number: baseVersion, // '1.20.1' lub '1.21.1'
+          type: 'release',
+          custom: customVersion // '1.20.1-forge-47.4.10' albo '1.21.1-fabric' albo undefined
+        },
+        window: {
+          width,
+          height,
+          fullscreen
+        },
+        memory: {
+          max: `${settings.ram}G`,
+          min: `4G`
+        },
+        customArgs: [`-DaccessToken=${accessToken}`]
+      })
+
+      Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
+
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
+      mcOpened = true
+
+      // NA RAZIE NIE CHOWAJ OKNA, ŻEBY ZOBACZYĆ CO SIĘ DZIEJE
+      // if (plt !== 'darwin') window.hide()
+    } catch (e) {
+      Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+      mcOpened = false
+    }
   }
 
   const stop = async (): Promise<void> => {
