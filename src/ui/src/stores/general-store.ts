@@ -31,6 +31,11 @@ const useGeneralStore = defineStore('general', () => {
       : null
   }
 
+  const availableGameModes = [
+    { label: 'Pokemony', value: 'Pokemons', icon: 'fas fa-ghost' },
+    { label: 'Fantasy', value: 'fantasy', icon: 'fas fa-hat-wizard' }
+  ]
+
   const savedSettings = localStorage.getItem('launcherSettings')
 
   const settings = reactive(
@@ -143,7 +148,13 @@ const useGeneralStore = defineStore('general', () => {
     saveSettings()
   }
 
+  const setGameMode = (mode: string): void => {
+    settings.gameMode = mode
+    saveSettings()
+  }
+
   return {
+    availableGameModes,
     searchQuery,
     mcInstance,
     settings,
@@ -167,6 +178,7 @@ const useGeneralStore = defineStore('general', () => {
     getTheme,
     setTheme,
     setLanguage,
+    setGameMode,
     setCustomTheme
   }
 })

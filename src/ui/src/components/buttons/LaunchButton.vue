@@ -5,7 +5,7 @@ import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { createParticles, refreshMicrosoftToken, showToast } from '@ui/utils'
 import { differenceInMilliseconds, intervalToDuration, parseISO } from 'date-fns'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -198,7 +198,32 @@ const currentState = computed(() => {
   return generalStore.currentState
 })
 
-onMounted(async () => {
+const isDropdownOpen = ref(false)
+const dropdownRef = ref<HTMLElement | null>(null)
+
+const toggleDropdown = (): void => {
+  if (generalStore.isOpeningGame || currentState.value !== 'start') return
+  isDropdownOpen.value = !isDropdownOpen.value
+}
+
+const selectMode = (value: string): void => {
+  generalStore.setGameMode(value)
+  isDropdownOpen.value = false
+}
+
+const currentMode = computed(() => {
+  return generalStore.availableGameModes.find((m) => m.value === generalStore.settings.gameMode)
+})
+
+const onClickOutside = (event: MouseEvent): void => {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
+    isDropdownOpen.value = false
+  }
+}
+
+onMounted(async (): Promise<void> => {
+  document.addEventListener('click', onClickOutside)
+
   timerInterval = window.setInterval(() => {
     now.value = new Date()
   }, 1000)
@@ -217,186 +242,306 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-  }
+// Clean up listener
+import { onBeforeUnmount } from 'vue'
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onClickOutside)
 })
 </script>
 
 <template>
-  <div class="relative">
-    <button
-      class="launch-button"
+  <div class="launch-split-container">
+    <!-- Game Mode Dropdown Menu -->
+    <Transition name="fade-slide">
+      <div v-if="isDropdownOpen" ref="dropdownRef" class="mode-dropdown">
+        <div class="dropdown-header">{{ t('settings.gameMode') }}</div>
+        <div class="dropdown-list">
+          <button
+            v-for="mode in generalStore.availableGameModes"
+            :key="mode.value"
+            class="dropdown-item"
+            :class="{ active: generalStore.settings.gameMode === mode.value }"
+            @click="selectMode(mode.value)"
+          >
+            <i :class="mode.icon"></i>
+            <div class="item-info">
+              <span class="item-label">{{ mode.label }}</span>
+              <span class="item-value">{{ mode.value }}</span>
+            </div>
+            <div
+              v-if="generalStore.settings.gameMode === mode.value"
+              class="fas fa-check check-icon"
+            ></div>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <div
+      class="split-button-wrapper"
       :class="{
         banned: isBanned,
         running: generalStore.isOpeningGame,
-        'mb-7': generalStore.currentLog.length
+        'has-log': generalStore.currentLog.length
       }"
-      :disabled="isBanned"
-      @click="(e) => handleToggleGame(e)"
     >
-      <div class="launch-button-bg"></div>
-      <template v-if="currentState === 'start'">
-        <div class="title">
-          <template v-if="isBanned">
-            <i class="fas fa-exclamation-triangle text-2xl"></i>
-            <div class="flex flex-col">
-              <span class="title" :class="{ 'mb-2': userStore.user?.banEndDate }">
-                {{ t('launcher.launchButton.ban.bannedTitle') }}
-              </span>
-              <span class="text-[0.7rem] text-black">
-                {{ userStore.user?.banEndDate ? formattedBanTime : '' }}
-              </span>
-            </div>
-          </template>
-          <template v-else>
-            <i class="fas fa-play"></i>
-            <span>{{ t('launcher.launchButton.actions.launch') }}</span>
-          </template>
+      <!-- Main Action -->
+      <button class="main-action" :disabled="isBanned" @click="(e) => handleToggleGame(e)">
+        <div class="launch-button-bg"></div>
+
+        <template v-if="currentState === 'start'">
+          <div class="action-content">
+            <template v-if="isBanned">
+              <i class="fas fa-exclamation-triangle"></i>
+              <div class="flex flex-col items-start leading-none">
+                <span class="text-sm font-bold">{{
+                  t('launcher.launchButton.ban.bannedTitle')
+                }}</span>
+                <span class="text-[0.6rem] opacity-70">{{
+                  userStore.user?.banEndDate ? formattedBanTime : ''
+                }}</span>
+              </div>
+            </template>
+            <template v-else>
+              <i class="fas fa-play"></i>
+              <span class="truncate">{{ t('launcher.launchButton.actions.launch') }}</span>
+            </template>
+          </div>
+        </template>
+
+        <div v-else class="action-running">
+          <div class="title" :class="{ 'margin-title': generalStore.isOpeningGame }">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span class="truncate">{{ state }}</span>
+          </div>
+          <span v-if="generalStore.isOpeningGame" class="info">{{
+            t('launcher.launchButton.actions.abort')
+          }}</span>
         </div>
-      </template>
-      <div v-else class="launch-running">
-        <div
-          class="title"
-          :class="{
-            'margin-title': generalStore.isOpeningGame
-          }"
-        >
-          <i v-if="currentState !== 'start'" class="fas fa-spinner fa-spin"></i>
-          <span>{{ state }}</span>
-        </div>
-        <span v-if="generalStore.isOpeningGame" class="info">{{
-          t('launcher.launchButton.actions.abort')
-        }}</span>
-      </div>
-    </button>
-    <Transition name="slide-down">
-      <div v-if="generalStore.currentLog.length" class="launch-button-info">
-        {{
-          generalStore.currentLog.length > 80
-            ? generalStore.currentLog.slice(0, 80) + '..'
-            : generalStore.currentLog
-        }}
+      </button>
+
+      <!-- Mode Indicator (Icon Trigger on Right) -->
+      <button
+        v-if="currentState === 'start' && !isBanned"
+        class="mode-trigger"
+        :class="{ open: isDropdownOpen }"
+        :title="currentMode?.label"
+        @click.stop="toggleDropdown"
+      >
+        <i :class="currentMode?.icon || 'fas fa-gamepad'"></i>
+      </button>
+    </div>
+
+    <!-- Log Overlay (New positioning) -->
+    <Transition name="slide-up">
+      <div v-if="generalStore.currentLog.length" class="launch-log-overlay">
+        {{ generalStore.currentLog }}
       </div>
     </Transition>
   </div>
 </template>
 
 <style scoped>
-.launch-button-info {
-  position: absolute;
-  bottom: 110%; /* Position above the button */
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: 300px;
-  min-width: 150px;
-  background: rgba(20, 20, 25, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 0.5rem 1rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.75rem;
-  color: var(--text-primary);
-  text-align: center;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  z-index: 20;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.launch-button-info::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 10px;
-  height: 10px;
-  background: rgba(20, 20, 25, 0.9);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.launch-running {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.launch-running .title {
-  font-size: 0.8rem; /* Smaller font text during loading */
-}
-
-.launch-button {
+.launch-split-container {
   position: relative;
   width: 100%;
-  height: 100%; /* Fill parent */
-  padding: 0;
-  background: var(--gradient-primary);
-  color: white;
-  border: none;
-  border-radius: 18px; /* Match dock radius */
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  cursor: pointer;
-  overflow: hidden;
-  transition: all 0.3s ease-in-out;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  z-index: 2;
-  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.2); /* Inner glow */
 }
 
-.banned {
+.split-button-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--gradient-primary);
+  border-radius: 18px;
+  padding: 0;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  width: 100%;
+  max-width: 300px;
+}
+
+.split-button-wrapper.running {
+  animation: pulse-border 2s infinite;
+}
+
+.split-button-wrapper.banned {
   background: var(--gradient-banned);
 }
 
-.banned:hover,
-.banned:focus {
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-.launch-button .title {
+/* Main Action */
+.main-action {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  z-index: 5;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-/* Adjusted typography for running state */
-.launch-running .title {
-  font-size: 0.7rem;
-  font-weight: 600;
+  justify-content: center;
+  flex: 1;
+  min-width: 120px;
+  height: 52px;
+  padding: 0 16px 0 20px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  font-weight: 800;
   letter-spacing: 0.5px;
-  margin-bottom: 4px; /* Space between title and info */
-  white-space: nowrap;
+  cursor: pointer;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding: 0 0.5rem;
+  white-space: nowrap;
 }
 
-.launch-button .info {
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
+/* Divider */
+.main-action::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Mode Trigger on Right */
+.mode-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 54px;
+  padding: 0 1rem;
+  height: 52px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mode-trigger.open {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Dropdown Menu - Right Aligned */
+.mode-dropdown {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  width: 100%;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(24px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  z-index: 1001;
+}
+
+.dropdown-header {
+  padding: 8px 12px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 1px;
-  transition: all 0.2s;
 }
 
-.margin-title {
-  margin-bottom: 2px;
+.dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.dropdown-item.active {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: #fff;
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.dropdown-item i {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-item.active i:first-child {
+  color: var(--primary);
+}
+
+.item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.item-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.item-value {
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+.check-icon {
+  font-size: 0.8rem;
+  color: var(--primary);
+}
+
+/* Action Content */
+.action-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+}
+
+.action-running {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  z-index: 2;
+}
+
+.action-running .title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.action-running .info {
+  font-size: 0.6rem;
+  opacity: 0.7;
+  font-weight: 600;
 }
 
 .launch-button-bg {
@@ -405,66 +550,75 @@ onUnmounted(() => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.6s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   z-index: 1;
 }
 
-.launch-button:hover .launch-button-bg {
-  left: 100%;
+.main-action:hover .launch-button-bg {
+  animation: shine 2s infinite;
 }
 
-.launch-button:hover {
-  transform: scale(1.02); /* More subtle scale */
-  box-shadow: inset 0 0 30px rgba(255, 255, 255, 0.3);
+/* Log Overlay */
+.launch-log-overlay {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  width: 300px;
+  background: rgba(15, 15, 20, 0.9);
+  backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-/* Base Pulse Animation for Running State */
-.launch-button.running {
-  animation: pulse-glow 2s infinite;
+@keyframes shine {
+  from {
+    left: -100%;
+  }
+  to {
+    left: 100%;
+  }
 }
 
-/* Danger Hover Effect for Running State */
-.launch-button.running:hover {
-  background: var(--gradient-banned);
-  animation: none; /* Stop pulsing on hover to focus on danger */
-  box-shadow:
-    0 0 20px rgba(239, 68, 68, 0.4),
-    inset 0 0 20px rgba(0, 0, 0, 0.2);
+@keyframes pulse-border {
+  0% {
+    border-color: rgba(var(--primary-rgb), 0.3);
+  }
+  50% {
+    border-color: rgba(var(--primary-rgb), 0.8);
+  }
+  100% {
+    border-color: rgba(var(--primary-rgb), 0.3);
+  }
+}
+.split-button-wrapper:hover:not(.running):not(.banned) {
   transform: scale(1.02);
 }
 
-.launch-button.running:hover .info {
-  color: white; /* Make 'Click to abort' clearer on red bg */
-  opacity: 1;
+/* Transitions */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
-
-@keyframes pulse-glow {
-  0% {
-    box-shadow:
-      0 0 0 0 rgba(var(--primary-rgb), 0.4),
-      inset 0 0 20px rgba(255, 255, 255, 0.2);
-  }
-  70% {
-    box-shadow:
-      0 0 0 10px rgba(var(--primary-rgb), 0),
-      inset 0 0 20px rgba(255, 255, 255, 0.2);
-  }
-  100% {
-    box-shadow:
-      0 0 0 0 rgba(var(--primary-rgb), 0),
-      inset 0 0 20px rgba(255, 255, 255, 0.2);
-  }
-}
-
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
+.fade-slide-enter-from,
+.fade-slide-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(10px) scale(0.95);
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>

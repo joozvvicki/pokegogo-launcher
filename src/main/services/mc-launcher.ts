@@ -34,11 +34,13 @@ const nonPremiumToMCLC = async (json: string): Promise<unknown> => {
   }
 }
 
-const getGameVersionByMode = (): string => {
-  return '1.21.1-fabric'
+const getGameVersionByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '1.20.1-47.4.10'
+  return '1.21.1'
 }
 
-const getVersionNumberByMode = (): string => {
+const getVersionNumberByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '1.20.1'
   return '1.21.1'
 }
 
@@ -103,7 +105,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   try {
     const data = JSON.parse(token)
     nickname = accountType === 'microsoft' ? data.profile.name : data.nickname
-  } catch (e) {
+  } catch {
     // ignore
   }
   const plt = os.platform()
@@ -134,9 +136,9 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       root: minecraftDir,
       javaPath,
       version: {
-        number: getVersionNumberByMode(),
+        number: getVersionNumberByMode(settings.gameMode),
         type: 'release',
-        custom: getGameVersionByMode()
+        custom: getGameVersionByMode(settings.gameMode)
       },
       window: {
         width,

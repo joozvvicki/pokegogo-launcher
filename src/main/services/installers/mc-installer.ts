@@ -286,7 +286,7 @@ export async function copyMCFiles(
     state = { client: await ftpService.connect() }
 
     const currentVersionFolder =
-      gameMode === 'Pokemons' ? (isDev ? 'dev-mc' : 'mc') : gameMode.toLowerCase()
+      gameMode === 'Pokemons' ? 'mc' : gameMode === 'fantasy' ? 'dev-mc' : gameMode.toLowerCase()
 
     const globalProgress: GlobalProgress = {
       totalFiles: 0,

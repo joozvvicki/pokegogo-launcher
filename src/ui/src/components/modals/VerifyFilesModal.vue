@@ -199,20 +199,27 @@ defineExpose({
   display: flex;
   gap: 8px;
   line-height: 1.5;
-  word-break: break-all;
+  width: 100%;
 }
 
 .prompt {
   color: #7ee787; /* Green */
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .cmd {
   color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .msg {
   color: #8b949e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Cursor Animation */
