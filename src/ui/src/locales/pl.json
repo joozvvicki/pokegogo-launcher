@@ -297,6 +297,8 @@
       "itemIdDesc": "Wpisz nazwę przedmiotu, np. cobblemon:master_ball",
       "amount": "Ilość do sprzedaży",
       "amountDesc": "Podaj ilość w jakiej będzie sprzedawany przedmiot. Domyślnie 1",
+      "index": "Index",
+      "indexDesc": "Kolejność wyświetlania przedmiotu",
       "command": "Komenda",
       "commandDesc": "Możesz wykorzystywać różne zmienne podane wyżej. {player} - nick gracza. Podane wyżej: {amount} - ilość przedmiotu, {item} - nazwa przedmiotu, {rank} - nazwa rangi, {days} - długość trwania."
     },

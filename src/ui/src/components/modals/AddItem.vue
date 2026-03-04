@@ -19,6 +19,7 @@ const state = reactive({
   name: '',
   type: 'rank',
   photo: '',
+  index: 0,
   price: 1.0,
   desc: '',
   src: '',
@@ -118,6 +119,7 @@ const openModal = async (item: any, type: 'add' | 'edit' = 'add'): Promise<void>
     state.desc = item.desc
     state.photo = item.src
     photoFile.value = item.src
+    state.index = item.index || 0
     state.price = item.price
     state.promotion = item.promotion
     state.type = getTypeByServiceName(item.serviceName)
@@ -238,6 +240,7 @@ const handleCancel = (): void => {
   state.desc = ''
   state.photo = ''
   state.type = 'rank'
+  state.index = 0
   state.price = 1.0
   state.src = ''
   state.command = ''
@@ -310,21 +313,29 @@ defineExpose({
 
               <!-- Main Fields -->
               <div class="flex flex-col gap-3 w-full">
-                <!-- Name -->
-                <div class="flex flex-col gap-1">
-                  <label class="text-sm font-semibold text-gray-400">{{
-                    t('addItem.labels.name')
-                  }}</label>
-                  <input
-                    v-model="state.name"
-                    type="text"
-                    class="g-input"
-                    :placeholder="t('addItem.placeholders.name')"
-                    :class="{ '!border-red-500': v$.name.$error }"
-                  />
-                  <span v-if="v$.name.$error" class="text-xs text-red-500">{{
-                    v$.name.$errors[0]?.$message
-                  }}</span>
+                <!-- Name & Index -->
+                <div class="flex gap-2">
+                  <div class="flex flex-col gap-1 w-full">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('addItem.labels.name')
+                    }}</label>
+                    <input
+                      v-model="state.name"
+                      type="text"
+                      class="g-input"
+                      :placeholder="t('addItem.placeholders.name')"
+                      :class="{ '!border-red-500': v$.name.$error }"
+                    />
+                    <span v-if="v$.name.$error" class="text-xs text-red-500">{{
+                      v$.name.$errors[0]?.$message
+                    }}</span>
+                  </div>
+                  <div class="flex flex-col gap-1 min-w-[5rem]">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('addItem.labels.index')
+                    }}</label>
+                    <input v-model="state.index" type="number" class="g-input" placeholder="0" />
+                  </div>
                 </div>
 
                 <!-- Price & Promotion -->

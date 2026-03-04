@@ -297,6 +297,8 @@
       "itemIdDesc": "Enter item name, e.g. cobblemon:master_ball",
       "amount": "Amount to sell",
       "amountDesc": "Enter amount in which item will be sold. Default 1",
+      "index": "Index",
+      "indexDesc": "Item display order",
       "command": "Command",
       "commandDesc": "You can use various variables listed above. {player} - player nickname. Listed above: {amount} - item amount, {item} - item name, {rank} - rank name, {days} - duration."
     },
