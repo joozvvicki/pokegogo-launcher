@@ -377,6 +377,7 @@
     },
     "changeNickname": {
       "title": "Change nickname",
+      "info": "Nickname change preview:",
       "newNickname": "New nickname",
       "newNicknamePlaceholder": "Enter new nickname",
       "success": "Successfully changed nickname from {old} to {new}",

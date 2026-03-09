@@ -176,9 +176,18 @@ export const showProgressToast = (
     const fill = toast.querySelector('.toast-progress-fill') as HTMLElement | null
     const span = toast.querySelector('.toast-message')
     if (!fill) return
-    const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((current / total) * 100))) : 0
-    fill.style.width = `${percent}%`
-    if (span) span.textContent = `${message?.length ? message + ' ' : ''}${current}/${total}`
+    const rawPercent = total > 0 ? (current / total) * 100 : 0
+    const rawClamped = Math.max(0, Math.min(100, rawPercent))
+
+    let displayPercent = Math.round(rawClamped).toString()
+    if (rawClamped % 1 !== 0) {
+      displayPercent = rawClamped.toFixed(2)
+      if (displayPercent.endsWith('.00')) displayPercent = Math.round(rawClamped).toString()
+      else if (displayPercent.endsWith('0')) displayPercent = rawClamped.toFixed(1)
+    }
+
+    fill.style.width = `${rawClamped}%`
+    if (span) span.textContent = `${message?.length ? message + ' ' : ''}${displayPercent}%`
   }
 
   const close = (

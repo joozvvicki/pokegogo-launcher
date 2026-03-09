@@ -80,6 +80,25 @@ defineExpose({
           </div>
 
           <div class="g-modal-content">
+            <div
+              v-if="playerData"
+              class="flex flex-col gap-2 mb-3 bg-white/5 p-3 rounded-xl border border-white/10"
+            >
+              <p class="text-[11px] text-gray-400 uppercase font-semibold">
+                {{ t('modals.changeNickname.info') }}
+              </p>
+              <div
+                class="flex items-center justify-center gap-3 text-sm font-bold bg-black/20 py-2 rounded-lg"
+              >
+                <span class="text-blue-400">{{ playerData.nickname }}</span>
+                <i class="fas fa-arrow-right text-gray-500 text-xs"></i>
+                <span
+                  :class="newNicknameInput.trim() ? 'text-green-400' : 'text-gray-500 italic'"
+                  >{{ newNicknameInput.trim() || '?' }}</span
+                >
+              </div>
+            </div>
+
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-gray-400">
                 {{ t('modals.changeNickname.newNickname') }} <span class="text-red-500">*</span>

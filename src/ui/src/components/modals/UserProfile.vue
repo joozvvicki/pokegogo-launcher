@@ -421,11 +421,7 @@ const handleEscape = (e: KeyboardEvent): void => {
               <i class="fas fa-key"></i> {{ t('modals.userProfile.resetPass') }}
             </button>
 
-            <button
-              class="action-btn"
-              style="background-color: var(--primary); color: white"
-              @click="openChangeNicknameModal"
-            >
+            <button class="action-btn info" @click="openChangeNicknameModal">
               <i class="fas fa-user-edit"></i> {{ t('modals.changeNickname.title') }}
             </button>
           </div>
@@ -434,8 +430,14 @@ const handleEscape = (e: KeyboardEvent): void => {
         <div class="divider"></div>
 
         <!-- Friend Requests -->
-        <template v-if="player.friendRequests && userStore.user?.nickname === player.nickname">
-          <div v-if="friendRequests.length > 0" class="section-title">
+        <template
+          v-if="
+            player.friendRequests &&
+            userStore.user?.nickname === player.nickname &&
+            friendRequests.length > 0
+          "
+        >
+          <div class="section-title">
             <h3>{{ t('modals.userProfile.friendRequestsTitle') }}</h3>
             <span class="count">{{ friendRequests.length }}</span>
           </div>
@@ -471,7 +473,15 @@ const handleEscape = (e: KeyboardEvent): void => {
           </div>
         </template>
 
-        <div class="section-title mt-4">
+        <div
+          class="section-title"
+          :class="{
+            'mt-4':
+              player.friendRequests &&
+              userStore.user?.nickname === player.nickname &&
+              friendRequests.length > 0
+          }"
+        >
           <h3>{{ t('modals.userProfile.friends') }}</h3>
           <span class="count">{{ player.friends?.length || 0 }}</span>
         </div>
@@ -919,6 +929,16 @@ const handleEscape = (e: KeyboardEvent): void => {
 .action-btn.warning:hover {
   background: #eab308;
   color: black;
+}
+
+.action-btn.info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.action-btn.info:hover {
+  background: #3b82f6;
+  color: white;
 }
 
 /* Section Dividers */

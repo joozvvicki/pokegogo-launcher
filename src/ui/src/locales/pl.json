@@ -377,6 +377,7 @@
     },
     "changeNickname": {
       "title": "Zmień nick",
+      "info": "Podgląd zmiany nicku:",
       "newNickname": "Nowy nick",
       "newNicknamePlaceholder": "Wpisz nowy nick",
       "success": "Pomyślnie zmieniono nick gracza {old} na {new}",
