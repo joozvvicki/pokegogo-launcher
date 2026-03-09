@@ -8,6 +8,7 @@ import { differenceInMilliseconds, format, intervalToDuration, parseISO } from '
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
+import ChangeNicknameModal from '@ui/components/modals/ChangeNicknameModal.vue'
 import { useChatsStore } from '@ui/stores/chats-store'
 import {
   acceptFriendRequest,
@@ -169,6 +170,13 @@ const changeSkinModalRef = ref()
 const openChangeSkinModal = (): void => {
   if (userStore?.user && player.value && userStore.user.uuid === player.value.uuid)
     changeSkinModalRef.value?.openModal()
+}
+
+const changeNicknameModalRef = ref()
+const openChangeNicknameModal = (): void => {
+  if (player.value && isAdmin.value) {
+    changeNicknameModalRef.value?.openModal(player.value)
+  }
 }
 
 const getPlayerID = (player: IUser): string => {
@@ -412,6 +420,14 @@ const handleEscape = (e: KeyboardEvent): void => {
             >
               <i class="fas fa-key"></i> {{ t('modals.userProfile.resetPass') }}
             </button>
+
+            <button
+              class="action-btn"
+              style="background-color: var(--primary); color: white"
+              @click="openChangeNicknameModal"
+            >
+              <i class="fas fa-user-edit"></i> {{ t('modals.changeNickname.title') }}
+            </button>
           </div>
         </div>
 
@@ -544,6 +560,7 @@ const handleEscape = (e: KeyboardEvent): void => {
     </Transition>
 
     <ChangeSkinModal ref="changeSkinModalRef" />
+    <ChangeNicknameModal ref="changeNicknameModalRef" @refresh-data="$emit('refresh-data')" />
   </div>
 </template>
 

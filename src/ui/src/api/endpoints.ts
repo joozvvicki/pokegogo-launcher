@@ -114,6 +114,18 @@ export const unbanPlayer = async (player: Partial<IUser> & { type?: string }): P
   return res.data
 }
 
+export const changePlayerNickname = async (
+  oldNickname: string,
+  newNickname: string
+): Promise<any> => {
+  const res = await api.post('/users/change-nickname', {
+    oldNickname,
+    newNickname
+  })
+
+  return res.data
+}
+
 export const connectPlayer = async (): Promise<any> => {
   const res = await api.post('/users/connect')
 

@@ -375,6 +375,14 @@
       "confirm": "Confirm",
       "cancel": "Cancel"
     },
+    "changeNickname": {
+      "title": "Change nickname",
+      "newNickname": "New nickname",
+      "newNicknamePlaceholder": "Enter new nickname",
+      "success": "Successfully changed nickname from {old} to {new}",
+      "change": "Change",
+      "cancel": "Cancel"
+    },
     "discordReport": {
       "required": "Content is required",
       "minLength": "Content must be at least 2 characters",

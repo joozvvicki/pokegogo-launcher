@@ -375,6 +375,14 @@
       "confirm": "Zatwierdź",
       "cancel": "Anuluj"
     },
+    "changeNickname": {
+      "title": "Zmień nick",
+      "newNickname": "Nowy nick",
+      "newNicknamePlaceholder": "Wpisz nowy nick",
+      "success": "Pomyślnie zmieniono nick gracza {old} na {new}",
+      "change": "Zmień",
+      "cancel": "Anuluj"
+    },
     "discordReport": {
       "required": "Treść jest wymagana",
       "minLength": "Treść musi mieć co najmniej 2 znaki",
