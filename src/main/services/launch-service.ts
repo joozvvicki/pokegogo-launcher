@@ -10,6 +10,7 @@ import { rm, unlink } from 'fs/promises'
 export const useLaunchService = (win: BrowserWindow): void => {
   const minecraftInstances: MinecraftInstance[] = []
   let currentAbortController: AbortController | null = null
+  let pendingInstance: MinecraftInstance | null = null
 
   ipcMain.handle('launch:game', async (_, data) => {
     let currentInstance: MinecraftInstance | null = null
@@ -25,9 +26,15 @@ export const useLaunchService = (win: BrowserWindow): void => {
     await installJava(data.javaVersion)
     win.webContents.send('launch:change-state', JSON.stringify('files-verify'))
 
+    // We don't register launch:exit here anymore. It's global.
     const res = await copyMCFiles(data.isDev, data.settings.gameMode, win, signal)
 
     currentAbortController = null
+
+    if (res === 'stop') {
+      Logger.log('Game launch aborted during verification.')
+      return null
+    }
 
     if (res !== 'stop') {
       currentInstance = createMinecraftInstance({
@@ -38,17 +45,45 @@ export const useLaunchService = (win: BrowserWindow): void => {
         token: data.token
       })
 
+      pendingInstance = currentInstance
       minecraftInstances.push(currentInstance)
 
-      await currentInstance.start()
+      try {
+        await currentInstance.start()
+      } finally {
+        pendingInstance = null
+      }
     }
 
-    ipcMain.handle('launch:exit', async (_, pid: string) => {
-      await minecraftInstances.find((instance) => instance.process === parseInt(pid))?.stop()
-      ipcMain.removeHandler('launch:exit')
-    })
-
     return currentInstance?.process
+  })
+
+  // Global exit handler
+  ipcMain.handle('launch:exit', async (_, pid: number | null) => {
+    // 1. Abort verification/download
+    if (currentAbortController) {
+      currentAbortController.abort()
+      currentAbortController = null
+      Logger.log('Cancel process triggered via launch:exit')
+    }
+
+    // 2. Kill specific process if running
+    if (pid) {
+      const instance = minecraftInstances.find((instance) => instance.process === pid)
+      if (instance) {
+        await instance.stop()
+        // Remove from list
+        const index = minecraftInstances.indexOf(instance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+      }
+    } else if (pendingInstance) {
+      // 3. Fallback: Kill pending instance (stuck in start/launch phase)
+      Logger.log('Killing pending instance via launch:exit fallback')
+      await pendingInstance.stop()
+      const index = minecraftInstances.indexOf(pendingInstance)
+      if (index > -1) minecraftInstances.splice(index, 1)
+      pendingInstance = null
+    }
   })
 
   ipcMain.handle('launch:check-files', async (_, data): Promise<any> => {

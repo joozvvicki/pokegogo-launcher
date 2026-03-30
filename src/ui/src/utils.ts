@@ -6,6 +6,8 @@ import useUserStore from './stores/user-store'
 import { checkMachineID } from './api/endpoints'
 import { IUser } from './env'
 
+import i18n from './i18n'
+
 const apiURL = import.meta.env.RENDERER_VITE_API_URL
 
 const TOAST_DURATION = 3000
@@ -13,14 +15,16 @@ const TOAST_DURATION = 3000
 export const checkUpdate = async (): Promise<void> => {
   const generalStore = useGeneralStore()
 
-  LOGGER.with('Updater').log('Checking for update..')
+  LOGGER.with('Updater').log(i18n.global.t('toasts.updateCheck'))
   const res = await window.electron?.ipcRenderer?.invoke(
     'update:check',
     generalStore.settings.updateChannel,
     generalStore.settings.showNotifications
   )
 
-  LOGGER.with('Updater').success(res ? 'Update available.' : 'App is up-to-date.')
+  LOGGER.with('Updater').success(
+    res ? i18n.global.t('toasts.updateAvailable') : i18n.global.t('toasts.updateUpToDate')
+  )
   generalStore.setUpdateAvailable(res)
 }
 
@@ -80,28 +84,42 @@ export const showToast = (message: string, type = 'success'): void => {
 
   const icon = type === 'success' ? 'check-circle' : 'exclamation-circle'
   toast.innerHTML = `
-        <i class="fas fa-${icon} text-xl" style="color: ${type === 'success' ? 'var(--primary)' : '#ef4444'}"></i>
-        <span>${message}</span>
+        <div class="toast-icon">
+          <i class="fas fa-${icon} text-lg"></i>
+        </div>
+        <div class="toast-body">
+            <span class="toast-message">${message}</span>
+        </div>
+        <button class="toast-close">
+          <i class="fas fa-times"></i>
+        </button>
     `
 
+  const closeHandler = (): void => {
+    toast.style.animation = 'slideOutRight 0.3s ease forwards'
+    setTimeout(() => {
+      toast.remove()
+    }, 300)
+  }
+
+  toast.querySelector('.toast-close')?.addEventListener('click', closeHandler)
   toastContainer.appendChild(toast)
 
   setTimeout(() => {
-    toast.style.animation = 'slideOutRight 0.3s ease'
-    setTimeout(() => {
-      toast.remove()
-    }, TOAST_DURATION * 1.5)
+    if (toast.parentElement) closeHandler()
   }, TOAST_DURATION)
 }
 
 // Progress toast: returns an updater and a closer
 export const showProgressToast = (
   initialMessage: string,
-  type: 'success' | 'info' | 'error' = 'info'
+  type: 'success' | 'info' | 'error' = 'info',
+  onAbort?: () => void
 ): {
   update: (msg: string) => void
   updateProgress: (current: number, total: number, message?: string) => void
-  close: (finalMessage?: string, finalType?: 'success' | 'error') => void
+  close: (finalMessage?: string, finalType?: 'success' | 'error', duration?: number) => void
+  setIndeterminate: (val: boolean) => void
 } | null => {
   const toastContainer = document.getElementById('toastContainer')
   if (toastContainer === null) return null
@@ -116,18 +134,38 @@ export const showProgressToast = (
     type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'
 
   toast.innerHTML = `
-    <i class="fas fa-${icon} text-xl toast-icon" style="color: ${
-      type === 'success' ? 'var(--primary)' : type === 'error' ? '#ef4444' : 'var(--primary)'
-    }"></i>
+    <div class="toast-icon">
+      <i class="fas fa-${icon} text-lg"></i>
+    </div>
     <div class="toast-body">
       <span class="toast-message">${initialMessage}</span>
     </div>
+    ${
+      onAbort
+        ? `<button class="toast-abort">${i18n.global.t('general.abort')}</button>`
+        : `<button class="toast-close"><i class="fas fa-times"></i></button>`
+    }
     <div class="toast-progress" aria-hidden="true">
       <div class="toast-progress-fill" style="width: 0%"></div>
     </div>
   `
 
+  const closeHandler = (): void => {
+    toast.style.animation = 'slideOutRight 0.3s ease forwards'
+    setTimeout(() => {
+      toast.remove()
+    }, 300)
+  }
+
   toastContainer.appendChild(toast)
+
+  if (onAbort) {
+    toast.querySelector('.toast-abort')?.addEventListener('click', () => {
+      onAbort()
+    })
+  } else {
+    toast.querySelector('.toast-close')?.addEventListener('click', closeHandler)
+  }
 
   const update = (msg: string): void => {
     const span = toast.querySelector('.toast-message')
@@ -138,24 +176,64 @@ export const showProgressToast = (
     const fill = toast.querySelector('.toast-progress-fill') as HTMLElement | null
     const span = toast.querySelector('.toast-message')
     if (!fill) return
-    const percent = total > 0 ? Math.max(0, Math.min(100, Math.round((current / total) * 100))) : 0
-    fill.style.width = `${percent}%`
-    if (span) span.textContent = `${message?.length ? message + ' ' : ''}${current}/${total}`
+    const rawPercent = total > 0 ? (current / total) * 100 : 0
+    const rawClamped = Math.max(0, Math.min(100, rawPercent))
+
+    let displayPercent = Math.round(rawClamped).toString()
+    if (rawClamped % 1 !== 0) {
+      displayPercent = rawClamped.toFixed(2)
+      if (displayPercent.endsWith('.00')) displayPercent = Math.round(rawClamped).toString()
+      else if (displayPercent.endsWith('0')) displayPercent = rawClamped.toFixed(1)
+    }
+
+    fill.style.width = `${rawClamped}%`
+    if (span) span.textContent = `${message?.length ? message + ' ' : ''}${displayPercent}%`
   }
 
-  const close = (finalMessage?: string): void => {
+  const close = (
+    finalMessage?: string,
+    finalType?: 'success' | 'error',
+    duration?: number
+  ): void => {
+    if (finalType) {
+      toast.className = `toast ${finalType}`
+    }
+
     if (finalMessage) {
       const span = toast.querySelector('.toast-message')
       if (span) span.textContent = finalMessage
+      // Switch icon to check if success or exclamation if error
+      const iconEl = toast.querySelector('.toast-icon i')
+      if (iconEl) {
+        iconEl.className =
+          finalType === 'error'
+            ? 'fas fa-exclamation-circle text-lg'
+            : 'fas fa-check-circle text-lg'
+      }
+      // Remove abort button on close
+      const abortBtn = toast.querySelector('.toast-abort')
+      if (abortBtn) abortBtn.remove()
     }
 
-    toast.style.animation = 'slideOutRight 0.3s ease'
     setTimeout(() => {
-      toast.remove()
-    }, TOAST_DURATION)
+      if (toast.parentElement) closeHandler()
+    }, duration ?? TOAST_DURATION)
   }
 
-  return { update, updateProgress, close }
+  const setIndeterminate = (val: boolean): void => {
+    const progressEl = toast.querySelector('.toast-progress') as HTMLElement | null
+    if (progressEl) {
+      if (val) {
+        progressEl.classList.add('indeterminate')
+        const fill = progressEl.querySelector('.toast-progress-fill') as HTMLElement | null
+        if (fill) fill.style.width = '100%'
+      } else {
+        progressEl.classList.remove('indeterminate')
+      }
+    }
+  }
+
+  return { update, updateProgress, close, setIndeterminate }
 }
 
 export const calculateValueFromPercentage = (
@@ -232,7 +310,7 @@ export function extractHead(skinUrl: string, size: number = 100): Promise<string
     img.crossOrigin = 'anonymous'
 
     img.onerror = () => {
-      reject(new Error(`Nie udało się załadować skina z URL (HTTP Error/404): ${skinUrl}`))
+      reject(new Error(`${i18n.global.t('toasts.skinFetchError')} ${skinUrl}`))
     }
 
     img.onload = () => {
@@ -240,7 +318,7 @@ export function extractHead(skinUrl: string, size: number = 100): Promise<string
       const ctx = canvas.getContext('2d')
 
       if (!ctx) {
-        return reject(new Error('Błąd inicjalizacji Canvas context.'))
+        return reject(new Error(i18n.global.t('toasts.canvasInitError')))
       }
 
       canvas.width = size
@@ -261,7 +339,9 @@ export const isMachineIDBanned = async (): Promise<void> => {
 
   const res = await checkMachineID(generalStore.settings.machineId)
 
-  LOGGER.log(res ? 'Machine ID is banned.' : 'Machine ID is not banned.')
+  LOGGER.log(
+    res ? i18n.global.t('toasts.machineIdBanned') : i18n.global.t('toasts.machineIdNotBanned')
+  )
 
   userStore.hwidBanned = res
 }
@@ -278,4 +358,35 @@ export const loadCustomOrFallbackHead = async (player: IUser): Promise<string> =
   } catch {
     return fallbackHeadUrl(player.nickname)
   }
+}
+
+const headUrlCache = new Map<string, string>()
+const inflight = new Map<string, Promise<string>>()
+
+export async function getHeadUrl(user: Pick<IUser, 'uuid' | 'nickname'>): Promise<string> {
+  const key = user.nickname || user.uuid
+  if (!key) return ''
+  if (headUrlCache.has(key)) return headUrlCache.get(key)!
+
+  if (inflight.has(key)) return inflight.get(key)!
+
+  const p = loadCustomOrFallbackHead(user as IUser)
+    .then((url) => {
+      headUrlCache.set(key, url)
+      inflight.delete(key)
+      return url
+    })
+    .catch((err) => {
+      inflight.delete(key)
+      throw err
+    })
+
+  inflight.set(key, p)
+  return p
+}
+
+export function invalidateHeadUrl(nicknameOrUuid?: string): void {
+  if (!nicknameOrUuid) return
+  headUrlCache.delete(nicknameOrUuid)
+  inflight.delete(nicknameOrUuid)
 }

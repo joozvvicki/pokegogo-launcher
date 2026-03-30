@@ -1,11 +1,12 @@
 import { Authenticator, Client } from 'minecraft-launcher-core'
 import path, { join } from 'path'
+import { readFileSync } from 'fs'
 import { app, BrowserWindow, screen } from 'electron'
 import os from 'os'
 import Logger from 'electron-log'
 import { ChildProcessWithoutNullStreams } from 'child_process'
+import { discordLogger } from './discord-logger'
 
-// Token -> MCLC
 const toMCLC = (token: string): unknown => {
   const data = JSON.parse(token)
 
@@ -34,12 +35,21 @@ const nonPremiumToMCLC = async (json: string): Promise<unknown> => {
   }
 }
 
-const getGameVersionByMode = (): string => {
-  return '1.21.1-fabric'
+const getBaseVersionByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '1.20.1' // vanilla baza pod Forge
+  if (mode === 'pokemons') return '1.21.1' // vanilla baza pod Fabric
+  return '1.21.1' // fallback
 }
 
-const getVersionNumberByMode = (): string => {
-  return '1.21.1'
+const getCustomVersionByMode = (mode: string): string | undefined => {
+  if (mode === 'fantasy') return '1.20.1-forge-47.4.10' // pełne ID Forge (lokalny profil)
+  if (mode === 'pokemons') return '1.21.1-fabric' // pełne ID Fabric (lokalny profil)
+  return undefined
+}
+
+const getJavaVersionByMode = (mode: string): string => {
+  if (mode === 'fantasy') return '17'
+  return '21'
 }
 
 export type DisplayMode = 'Pełny ekran' | 'Okno'
@@ -66,17 +76,18 @@ export interface MinecraftInstance {
   stop: () => Promise<void>
 }
 
-function resolveJavaPath(baseDir: string): string {
+function resolveJavaPath(baseDir: string, version: string): string {
   const plt = os.platform()
+  const folderName = version === '17' ? 'jdk-17.0.12' : 'jdk-21.0.8'
 
   return join(
     baseDir,
     'java',
     plt === 'win32'
-      ? 'jdk-21.0.8/bin/java.exe'
+      ? `${folderName}/bin/java.exe`
       : plt === 'darwin'
-        ? 'jdk-21.0.8.jdk/Contents/Home/bin/java'
-        : 'jdk-21.0.8/bin/java'
+        ? `${folderName}.jdk/Contents/Home/bin/java`
+        : `${folderName}/bin/java`
   )
 }
 
@@ -97,11 +108,20 @@ function computeResolution(
 
 export function createMinecraftInstance(config: MinecraftInstanceConfig): MinecraftInstance {
   const { token, accessToken, accountType, settings, window } = config
-  const plt = os.platform()
+
+  // Extract nickname for Discord logging
+  let nickname = 'Unknown'
+  try {
+    const data = JSON.parse(token)
+    nickname = accountType === 'microsoft' ? data.profile.name : data.nickname
+  } catch {
+    // ignore
+  }
   const baseDir = app.getPath('userData')
   const minecraftDir = path.join(baseDir, 'instances', settings.gameMode.toLowerCase())
   const client = new Client()
-  const javaPath = resolveJavaPath(baseDir)
+  const javaVersion = getJavaVersionByMode(settings.gameMode.toLowerCase())
+  const javaPath = resolveJavaPath(baseDir, javaVersion)
 
   let mcOpened = false
   let childProcess: ChildProcessWithoutNullStreams | null = null
@@ -118,59 +138,101 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     Logger.log('PokeGoGo Launcher > MC Starting')
     window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
 
-    childProcess = await client.launch({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      authorization,
-      root: minecraftDir,
-      javaPath,
-      version: {
-        number: getVersionNumberByMode(),
-        type: 'release',
-        custom: getGameVersionByMode()
-      },
-      window: {
-        width,
-        height,
-        fullscreen
-      },
-      memory: {
-        max: `${settings.ram}G`,
-        min: `4G`
-      },
-      customArgs: [`-DaccessToken=${accessToken}`]
-    })
+    const baseVersion = getBaseVersionByMode(settings.gameMode.toLowerCase())
+    const customVersion = getCustomVersionByMode(settings.gameMode.toLowerCase())
 
+    Logger.log('MC root dir:', minecraftDir)
+    Logger.log('MC javaPath:', javaPath)
+    Logger.log('MC baseVersion:', baseVersion)
+    Logger.log('MC customVersion:', customVersion)
+
+    // LISTENERY ZANIM ODPALISZ launch
     client.on('debug', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Debug > ', data)
+      Logger.log('MC DEBUG:', data)
     })
 
     client.on('data', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Data > ', data)
+      Logger.log('MC STDOUT:', String(data))
       window.webContents.send('launch:show-log', data)
 
-      if (!mcOpened)
-        window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
-
-      if (typeof data === 'string' && data.includes('Initializing Client')) {
-        window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
-        mcOpened = true
-        if (plt !== 'darwin') window.hide()
+      if (typeof data === 'string') {
+        if (data.includes('[Error]') || data.includes('Exception') || data.includes('FATAL')) {
+          discordLogger.sendError('Game Client Error', data, nickname)
+        }
       }
     })
 
-    client.on('progress', (data) => {
-      Logger.log('PokeGoGo Launcher > MC Progress > ', data)
+    client.on('error', (err) => {
+      Logger.error('MC ERROR event:', err)
     })
 
-    client.on('close', () => {
-      Logger.log('PokeGoGo Launcher > MC Closed')
+    client.on('close', (code) => {
+      Logger.log('PokeGoGo Launcher > MC Closed with code', code)
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+
+      if (code !== 0 && code !== 130 && code !== 143 && mcOpened) {
+        discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
+      }
+
       mcOpened = false
       window.show()
     })
 
-    Logger.log('PokeGoGo Launcher > PID ' + childProcess?.pid + ' started')
+    let customArgs: string[] = [`-DaccessToken=${accessToken}`]
+
+    if (settings.gameMode === 'fantasy' && customVersion) {
+      const versionJsonPath = join(minecraftDir, 'versions', customVersion, `${customVersion}.json`)
+      try {
+        const versionJson = JSON.parse(readFileSync(versionJsonPath, 'utf-8'))
+        if (versionJson.arguments && versionJson.arguments.jvm) {
+          const separator = process.platform === 'win32' ? ';' : ':'
+          const jvmArgs = versionJson.arguments.jvm
+            .filter((arg: any) => typeof arg === 'string')
+            .map((arg: string) => {
+              return arg
+                .replace(/\${library_directory}/g, join(minecraftDir, 'libraries'))
+                .replace(/\${classpath_separator}/g, separator)
+                .replace(/\${version_name}/g, customVersion)
+            })
+          customArgs = [...customArgs, ...jvmArgs]
+        }
+      } catch (e) {
+        Logger.error('PokeGoGo Launcher > Error parsing version JSON for JVM args:', e)
+      }
+    }
+
+    try {
+      childProcess = await client.launch({
+        // @ts-ignore: MCLC types might be incomplete or mismatching
+        authorization,
+        root: minecraftDir,
+        javaPath,
+        version: {
+          number: baseVersion,
+          type: 'release',
+          custom: customVersion
+        },
+        window: {
+          width,
+          height,
+          fullscreen
+        },
+        memory: {
+          max: `${settings.ram}G`,
+          min: `4G`
+        },
+        customArgs
+      })
+
+      Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
+
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
+      mcOpened = true
+    } catch (e) {
+      Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+      mcOpened = false
+    }
   }
 
   const stop = async (): Promise<void> => {

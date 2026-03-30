@@ -1,9 +1,7 @@
 <script lang="ts" setup>
 import { changeEmail, changePassword } from '@ui/api/endpoints'
 import { applyTheme, themes } from '@ui/assets/theme/themes'
-import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
 import VerifyFilesModal from '@ui/components/modals/VerifyFilesModal.vue'
-import SkinViewer from '@ui/components/SkinViewer.vue'
 import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
@@ -11,7 +9,10 @@ import { calculateValueFromPercentage, checkUpdate, MIN_RAM, showToast } from '@
 import useVuelidate from '@vuelidate/core'
 import { helpers, required, sameAs } from '@vuelidate/validators'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import CustomTheme from '@ui/components/modals/CustomTheme.vue'
+import { useI18n } from 'vue-i18n'
 
+const { t, locale } = useI18n()
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
 
@@ -27,15 +28,15 @@ const state = reactive({
 
 const rules = computed(() => ({
   old: {
-    required: helpers.withMessage('To pole jest wymagane', required)
+    required: helpers.withMessage(t('general.required'), required)
   },
   new: {
-    required: helpers.withMessage('To pole jest wymagane', required),
-    sameAs: helpers.withMessage('Hasła muszą być identyczne', sameAs(state.repeatNew))
+    required: helpers.withMessage(t('general.required'), required),
+    sameAs: helpers.withMessage(t('general.passwordMismatch'), sameAs(state.repeatNew))
   },
   repeatNew: {
-    required: helpers.withMessage('To pole jest wymagane', required),
-    sameAs: helpers.withMessage('Hasła muszą być identyczne', sameAs(state.new))
+    required: helpers.withMessage(t('general.required'), required),
+    sameAs: helpers.withMessage(t('general.passwordMismatch'), sameAs(state.new))
   }
 }))
 
@@ -43,8 +44,8 @@ const v$ = useVuelidate(rules, state)
 const emailV$ = useVuelidate(
   {
     email: {
-      required: helpers.withMessage('To pole jest wymagane', required),
-      email: helpers.withMessage('Nieprawidłowy adres email', (value: string) => {
+      required: helpers.withMessage(t('general.required'), required),
+      email: helpers.withMessage(t('general.emailInvalid'), (value: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(value)
       })
@@ -97,12 +98,12 @@ onMounted(async () => {
 
 const saveSettings = (): void => {
   generalStore.saveSettings()
-  showToast('Zapisano ustawienia.')
+  showToast(t('settings.successSave'))
 }
 
 const resetSettings = (): void => {
   generalStore.resetSettings()
-  showToast('Przywrócono domyślne ustawienia', 'success')
+  showToast(t('settings.successReset'), 'success')
 }
 
 const handleChangePassword = async (): Promise<void> => {
@@ -113,22 +114,17 @@ const handleChangePassword = async (): Promise<void> => {
     const res = await changePassword(userStore.user?.nickname, state.old, state.new)
 
     if (res) {
-      showToast('Pomyślnie zmieniono hasło', 'success')
+      showToast(t('settings.successPasswordChange'), 'success')
       state.old = ''
       state.new = ''
       state.repeatNew = ''
       v$.value.$reset()
     }
   } catch {
-    showToast('Nie udało się zmienić hasła', 'error')
+    showToast(t('settings.errorPasswordChange'), 'error')
     return
   }
 }
-
-const apiURL = import.meta.env.RENDERER_VITE_API_URL
-const skinUrl = computed(() => {
-  return `${apiURL}/skins/image/${userStore.user?.nickname}`
-})
 
 watch(
   () => userStore.user,
@@ -145,12 +141,12 @@ const handleChangeEmail = async (): Promise<void> => {
     const res = await changeEmail(userStore.user?.nickname, state.email)
 
     if (res) {
-      showToast('Pomyślnie zmieniono email', 'success')
+      showToast(t('settings.successEmailChange'), 'success')
       emailV$.value.$reset()
       await userStore.logout()
     }
   } catch {
-    showToast('Nie udało się zmienić email', 'error')
+    showToast(t('settings.errorEmailChange'), 'error')
     return
   }
 }
@@ -160,17 +156,14 @@ const handleChangeUpdateChannel = async (channel: string): Promise<void> => {
   generalStore.saveSettings()
   await checkUpdate()
   await window.electron?.ipcRenderer?.invoke('launch:remove-markfile')
-  showToast(generalStore.isUpdateAvailable ? 'Update available.' : 'App is up-to-date.')
+  showToast(
+    generalStore.isUpdateAvailable ? t('toasts.updateAvailable') : t('toasts.updateUpToDate')
+  )
 }
 
 const verifyFilesModalRef = ref()
 const openVerifyFilesModal = (): void => {
   verifyFilesModalRef.value?.openModal()
-}
-
-const changeSkinModalRef = ref()
-const openChangeSkinModal = (): void => {
-  changeSkinModalRef.value?.openModal()
 }
 
 const setNewTheme = (newTheme: string): void => {
@@ -179,15 +172,39 @@ const setNewTheme = (newTheme: string): void => {
   saveSettings()
 }
 
-const changeGameMode = async (newMode: string): Promise<void> => {
-  try {
-    await window.electron?.ipcRenderer?.invoke('launch:remove-markfile')
-  } catch {
-    /* ignore */
-  }
-  generalStore.settings.gameMode = newMode
+const changeLanguage = (lang: string): void => {
+  generalStore.setLanguage(lang)
+  locale.value = lang
+}
 
-  saveSettings()
+const themeEditorModalRef = ref()
+
+const openThemeEditor = (): void => {
+  themeEditorModalRef.value?.open()
+}
+
+const openLauncherLogs = async (): Promise<void> => {
+  await window.electron?.ipcRenderer?.invoke('logs:open-launcher')
+}
+
+const openGameLogs = async (): Promise<void> => {
+  await window.electron?.ipcRenderer?.invoke(
+    'logs:open-game',
+    generalStore.settings.gameMode || 'main'
+  )
+}
+
+// Funkcja obsługująca zapisanie customowego motywu
+const handleCustomTheme = (customConfig: Record<string, string>): void => {
+  // Możesz tutaj dodać logikę zapisu do localStorage lub bazy
+  Object.entries(customConfig).forEach(([key, value]: [string, string]) => {
+    if (value)
+      document.documentElement.style.setProperty(
+        `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`,
+        value
+      )
+  })
+  showToast(t('settings.customThemeApplied'), 'success')
 }
 
 onUnmounted(() => {
@@ -197,407 +214,746 @@ onUnmounted(() => {
 
 <template>
   <div class="settings-container">
-    <div class="settings-grid card-panel min-h-full overflow-y-auto">
-      <div>
-        <div class="card-header">
-          <div class="card-title">
-            <div class="nav-icon">
-              <i class="fas fa-cog"></i>
+    <div class="settings-grid">
+      <!-- Left Column: Display & Launcher Settings -->
+      <div class="settings-column">
+        <!-- Display Settings -->
+        <div class="g-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-desktop"></i>
+              </div>
+              <h3>{{ t('settings.title') }}</h3>
             </div>
-            <h2>Ustawienia gry</h2>
-            <span class="applogo-badge">{{ generalStore.appVersion?.split('-')[0] }}</span>
           </div>
-        </div>
 
-        <div class="setting-group">
-          <label>Tryb gry</label>
-          <div class="toggle-group">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.gameMode === 'Pokemons' }"
-              @click="changeGameMode('Pokemons')"
-            >
-              Pokemony
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.gameMode === 'MiniGames' }"
-              @click="changeGameMode('MiniGames')"
-            >
-              MiniGamesy
-            </button>
+          <div class="setting-item">
+            <label>{{ t('settings.displayMode') }}</label>
+            <div class="toggle-switch">
+              <button
+                :class="{ active: generalStore.settings.displayMode === 'Okno' }"
+                @click="generalStore.settings.displayMode = 'Okno'"
+              >
+                {{ t('settings.window') }}
+              </button>
+              <button
+                :class="{ active: generalStore.settings.displayMode === 'Pełny ekran' }"
+                @click="generalStore.settings.displayMode = 'Pełny ekran'"
+              >
+                {{ t('settings.fullscreen') }}
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="setting-group">
-          <label>Rozdzielczość</label>
-          <div class="toggle-group">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.resolution === '1920x1080' }"
-              @click="changeResolution('1920x1080')"
-            >
-              1920x1080
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.resolution === '1366x768' }"
-              @click="changeResolution('1366x768')"
-            >
-              1366x768
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.resolution === '1200x720' }"
-              @click="changeResolution('1200x720')"
-            >
-              1200x720
-            </button>
+          <div class="setting-item">
+            <label>{{ t('settings.resolution') }}</label>
+            <div class="select-wrapper">
+              <select
+                :value="generalStore.settings.resolution"
+                @change="(e) => changeResolution((e.target as HTMLSelectElement).value)"
+              >
+                <option value="1920x1080">1920x1080 (FHD)</option>
+                <option value="1366x768">1366x768 (HD)</option>
+                <option value="1200x720">1200x720 (HD-)</option>
+              </select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
           </div>
-        </div>
 
-        <div class="setting-group">
-          <label>Pamięć RAM</label>
-          <div class="ram-slider-container">
-            <input
-              id="ramSlider"
-              ref="sliderRef"
-              v-model="generalStore.settings.ram"
-              type="range"
-              :min="MIN_RAM"
-              :max="generalStore.settings.maxRAM"
-              :step="1"
-            />
-            <div ref="displayRef" class="ram-display"></div>
+          <div class="setting-item">
+            <div class="flex justify-between mb-2">
+              <label>{{ t('settings.ram') }}</label>
+              <span class="ram-value">{{ generalStore.settings.ram }} GB</span>
+            </div>
+            <div class="ram-slider-wrapper">
+              <input
+                id="ramSlider"
+                ref="sliderRef"
+                v-model="generalStore.settings.ram"
+                type="range"
+                :min="MIN_RAM"
+                :max="generalStore.settings.maxRAM"
+                :step="1"
+              />
+              <div class="slider-track" :style="{ width: percent + 'px' }"></div>
+            </div>
             <div class="ram-markers">
               <span>{{ MIN_RAM }}GB</span>
-              <span
-                >{{
-                  MIN_RAM + parseFloat(((generalStore.settings.maxRAM - MIN_RAM) / 2).toFixed(1))
-                }}GB</span
-              >
               <span>{{ generalStore.settings.maxRAM }}GB</span>
             </div>
           </div>
         </div>
 
-        <div class="my-0 flex flex-row items-center justify-between mb-4">
-          <div class="text-[var(--text-secondary)] w-full">Tryb wyświetlania gry</div>
-
-          <div class="flex items-center gap-2 w-full">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.displayMode === 'Okno' }"
-              @click="generalStore.settings.displayMode = 'Okno'"
-            >
-              Okno
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.displayMode === 'Pełny ekran' }"
-              @click="generalStore.settings.displayMode = 'Pełny ekran'"
-            >
-              Pełny ekran
-            </button>
-          </div>
-        </div>
-
-        <div class="card-header !mb-0">
-          <div class="card-title">
-            <div class="nav-icon">
-              <i class="fas fa-user"></i>
+        <!-- Launcher Settings -->
+        <div class="g-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-cogs"></i>
+              </div>
+              <h3>{{ t('settings.launcherSettings') }}</h3>
             </div>
-            <h2>Ustawienia launchera</h2>
           </div>
-        </div>
 
-        <div
-          v-if="
-            [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.HELPER].includes(
-              userStore.user?.role ?? UserRole.USER
-            )
-          "
-          class="my-0 flex flex-row items-center justify-between"
-        >
-          <div class="text-[var(--text-secondary)]">Motyw</div>
-
-          <div class="flex gap-2 my-4">
-            <button
-              v-for="theme in themes"
-              :key="theme.primary"
-              class="nav-icon !w-[2rem] !h-[2rem] !text-[1rem]"
-              @click="setNewTheme(theme.name)"
-            >
-              <i class="fa fa-home" :style="{ color: theme.primary }" />
-            </button>
+          <div class="setting-item row">
+            <label>{{ t('settings.language') }}</label>
+            <div class="lang-toggles">
+              <button
+                :class="{ active: generalStore.settings.language === 'pl' }"
+                @click="changeLanguage('pl')"
+              >
+                PL
+              </button>
+              <div class="divider"></div>
+              <button
+                :class="{ active: generalStore.settings.language === 'en' }"
+                @click="changeLanguage('en')"
+              >
+                EN
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div
-          class="my-0 flex flex-row items-center justify-between"
-          :class="{
-            'mt-4': ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.HELPER].includes(
-              userStore.user?.role ?? UserRole.USER
-            )
-          }"
-        >
-          <div class="text-[var(--text-secondary)]">Powiadomienia</div>
-
-          <div class="flex items-center gap-2">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.showNotifications === true }"
-              @click="generalStore.setShowNotifications(true)"
-            >
-              Włączone
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.showNotifications === false }"
-              @click="generalStore.setShowNotifications(false)"
-            >
-              Wyłączone
-            </button>
+          <div class="setting-item">
+            <label>{{ t('settings.theme') }}</label>
+            <div class="theme-grid">
+              <button
+                v-for="theme in themes"
+                :key="theme.name"
+                class="theme-btn"
+                :class="{ active: generalStore.settings.theme === theme.name }"
+                :style="{ '--theme-color': theme.primary }"
+                @click="setNewTheme(theme.name)"
+              >
+                <div class="color-dot"></div>
+                <span>{{ theme.name }}</span>
+              </button>
+              <button class="theme-btn add-theme" @click="openThemeEditor">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div class="my-0 mt-4 flex flex-row items-center justify-between">
-          <div class="text-[var(--text-secondary)]">Ukrywanie w zasobniku</div>
-
-          <div class="flex items-center gap-2">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.hideToTray === true }"
-              @click="generalStore.setHideToTray(true)"
-            >
-              Włączone
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.hideToTray === false }"
-              @click="generalStore.setHideToTray(false)"
-            >
-              Wyłączone
-            </button>
+          <div class="setting-item row">
+            <label>{{ t('settings.notifications') }}</label>
+            <label class="switch">
+              <input
+                type="checkbox"
+                :checked="generalStore.settings.showNotifications"
+                @change="
+                  generalStore.setShowNotifications(!generalStore.settings.showNotifications)
+                "
+              />
+              <span class="slider round"></span>
+            </label>
           </div>
-        </div>
 
-        <div
-          v-if="
-            [UserRole.DEV, UserRole.ADMIN, UserRole.MODERATOR].includes(
-              userStore.user?.role ?? UserRole.USER
-            )
-          "
-          class="my-0 mt-4 flex flex-row items-center justify-between"
-        >
-          <div class="text-[var(--text-secondary)] w-full">Automatyczne aktualizacje</div>
-
-          <div class="flex items-center gap-2">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.autoUpdate === true }"
-              @click="generalStore.settings.autoUpdate = true"
-            >
-              Włączone
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.autoUpdate === false }"
-              @click="generalStore.settings.autoUpdate = false"
-            >
-              Wyłączone
-            </button>
+          <div class="setting-item row">
+            <label>{{ t('settings.hideToTray') }}</label>
+            <label class="switch">
+              <input
+                type="checkbox"
+                :checked="generalStore.settings.hideToTray"
+                @change="generalStore.setHideToTray(!generalStore.settings.hideToTray)"
+              />
+              <span class="slider round"></span>
+            </label>
           </div>
-        </div>
 
-        <div
-          v-if="
-            userStore.user?.enableUpdateChannel ||
-            [UserRole.DEV, UserRole.ADMIN, UserRole.MODERATOR, UserRole.HELPER].includes(
-              userStore.user?.role ?? UserRole.USER
-            )
-          "
-          class="my-0 mt-4 flex flex-row items-center justify-between"
-        >
-          <div class="text-[var(--text-secondary)] w-full">Kanał aktualizacji</div>
+          <div
+            v-if="
+              userStore.user?.enableUpdateChannel ||
+              [UserRole.HELPER, UserRole.MODERATOR, UserRole.DEV, UserRole.ADMIN].includes(
+                userStore.user?.role ?? UserRole.USER
+              )
+            "
+            class="setting-item row"
+          >
+            <label>{{ t('settings.updateChannel') }}</label>
+            <div class="toggle-switch small">
+              <button
+                :class="{ active: generalStore.settings.updateChannel === 'beta' }"
+                @click="handleChangeUpdateChannel('beta')"
+              >
+                Beta
+              </button>
+              <button
+                :class="{ active: generalStore.settings.updateChannel === 'dev' }"
+                @click="handleChangeUpdateChannel('dev')"
+              >
+                Dev
+              </button>
+            </div>
+          </div>
 
-          <div class="flex items-center gap-2">
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.updateChannel === 'beta' }"
-              @click="handleChangeUpdateChannel('beta')"
-            >
-              Beta
-            </button>
-            <button
-              class="toggle-option !py-[0.25rem]"
-              :class="{ active: generalStore.settings.updateChannel === 'dev' }"
-              @click="handleChangeUpdateChannel('dev')"
-            >
-              Dev
-            </button>
+          <div class="setting-item row">
+            <label>{{ t('settings.logs') }}</label>
+            <div class="flex gap-2">
+              <button
+                class="g-btn small icon-only"
+                :title="t('settings.openLauncherLogs')"
+                @click="openLauncherLogs"
+              >
+                <i class="fas fa-file-alt"></i> Launcher
+              </button>
+              <button
+                class="g-btn small icon-only"
+                :title="t('settings.openGameLogs')"
+                @click="openGameLogs"
+              >
+                <i class="fas fa-gamepad"></i> Game
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div>
-        <div class="card-header">
-          <div class="card-title">
-            <div class="nav-icon">
-              <i class="fas fa-user"></i>
+      <!-- Right Column: Account Settings -->
+      <div class="settings-column">
+        <div class="g-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-user-shield"></i>
+              </div>
+              <h3>{{ t('settings.accountSettings') }}</h3>
             </div>
-            <h2>Ustawienia Konta</h2>
+            <div class="header-actions">
+              <button class="icon-btn" title="Verify Files" @click="openVerifyFilesModal">
+                <i class="fas fa-hammer"></i>
+              </button>
+              <button class="icon-btn" title="Save" @click="saveSettings">
+                <i class="fas fa-save"></i>
+              </button>
+            </div>
           </div>
 
-          <div class="settings-actions">
-            <button class="nav-icon" @click="openVerifyFilesModal">
-              <i class="fas fa-hammer"></i>
-            </button>
-            <button class="nav-icon" @click="saveSettings">
-              <i class="fas fa-save"></i>
-            </button>
-            <button class="nav-icon" @click="resetSettings">
-              <i class="fas fa-undo"></i>
-            </button>
-          </div>
-        </div>
-
-        <div v-if="userStore.user" class="setting-group mb-2!">
-          <label>Customowy skin</label>
-          <p class="text-[var(--text-secondary)] mb-2 text-[0.7rem]">
-            Zmiana skina jest możliwa tylko dla użytkwników non-premium!
-          </p>
-          <div
-            class="flex w-[100px] h-[100px] player-profile rounded-2xl! hover:bg-[var(--bg-light)]/40! hover:cursor-pointer"
-            @click="openChangeSkinModal()"
-          >
-            <SkinViewer :skin="skinUrl" />
-          </div>
-        </div>
-
-        <div class="setting-group !w-full">
-          <label>Zmiana emaila</label>
-          <div class="flex gap-2 !w-full items-center">
-            <div class="form-group !w-full">
-              <div class="input-wrapper !w-full flex">
-                <i class="fas fa-lock input-icon"></i>
+          <div class="account-forms">
+            <!-- Email Change -->
+            <div class="form-section">
+              <h4>{{ t('settings.changeEmail') }}</h4>
+              <div class="input-group">
+                <i class="fas fa-envelope"></i>
                 <input
-                  id="login-email"
                   v-model="state.email"
                   type="email"
-                  class="form-input"
-                  placeholder="Adres email"
-                  :class="{ invalid: emailV$.email.$error }"
-                  required
+                  placeholder="New Email Address"
+                  :class="{ error: emailV$.email.$error }"
+                  class="glass-input"
                 />
-                <div class="input-line"></div>
               </div>
-              <div class="error-message" :class="{ show: emailV$.email.$error }">
-                {{ emailV$.email.$errors[0]?.$message }}
-              </div>
+              <button class="g-btn" @click="handleChangeEmail">
+                {{ t('settings.changeEmail') }}
+              </button>
             </div>
-            <button class="btn-primary mb-4 max-w-1/3" @click="handleChangeEmail">
-              <i class="fas fa-edit"></i>
-              Zmień email
-            </button>
+
+            <!-- Password Change (Backend Only) -->
+            <div
+              v-if="userStore.user?.accountType === AccountType.BACKEND"
+              class="form-section mt-6"
+            >
+              <h4>{{ t('settings.changePassword') }}</h4>
+
+              <div class="input-group">
+                <i class="fas fa-lock"></i>
+                <input
+                  :placeholder="t('settings.oldPassword')"
+                  :class="{ error: v$.old.$error }"
+                  class="glass-input"
+                />
+                <i
+                  class="fas cursor-pointer"
+                  :class="state.showedOld ? 'fa-eye-slash' : 'fa-eye'"
+                  @click="state.showedOld = !state.showedOld"
+                ></i>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-key"></i>
+                <input
+                  :placeholder="t('settings.newPassword')"
+                  :class="{ error: v$.new.$error }"
+                  class="glass-input"
+                />
+                <i
+                  class="fas cursor-pointer"
+                  :class="state.showedNew ? 'fa-eye-slash' : 'fa-eye'"
+                  @click="state.showedNew = !state.showedNew"
+                ></i>
+              </div>
+
+              <div class="input-group">
+                <i class="fas fa-key"></i>
+                <input
+                  :placeholder="t('settings.repeatPassword')"
+                  :class="{ error: v$.repeatNew.$error }"
+                  class="glass-input"
+                />
+                <i
+                  class="fas cursor-pointer"
+                  :class="state.showedRepeatNew ? 'fa-eye-slash' : 'fa-eye'"
+                  @click="state.showedRepeatNew = !state.showedRepeatNew"
+                ></i>
+              </div>
+
+              <button class="g-btn primary" @click="handleChangePassword">
+                {{ t('settings.changePassword') }}
+              </button>
+            </div>
           </div>
 
-          <template v-if="userStore.user?.accountType === AccountType.BACKEND">
-            <label class="mt-[11px]">Zmiana hasła</label>
-            <div class="form-group" :class="{ '!mb-5': v$.old.$error }">
-              <div class="input-wrapper">
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                  v-model="state.old"
-                  :type="!state.showedOld ? 'password' : 'text'"
-                  class="form-input"
-                  placeholder="Stare hasło"
-                  :class="{ invalid: v$.old.$error }"
-                  required
-                />
-                <button
-                  id="login-toggle"
-                  type="button"
-                  class="password-toggle"
-                  @click="state.showedOld = !state.showedOld"
-                >
-                  <i v-if="state.showedOld" class="far fa-eye-slash"></i>
-                  <i v-else class="far fa-eye"></i>
-                </button>
-                <div class="input-line"></div>
-              </div>
-              <div class="error-message" :class="{ show: v$.old.$error }">
-                {{ v$.old.$errors[0]?.$message }}
-              </div>
-            </div>
-
-            <div class="form-group" :class="{ '!mb-5': v$.new.$error }">
-              <div class="input-wrapper">
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                  v-model="state.new"
-                  :type="!state.showedNew ? 'password' : 'text'"
-                  class="form-input"
-                  placeholder="Hasło"
-                  :class="{ invalid: v$.new.$error }"
-                  required
-                />
-                <button
-                  id="login-toggle"
-                  type="button"
-                  class="password-toggle"
-                  @click="state.showedNew = !state.showedNew"
-                >
-                  <i v-if="state.showedNew" class="far fa-eye-slash"></i>
-                  <i v-else class="far fa-eye"></i>
-                </button>
-                <div class="input-line"></div>
-              </div>
-              <div class="error-message" :class="{ show: v$.new.$error }">
-                {{ v$.new.$errors[0]?.$message }}
-              </div>
-            </div>
-
-            <div class="form-group" :class="{ '!mb-5': v$.repeatNew.$error }">
-              <div class="input-wrapper">
-                <i class="fas fa-lock input-icon"></i>
-                <input
-                  v-model="state.repeatNew"
-                  :type="!state.showedRepeatNew ? 'password' : 'text'"
-                  class="form-input"
-                  placeholder="Potwórz hasło"
-                  :class="{ invalid: v$.repeatNew.$error }"
-                  required
-                />
-                <button
-                  id="login-toggle"
-                  type="button"
-                  class="password-toggle"
-                  @click="state.showedRepeatNew = !state.showedRepeatNew"
-                >
-                  <i v-if="state.showedRepeatNew" class="far fa-eye-slash"></i>
-                  <i v-else class="far fa-eye"></i>
-                </button>
-                <div class="input-line"></div>
-              </div>
-              <div class="error-message" :class="{ show: v$.repeatNew.$error }">
-                {{ v$.repeatNew.$errors[0]?.$message }}
-              </div>
-            </div>
-
-            <button
-              class="btn-primary max-w-1/2"
-              :class="{ 'mt-2': v$.repeatNew.$error }"
-              @click="handleChangePassword"
-            >
-              <i class="fas fa-edit"></i>
-              Zmień hasło
+          <div class="danger-zone mt-auto">
+            <button class="text-btn danger" @click="resetSettings">
+              <i class="fas fa-undo"></i>
+              {{ t('settings.resetSettings') }}
             </button>
-          </template>
+          </div>
         </div>
       </div>
     </div>
+
     <VerifyFilesModal ref="verifyFilesModalRef" />
-    <ChangeSkinModal ref="changeSkinModalRef" />
+    <CustomTheme ref="themeEditorModalRef" @apply="handleCustomTheme" />
   </div>
 </template>
+
+<style scoped>
+.settings-container {
+  width: 100%;
+  height: calc(100vh - 60px);
+  margin: 0;
+  padding: 1rem 2rem 2rem 2rem;
+  overflow-y: auto;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.settings-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Cards */
+/* .settings-card removed in favor of .g-card */
+/* .card-header removed in favor of .g-card-header */
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+/* Form Items */
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.setting-item.row {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-item label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Custom Toggle Switch */
+.toggle-switch {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 16px;
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toggle-switch button {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch button.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-switch.small button {
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* Custom Select */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.select-wrapper select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.select-wrapper select:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.select-wrapper i {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* Range Slider */
+.ram-slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  outline: none;
+  z-index: 2;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.6);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid #fff;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.slider-track {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
+  height: 6px;
+  background: var(--gradient-primary);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.ram-value {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.ram-markers {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: -0.5rem;
+}
+
+/* Theme Grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 1rem;
+}
+
+.theme-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.8rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.theme-btn.active {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
+}
+
+.color-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--theme-color);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.theme-btn.active .color-dot {
+  box-shadow: 0 0 15px var(--theme-color);
+}
+
+.theme-btn span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.add-theme {
+  border: 1px dashed var(--border);
+}
+
+.add-theme i {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+}
+
+/* Global Input Styles */
+/* .glass-input moved to base.css as .g-input */
+
+/* .action-btn moved to base.css as .g-btn */
+
+/* Switch Checkbox */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.slider:before {
+  position: absolute;
+  content: '';
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* Input Styles */
+.input-group {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 2.8rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-group input:focus {
+  border-color: var(--primary);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.input-group input.error {
+  border-color: var(--toast-error);
+}
+
+.input-group i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* Buttons */
+.action-btn {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.action-btn.primary {
+  background: var(--gradient-primary);
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+}
+
+.text-btn:hover {
+  color: var(--text-primary);
+}
+
+.text-btn.danger:hover {
+  color: var(--toast-error);
+}
+
+.h-full {
+  height: 100%;
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
+.lang-toggles {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.lang-toggles button {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-toggles button.active {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.2);
+}
+
+.divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 4px;
+}
+</style>

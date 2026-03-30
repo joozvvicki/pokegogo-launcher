@@ -44,7 +44,9 @@ function createBackgroundParticles(): void {
   for (let i = 0; i < 50; i += 1) {
     const particle = document.createElement('div')
     particle.textContent =
-      themes.find((theme) => generalStore.getTheme() === theme.name)?.firstFloating ?? '❄️'
+      generalStore.settings.customTheme?.firstFloating ??
+      themes.find((theme) => generalStore.getTheme() === theme.name)?.firstFloating ??
+      '❄️'
     particle.style.position = 'absolute'
     particle.style.color = 'white'
     particle.style.fontSize = `${10 + Math.random() * 15}px`
@@ -57,6 +59,31 @@ function createBackgroundParticles(): void {
 
     particlesContainer.appendChild(particle)
   }
+
+  document.addEventListener('visibilitychange', () => {
+    const particles = document.querySelectorAll<HTMLElement>('.particles div')
+
+    if (document.hidden) {
+      particles.forEach((p) => (p.style.animationPlayState = 'paused'))
+    } else {
+      particles.forEach((p) => (p.style.animationPlayState = 'running'))
+    }
+  })
+
+  window.electron.ipcRenderer.on('window-focus-changed', (_, isFocused) => {
+    const particles = document.querySelectorAll<HTMLElement>('.particles div')
+    particles.forEach((p) => {
+      p.style.animationPlayState = isFocused ? 'running' : 'paused'
+    })
+  })
+
+  watch(
+    () => generalStore.settings.customTheme,
+    () => {
+      particlesContainer.innerHTML = ''
+      createBackgroundParticles()
+    }
+  )
 
   watch(
     () => generalStore.getTheme(),

@@ -86,96 +86,7 @@ body {
     transform: translateY(120vh) translateX(30px) rotate(360deg);
   }
 }
-/* -------------------------------------- Nagłówek  ---------------------------- */
-.header {
-  position: relative;
-  z-index: 300;
-  width: 100%;
-
-  padding: 0.5rem 1rem;
-
-  display: flex;
-  align-items: center;
-
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-
-  -webkit-app-region: drag;
-  user-select: none;
-
-  animation: slideDown 0.5s ease;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0%);
-  }
-}
-
-.applogo {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0 0.2rem;
-  user-select: none;
-  -webkit-app-region: no-drag;
-}
-
-.applogo-icon {
-  width: 2rem;
-  height: 2rem;
-  background: var(--gradient-primary);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  color: var(--text-primary);
-  animation: rotateCube 10s linear infinite;
-}
-
-@keyframes rotateCube {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.applogo h1 {
-  font-size: 25px;
-  font-weight: 800;
-  background: var(--gradient-primary);
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 1px;
-}
-
-.applogo-badge {
-  background: var(--border);
-  color: var(--primary);
-  padding: 0.125rem 0.5rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-}
+/* Header styles moved to Header.vue */
 
 /* -------------------------------------- Profil gracza ---------------------------- */
 .player-fullinfo {
@@ -226,28 +137,6 @@ body {
   color: var(--primary);
 }
 
-.status-dot {
-  position: absolute;
-  bottom: 0px;
-  right: -1px;
-  width: 10px;
-  height: 10px;
-  background: var(--primary);
-  border: 1px solid var(--bg-dark);
-  border-radius: 50%;
-  animation: statusPulse 2s infinite;
-}
-
-@keyframes statusPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--status-pulse);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(197, 167, 34, 0);
-  }
-}
-
 .player-info {
   display: flex;
   flex-direction: column;
@@ -285,121 +174,10 @@ body {
 .launcher-container {
   display: flex;
   width: calc(100vw);
-  height: calc(100vh - 54.5px);
+  height: calc(100vh - 60px);
 }
 
-/* -------------------------------------- Pasek boczny ---------------------------- */
-.sidebar {
-  width: 6.5rem;
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  display: flex;
-  flex-direction: column;
-  animation: slideRight 0.5s ease;
-}
-
-@keyframes slideRight {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-.sidebar-nav {
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.5rem 0.8rem;
-  margin-bottom: 0.25rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  position: relative;
-  transition: opacity 0.3s ease-in-out;
-  overflow: hidden;
-}
-
-.nav-icon {
-  width: 1.8rem;
-  height: 1.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--nav-icon);
-  border-radius: 10px;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.nav-item span {
-  font-size: 0.5rem;
-  margin-top: 0.4rem;
-}
-
-.nav-item:hover,
-.nav-item:focus {
-  color: var(--text-primary);
-  background: var(--nav-item);
-  cursor: pointer;
-}
-
-.nav-item:hover .nav-icon,
-.nav-item:focus .nav-icon,
-.nav-icon.active {
-  background: var(--nav-item-hover-nav-icon);
-  color: var(--primary);
-}
-
-.nav-icon:hover,
-.nav-icon:focus {
-  cursor: pointer;
-  background: var(--nav-item-hover-nav-icon);
-  color: var(--primary);
-}
-
-.nav-item.active {
-  font-weight: 700;
-  color: var(--primary);
-  background: var(--nav-item-active);
-}
-
-.nav-item.active .nav-icon {
-  background: var(--gradient-primary);
-  color: var(--text-primary);
-}
-
-.nav-item.active .nav-indicator {
-  height: 70%;
-}
-
-.sidebar-footer {
-  padding: 20px;
-  border-top: 1px solid var(--nav-icon);
-}
-
-.server-mini-status {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: var(--nav-item);
-  border-radius: 10px;
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--primary);
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
+/* Sidebar styles moved to Sidebar.vue */
 
 .main-content {
   height: calc(100vh - 60px);
@@ -431,337 +209,7 @@ body {
   }
 }
 
-.sidebar.collapsed .nav-item,
-.sidebar.collapsed .player-fullinfo {
-  justify-content: center;
-  gap: 0;
-}
-
-/* -------------------------------------- Strona główna ---------------------------- */
-.home-grid {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-/* -------------------------------------- Panel uruchamiania ---------------------------- */
-.card-panel {
-  background: var(--bg-card);
-  border-radius: 1rem;
-  padding: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.card-header h2 {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.version-selector {
-  position: relative;
-}
-
-.version-selector-select {
-  appearance: none;
-  background: var(--bg-light);
-  color: var(--text-primary);
-  border: 2px solid var(--border);
-  padding: 0.75rem 3rem 0.75rem 1rem;
-  border-radius: 1rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
-}
-
-.version-selector-select:hover,
-.version-selector-select:focus,
-.setting-select:hover,
-.setting-select:focus {
-  cursor: pointer;
-  border-color: var(--text-secondary);
-}
-
-.version-selector-select option {
-  cursor: pointer;
-}
-
-.version-selector i {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-secondary);
-  pointer-events: none;
-}
-
-.server-image {
-  position: relative;
-  border-radius: 15px;
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-
-.server-image img {
-  width: 100%;
-  object-fit: cover;
-}
-
-.server-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 20px;
-  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
-}
-
-.server-ip {
-  background: var(--gradient-primary);
-  color: var(--text-primary);
-  opacity: 0.9;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.server-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0.5rem 0.8rem;
-  background: var(--bg-light);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.stat-item:hover {
-  background: var(--border);
-  transform: translateY(-2px);
-}
-
-.stat-item i {
-  font-size: 0.8rem;
-  color: var(--primary);
-}
-
-.stat-item div {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-item span {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.stat-item label {
-  font-size: 0.7rem;
-  color: var(--text-primary);
-  text-transform: uppercase;
-}
-
-.quick-settings {
-  display: flex;
-  gap: 15px;
-}
-
-.quick-setting {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 12px;
-  padding: 0.8rem;
-  background: var(--bg-light);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-}
-
-.quick-setting i {
-  color: var(--primary);
-}
-
-.quick-setting strong {
-  color: var(--text-primary);
-}
-
-/* -------------------------------------- Panel nowości (aktualności) ---------------------------- */
-.news-panel {
-  background: var(--bg-card);
-  width: 100%;
-  border-radius: 20px;
-  padding: 1.5rem;
-  border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-}
-
-.news-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.8rem;
-}
-
-.news-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.news-header h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.news-featured {
-  position: relative;
-  border-radius: 15px;
-  overflow: hidden;
-  margin-bottom: 1.8rem;
-  transition: transform 0.3s ease;
-}
-
-.news-featured:hover {
-  transform: scale(1.02);
-}
-
-.featured-image {
-  position: relative;
-  height: 300px;
-}
-
-.featured-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.featured-gradient {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.9));
-}
-
-.vignette {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, transparent 0%, var(--vignette-color) 80%);
-}
-
-.featured-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 1.5rem;
-  color: var(--text-primary);
-}
-
-.featured-tag {
-  background: var(--tag-dark);
-  color: var(--text-primary);
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  display: inline-block;
-  margin-bottom: 10px;
-}
-
-.featured-content h3 {
-  font-size: 22px;
-  margin-bottom: 10px;
-}
-
-.featured-content p {
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 15px;
-}
-
-.news-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.news-item {
-  display: flex;
-  gap: 15px;
-  padding: 15px;
-  background: var(--bg-light);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.news-item:hover {
-  background: var(--border);
-  transform: translateX(5px);
-}
-
-.news-thumbnail {
-  width: 80px;
-  height: 80px;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.news-thumbnail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.news-info {
-  flex: 1;
-}
-
-.news-date {
-  color: var(--text-muted);
-  text-transform: uppercase;
-  font-size: 0.7rem;
-}
-
-.news-info h4 {
-  margin: 5px 0;
-  font-size: 1rem;
-  color: var(--text-primary);
-}
-
-.news-info p {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
+/* Home and News styles moved to Home.vue */
 
 /* -------------------------------------- Strona z ustawieniami---------------------------- */
 .settings-container {
@@ -1032,83 +480,189 @@ body {
 /* -------------------------------------- Powiadomienia ---------------------------- */
 .toast-container {
   position: fixed;
-  bottom: 20px;
+  top: 62.5px;
   right: 20px;
-  z-index: 1500;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.modals-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
 }
 
 .toast {
-  background: var(--bg-toast);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 0.5rem 1rem;
-  margin-bottom: 10px;
+  pointer-events: all;
+  background: rgba(15, 15, 20, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
-  gap: 12px;
-  animation: slideInRight 0.3s ease;
-  min-width: 300px;
+  gap: 14px;
+  min-width: 340px;
+  max-width: 420px;
   position: relative;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  overflow: hidden;
+  animation: slideInRight 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  transition: all 0.3s ease;
+}
+
+.toast:hover {
+  transform: translateX(-4px);
+  background: rgba(20, 20, 25, 0.9);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.toast .toast-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+}
+.toast.error .toast-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+.toast.info .toast-icon {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
 }
 
 .toast .toast-body {
   flex: 1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.toast .toast-icon {
-  flex-shrink: 0;
+.toast .toast-message {
+  line-height: 1.4;
+}
+
+.toast .toast-close,
+.toast .toast-abort {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toast .toast-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.toast .toast-abort {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  text-transform: uppercase;
+}
+
+.toast .toast-abort:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
 }
 
 .toast .toast-progress {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0px;
-  height: 4px;
+  bottom: 0;
+  height: 3px;
   background: rgba(255, 255, 255, 0.03);
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-  overflow: hidden;
 }
 
 .toast .toast-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), var(--text-secondary));
+  background: linear-gradient(90deg, var(--primary), #a855f7);
   width: 0%;
-  transition: width 0.15s linear;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.toast .toast-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(90deg, transparent, white);
+  opacity: 0.3;
+  filter: blur(4px);
+}
+
+.toast .toast-progress.indeterminate .toast-progress-fill {
+  width: 100%;
+  background: linear-gradient(90deg, var(--primary), #a855f7, var(--primary));
+  background-size: 200% 100%;
+  animation: indeterminateProgress 2s linear infinite;
+}
+
+@keyframes indeterminateProgress {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes slideInRight {
   from {
-    transform: translateX(100%);
+    transform: translateX(120%);
+    opacity: 0;
   }
   to {
     transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
   }
 }
 
 .toast.success {
-  border-color: var(--primary);
+  border-left: 4px solid var(--primary);
 }
-
 .toast.error {
-  border-color: var(--toast-error);
+  border-left: 4px solid #ef4444;
+}
+.toast.info {
+  border-left: 4px solid #3b82f6;
 }
 
 .ban-btn {
@@ -1212,4 +766,385 @@ body {
 .p-inputtext::placeholder {
   color: var(--text-secondary) !important;
   font-size: 0.8rem;
+}
+/* === Global Modal Styles === */
+.g-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+/* Premium Card Style (Global) */
+.g-card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.g-modal-card {
+  /* Replicating .g-card styles because @apply is not supported */
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  width: 90%;
+  max-width: 650px;
+  max-height: 90vh;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.g-card-header,
+.g-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  justify-content: space-between;
+}
+
+.g-card-header h3,
+.g-modal-title h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: white;
+}
+
+.g-modal-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: block;
+}
+
+.g-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.g-icon-box.small {
+  width: 32px;
+  height: 32px;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+/* Global Input Styles */
+.g-input,
+.glass-input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.g-input:focus,
+.glass-input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+/* ... (skipping button styles) ... */
+
+/* DatePicker Global Overrides (Glass Theme) */
+
+/* 1. Panel/Popup container */
+.p-datepicker-panel {
+  background: #161b22 !important; /* Solid dark background */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  padding: 1rem !important;
+  z-index: 9999 !important;
+  max-width: none !important;
+  min-width: 250px;
+  /* Width is handled by 'fluid' prop and pt: { pcPanel: { root: '!w-full' } } in components */
+}
+
+/* 2. Header and Title */
+.p-datepicker-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.p-datepicker-title {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+/* 3. Calendar Table */
+.p-datepicker table th {
+  color: var(--text-secondary) !important;
+  font-weight: 500 !important;
+}
+
+.p-datepicker table td > span {
+  color: var(--text-primary) !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-radius: 50% !important;
+  transition: all 0.2s !important;
+}
+
+.p-datepicker-panel .p-datepicker-calendar td > span:hover,
+.p-datepicker-panel .p-datepicker-day:not(.p-highlight):hover,
+.p-datepicker table td > span:hover {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.4) !important;
+}
+
+/* 4. Selection and Today states */
+.p-datepicker-today > span,
+.p-datepicker-today > span > span {
+  background: transparent !important;
+  border: 1px solid var(--primary) !important;
+  color: var(--primary) !important;
+}
+
+/* Fix selected day visibility (white text on primary background) */
+.p-datepicker-selected > span,
+.p-datepicker-selected > span:hover,
+.p-datepicker-selected > span > span,
+.p-highlight {
+  background: var(--primary) !important;
+  color: white !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4) !important;
+}
+
+/* 5. Navigation buttons */
+.p-datepicker .p-datepicker-prev,
+.p-datepicker .p-datepicker-next {
+  color: var(--text-secondary) !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+}
+
+.p-datepicker .p-datepicker-prev:hover,
+.p-datepicker .p-datepicker-next:hover {
+  background: rgba(var(--primary-rgb), 0.2) !important;
+  color: var(--primary) !important;
+}
+
+/* 6. Input Root (when not opened) */
+.p-datepicker:not(.p-datepicker-panel) {
+  display: inline-flex !important;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.p-datepicker:not(.p-datepicker-panel) .p-inputtext,
+.p-datepicker:not(.p-datepicker-panel) .g-input {
+  flex: 1;
+  min-width: 0;
+  width: 100% !important;
+  padding: 0.8rem 1rem !important;
+  background: var(--bg-input) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 16px !important;
+  color: var(--text-primary) !important;
+}
+
+.p-datepicker:not(.p-datepicker-panel) .p-inputtext:focus,
+.p-datepicker:not(.p-datepicker-panel) .g-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1) !important;
+}
+
+/* Global Button Styles */
+.g-btn,
+.action-btn {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.g-btn:hover,
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.g-btn.primary {
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+}
+
+.g-btn.primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.4);
+}
+
+.g-btn.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.g-btn.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.g-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.g-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.g-modal-footer {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: auto;
+}
+
+/* PrimeVue Components Z-Index Fix */
+.p-datepicker,
+.p-datepicker-panel,
+.p-component-overlay,
+.p-connected-overlay-enter-done,
+.p-dropdown-panel,
+.p-dialog,
+.p-popover,
+.p-contextmenu,
+.p-menu {
+  z-index: 9999 !important;
+}
+
+.p-toast {
+  z-index: 10000 !important;
+}
+
+.g-modal-content {
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+  padding: 0.5rem;
+}
+/* Extreme Compact DatePicker for Modals */
+.extreme-compact-datepicker {
+  padding: 0.2rem !important;
+  border-radius: 12px !important;
+  width: auto !important;
+  min-width: 200px !important;
+  background: #161b22 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+  margin-top: 4px !important;
+  z-index: 10001 !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-header {
+  padding: 0.15rem !important;
+  font-size: 0.7rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-title {
+  font-size: 0.7rem !important;
+  line-height: normal !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-prev,
+.extreme-compact-datepicker .p-datepicker-next {
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+}
+
+.extreme-compact-datepicker table {
+  font-size: 0.65rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-day {
+  width: 1.4rem !important;
+  height: 1.4rem !important;
+  padding: 0 !important;
+}
+
+.extreme-compact-datepicker table td > span {
+  width: 1.4rem !important;
+  height: 1.4rem !important;
+  font-size: 0.65rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-time-picker {
+  padding: 0.15rem !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+  gap: 0.15rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-hour-picker,
+.extreme-compact-datepicker .p-datepicker-minute-picker,
+.extreme-compact-datepicker .p-datepicker-second-picker {
+  font-size: 0.7rem !important;
+}
+
+.extreme-compact-datepicker .p-datepicker-buttonbar {
+  padding: 0.15rem !important;
 }

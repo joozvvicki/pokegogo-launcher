@@ -71,12 +71,8 @@ export const useFTP = (): FTPService => {
   const inputFile = ref<HTMLInputElement | null>(null)
   const inputFolder = ref<HTMLInputElement | null>(null)
 
-  const getFolderContent = async (folder: string = ''): Promise<void> => {
+  const getFolderContent = async (folderPath: string = ''): Promise<void> => {
     loadingStatuses.value = true
-    const folderPath =
-      currentFolder.value.length && !currentFolder.value.endsWith(folder)
-        ? currentFolder.value + '/' + folder
-        : folder
 
     try {
       const res = await window.electron.ipcRenderer?.invoke(FTPChannel.LIST_FILES, folderPath)
@@ -98,7 +94,8 @@ export const useFTP = (): FTPService => {
   }
 
   const changeFolder = async (name: string): Promise<void> => {
-    await getFolderContent(name)
+    const newPath = currentFolder.value ? `${currentFolder.value}/${name}` : name
+    await getFolderContent(newPath)
   }
 
   const createFolder = async (newFolder: string): Promise<void> => {
@@ -122,17 +119,32 @@ export const useFTP = (): FTPService => {
   const zipFolder = async (folderName: string): Promise<void> => {
     const fullPath = currentFolder.value ? `${currentFolder.value}/${folderName}` : folderName
 
-    const progress = showProgressToast(`Rozpoczynam pakowanie ${folderName}...`)
+    let isAborted = false
+    let progress: ReturnType<typeof showProgressToast> = null
+    progress = showProgressToast(`Rozpoczynam pakowanie ${folderName}...`, 'info', () => {
+      isAborted = true
+      window.electron.ipcRenderer?.send('ftp:abort-all')
+      progress?.close('Operacja została przerwana.', 'error', 1000)
+      getFolderContent(currentFolder.value)
+    })
     progress?.updateProgress(0, 100, 'Inicjalizacja...')
 
     const progressHandler = (_event: any, data: { percent: number; message: string }): void => {
-      progress?.updateProgress(data.percent, 100, data.message)
+      if (!isAborted) {
+        progress?.updateProgress(data.percent, 100, data.message)
+      }
     }
 
     try {
       window.electron.ipcRenderer?.on(FTPChannel.ZIP_PROGRESS, progressHandler)
 
       await window.electron.ipcRenderer?.invoke(FTPChannel.ZIP_FOLDER, fullPath)
+
+      if (isAborted) {
+        progress?.close('Operacja pakowania została przerwana.', 'error', 1000)
+        await getFolderContent(currentFolder.value)
+        return
+      }
 
       progress?.updateProgress(100, 100, 'Gotowe!')
       progress?.close('Folder został spakowany pomyślnie.', 'success')
@@ -150,8 +162,17 @@ export const useFTP = (): FTPService => {
     if (!inputFolder?.value?.files?.length) return
     const files = Array.from(inputFolder.value.files)
 
+    let isAborted = false
+    let progress: ReturnType<typeof showProgressToast> = null
+    const onAbort = (): void => {
+      isAborted = true
+      window.electron.ipcRenderer?.send('ftp:abort-all')
+      progress?.close('Operacja została przerwana.', 'error', 1000)
+      getFolderContent(currentFolder.value)
+    }
+
     try {
-      const progress = showProgressToast(`Wczytywanie plików...`)
+      progress = showProgressToast(`Wczytywanie plików...`, 'info', onAbort)
       const resolvedFiles = await Promise.all(
         files.map(async (file) => ({
           path: file.webkitRelativePath || file.name,
@@ -159,14 +180,20 @@ export const useFTP = (): FTPService => {
         }))
       )
 
+      if (isAborted) {
+        progress?.close('Przerwano operację.', 'error')
+        return
+      }
+
       progress?.updateProgress(0, resolvedFiles.length, 'Przesyłanie plików...')
 
-      window.electron.ipcRenderer?.on(
-        FTPChannel.UPLOAD_FOLDER_PROGRESS,
-        (_event, completed: number) => {
+      const progressHandler = (_event: any, completed: number): void => {
+        if (!isAborted) {
           progress?.updateProgress(completed, resolvedFiles.length, 'Przesyłanie plików...')
         }
-      )
+      }
+
+      window.electron.ipcRenderer?.on(FTPChannel.UPLOAD_FOLDER_PROGRESS, progressHandler)
 
       try {
         const res = await window.electron.ipcRenderer?.invoke(
@@ -176,7 +203,11 @@ export const useFTP = (): FTPService => {
           0
         )
 
-        window.electron.ipcRenderer.removeAllListeners('ftp:upload-folder-progress')
+        if (isAborted) {
+          progress?.close('Operacja została przerwana.', 'error', 1000)
+          await getFolderContent(currentFolder.value)
+          return
+        }
 
         if (res) {
           progress?.close(`Pomyślnie przesłano folder.`, 'success')
@@ -187,6 +218,8 @@ export const useFTP = (): FTPService => {
       } catch (err) {
         progress?.close('Wystąpił błąd podczas przesyłania folderu.', 'error')
         throw err
+      } finally {
+        window.electron.ipcRenderer?.removeAllListeners(FTPChannel.UPLOAD_FOLDER_PROGRESS)
       }
     } catch (err) {
       LOGGER.err(err as string)
@@ -208,18 +241,31 @@ export const useFTP = (): FTPService => {
       currentFolder.value.indexOf(name) + name.length
     )
 
-    currentFolder.value = '' // Reset, żeby getFolderContent użył argumentu poprawnie
+    currentFolder.value = ''
     await getFolderContent(prevFolder)
   }
 
   const uploadFile = async (): Promise<void> => {
     if (!inputFile?.value?.files?.length) return
     const files = Array.from(inputFile.value.files)
-    const progress = showProgressToast(`Wysyłanie plików...`)
+
+    let isAborted = false
+    let progress: ReturnType<typeof showProgressToast> = null
+    progress = showProgressToast(`Wysyłanie plików...`, 'info', () => {
+      isAborted = true
+      window.electron.ipcRenderer?.send('ftp:abort-all')
+      progress?.close('Operacja została przerwana.', 'error', 1000)
+      getFolderContent(currentFolder.value)
+    })
 
     try {
       let succeeded = 0
       for (let i = 0; i < files.length; i++) {
+        if (isAborted) {
+          progress?.close(`Przerwano. Przesłano ${succeeded}/${files.length} plików.`, 'error')
+          break
+        }
+
         const file = files[i]
         try {
           const res = await window.electron.ipcRenderer?.invoke(
@@ -235,8 +281,12 @@ export const useFTP = (): FTPService => {
         }
       }
 
-      if (succeeded > 0) await getFolderContent(currentFolder.value)
-      progress?.close(`Wysłano pliki: ${succeeded}/${files.length}`, 'success')
+      if (isAborted) {
+        await getFolderContent(currentFolder.value)
+      } else {
+        if (succeeded > 0) await getFolderContent(currentFolder.value)
+        progress?.close(`Wysłano pliki: ${succeeded}/${files.length}`, 'success')
+      }
     } catch (err) {
       LOGGER.err(err as string)
       progress?.close('Błąd przesyłania.', 'error')
@@ -300,7 +350,9 @@ export const useFTP = (): FTPService => {
   }
 
   const removeFile = async (name: string): Promise<void> => {
-    const progress = showProgressToast(`Usuwanie...`)
+    const progress = showProgressToast(`Usuwanie ${name}...`)
+    progress?.setIndeterminate(true)
+
     try {
       const res = await window.electron.ipcRenderer?.invoke(
         FTPChannel.REMOVE_FILE,
@@ -311,6 +363,8 @@ export const useFTP = (): FTPService => {
       if (res) {
         progress?.close(`Pomyślnie usunięto ${name}`, 'success')
         await getFolderContent(currentFolder.value)
+      } else {
+        progress?.close('Wystąpił błąd podczas usuwania.', 'error')
       }
     } catch (err) {
       LOGGER.err(err as string)
@@ -387,6 +441,15 @@ export const useFTP = (): FTPService => {
     const dt = ev.dataTransfer
     if (!dt) return
 
+    let isAborted = false
+    let progress: ReturnType<typeof showProgressToast> = null
+    const onAbort = (): void => {
+      isAborted = true
+      window.electron.ipcRenderer?.send('ftp:abort-all')
+      progress?.close('Przerwano operację.', 'error', 1000)
+      getFolderContent(currentFolder.value)
+    }
+
     if (dt.items && dt.items.length) {
       const items = Array.from(dt.items)
       const hasDirectory = items.some((it) => (it as any).webkitGetAsEntry?.()?.isDirectory)
@@ -401,19 +464,25 @@ export const useFTP = (): FTPService => {
         if (!all.length) return
 
         try {
-          const progress = showProgressToast(`Wczytywanie plików...`)
+          progress = showProgressToast(`Wczytywanie plików...`, 'info', onAbort)
           const resolvedFiles = await Promise.all(
             all.map(async ({ path, file }) => ({ path, buffer: await file.arrayBuffer() }))
           )
 
+          if (isAborted) {
+            progress?.close('Przerwano.', 'error')
+            return
+          }
+
           progress?.updateProgress(0, resolvedFiles.length, 'Przesyłanie plików...')
 
-          window.electron.ipcRenderer?.on(
-            FTPChannel.UPLOAD_FOLDER_PROGRESS,
-            (_event, completed: number) => {
+          const progressHandler = (_event: any, completed: number): void => {
+            if (!isAborted) {
               progress?.updateProgress(completed, resolvedFiles.length, 'Przesyłanie plików...')
             }
-          )
+          }
+
+          window.electron.ipcRenderer?.on(FTPChannel.UPLOAD_FOLDER_PROGRESS, progressHandler)
 
           try {
             const res = await window.electron.ipcRenderer?.invoke(
@@ -423,8 +492,13 @@ export const useFTP = (): FTPService => {
               0
             )
 
+            if (isAborted) {
+              progress?.close('Przerwano operację.', 'error', 1000)
+              await getFolderContent(currentFolder.value)
+              return
+            }
+
             if (res) {
-              window.electron.ipcRenderer.removeAllListeners('ftp:upload-folder-progress')
               await getFolderContent(currentFolder.value)
               progress?.updateProgress(
                 resolvedFiles.length,
@@ -441,6 +515,8 @@ export const useFTP = (): FTPService => {
           } catch (err) {
             progress?.close('Wystąpił błąd podczas przesyłania folderu.', 'error')
             LOGGER.with('FTP').err((err as Error).message ?? err)
+          } finally {
+            window.electron.ipcRenderer?.removeAllListeners(FTPChannel.UPLOAD_FOLDER_PROGRESS)
           }
         } catch (err) {
           LOGGER.with('FTP').err((err as Error).message ?? err)
@@ -452,11 +528,15 @@ export const useFTP = (): FTPService => {
 
     if (dt.files && dt.files.length) {
       const files = Array.from(dt.files)
-      const progress = showProgressToast(`Wysyłanie plików...`)
+      progress = showProgressToast(`Wysyłanie plików...`, 'info', onAbort)
 
       try {
         let succeeded = 0
         for (const file of files) {
+          if (isAborted) {
+            progress?.close(`Przerwano. Przesłano ${succeeded}/${files.length}`, 'error')
+            break
+          }
           try {
             const res = await window.electron.ipcRenderer?.invoke(
               FTPChannel.UPLOAD_FILE,
@@ -476,9 +556,13 @@ export const useFTP = (): FTPService => {
           }
         }
 
-        if (succeeded > 0) await getFolderContent()
-        progress?.updateProgress(succeeded, files.length)
-        progress?.close(`Wysłano pliki: ${succeeded}/${files.length}`, 'success')
+        if (isAborted) {
+          await getFolderContent(currentFolder.value)
+        } else {
+          if (succeeded > 0) await getFolderContent(currentFolder.value)
+          progress?.updateProgress(succeeded, files.length)
+          progress?.close(`Wysłano pliki: ${succeeded}/${files.length}`, 'success')
+        }
       } catch (err) {
         LOGGER.with('FTP').err((err as Error).message ?? err)
         progress?.close('Wystąpił błąd podczas przesyłania plików.', 'error')

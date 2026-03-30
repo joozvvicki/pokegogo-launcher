@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import useUserStore from '@ui/stores/user-store'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const modalVisible = ref(false)
@@ -31,97 +34,51 @@ defineExpose({
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="alert"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-      aria-describedby="ban-desc"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="launch-title">
-            <div class="nav-icon">
-              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box primary">
+                <i class="fas fa-cloud-download-alt"></i>
+              </div>
+              <h3>{{ t('modals.updateConfirm.title') }}</h3>
             </div>
-            <h2 id="ban-title">Aktualizacja launchera</h2>
+            <button class="g-close-btn" @click="closeModal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="g-modal-content">
+            <p class="text-gray-300 text-center py-4 leading-relaxed">
+              {{ t('modals.updateConfirm.desc') }}
+            </p>
+          </div>
+
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="closeModal">
+              {{ t('modals.updateConfirm.cancel') }}
+            </button>
+            <button class="g-btn primary flex-1" @click="handleSubmit">
+              <i class="fas fa-sync-alt"></i>
+              {{ t('modals.updateConfirm.update') }}
+            </button>
           </div>
         </div>
-        <div class="modal-content">
-          <p class="ban-description">
-            Czy napewno chcesz aktualizować launcher? Spowoduje to wyłączenie minecrafta oraz
-            wylogowanie z konta.
-          </p>
-        </div>
-        <div class="flex gap-2">
-          <button type="button" class="btn-primary" @click="handleSubmit">Aktualizuj</button>
-          <button type="button" class="btn-secondary" @click="closeModal">Anuluj</button>
-        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 420px;
-  min-height: 220px;
-  background: rgba(16, 14, 10, 0.95);
-  box-shadow: 0 0 1rem rgba(51, 48, 35, 0.568);
-  border-radius: 1rem;
-  padding: 1.5rem 2rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-  margin-bottom: 1.5rem;
-}
-
-.ban-description {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

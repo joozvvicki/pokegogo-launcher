@@ -7,6 +7,9 @@ import { changeCustomSkin } from '@ui/api/endpoints'
 import { showToast } from '@ui/utils'
 import { AxiosError } from 'axios'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const userStore = useUserStore()
@@ -61,7 +64,7 @@ const handleSubmit = async (): Promise<void> => {
   const skinFile = fileInputRef.value?.files ? fileInputRef.value.files[0] : null
 
   if (!skinFile) {
-    showToast('Proszę wybrać plik skina.', 'error')
+    showToast(t('modals.changeSkin.selectFile'), 'error')
     return
   }
 
@@ -77,7 +80,7 @@ const handleSubmit = async (): Promise<void> => {
     const result = await changeCustomSkin(formData)
 
     if (result) {
-      showToast('Skin został pomyślnie zmieniony!', 'success')
+      showToast(t('modals.changeSkin.success'), 'success')
       modalVisible.value = false
       v$.value.$reset()
       router.go(0)
@@ -96,155 +99,108 @@ const handleSubmit = async (): Promise<void> => {
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="alert"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-      aria-describedby="ban-desc"
-    >
-      <div class="modal-card">
-        <div class="modal-header flex justify-between">
-          <div class="launch-title">
-            <div class="nav-icon">
-              <i class="fas fa-pencil" aria-hidden="true"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-tshirt"></i>
+              </div>
+              <h3>{{ t('modals.changeSkin.title') }}</h3>
             </div>
-            <h2>Custom skin</h2>
-          </div>
-          <div>
-            <button class="nav-icon" @click="handleExit">
-              <i class="fa fa-x" />
+            <button class="g-close-btn" @click="handleExit">
+              <i class="fas fa-times"></i>
             </button>
           </div>
-        </div>
-        <input
-          ref="fileInputRef"
-          class="hidden"
-          type="file"
-          accept=".png"
-          @change="handleFileUpload"
-        />
-        <div class="setting-group mb-2!">
-          <label class="input-label mb-1">Typ skina</label>
-          <div class="toggle-group">
-            <button
-              class="toggle-option"
-              :class="{ active: state.type === 'classic' }"
-              @click="state.type = 'classic'"
-            >
-              Steve
-            </button>
-            <button
-              class="toggle-option"
-              :class="{ active: state.type === 'slim' }"
-              @click="state.type = 'slim'"
-            >
-              Alexa
-            </button>
-          </div>
-        </div>
 
-        <div v-if="userStore.user" class="setting-group mb-2!">
-          <label>Customowy skin</label>
-          <p class="text-[var(--text-secondary)] mb-2 text-[0.7rem]">
-            Kliknij na podgląd skina, aby zmienić swój customowy skin w grze.
-          </p>
-          <div class="flex w-full items-center justify-center mb-4">
-            <div
-              class="flex w-[100px] h-[100px] player-profile rounded-2xl! hover:bg-[var(--bg-light)]/40! hover:cursor-pointer"
-              @click="fileInputRef?.click()"
-            >
-              <SkinViewer :skin="skinUrl" />
+          <div class="g-modal-content">
+            <input
+              ref="fileInputRef"
+              class="hidden"
+              type="file"
+              accept=".png"
+              @change="handleFileUpload"
+            />
+
+            <!-- Skin Type -->
+            <div class="flex flex-col gap-1 mb-4">
+              <label class="text-sm font-semibold text-gray-400">{{
+                t('modals.changeSkin.type')
+              }}</label>
+              <div class="flex bg-black/20 p-1 rounded-xl">
+                <button
+                  class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                  :class="
+                    state.type === 'classic'
+                      ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
+                  "
+                  @click="state.type = 'classic'"
+                >
+                  {{ t('modals.changeSkin.steve') }}
+                </button>
+                <button
+                  class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                  :class="
+                    state.type === 'slim'
+                      ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
+                  "
+                  @click="state.type = 'slim'"
+                >
+                  {{ t('modals.changeSkin.alex') }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Skin Preview/Upload -->
+            <div v-if="userStore.user" class="flex flex-col gap-2 mb-2 items-center">
+              <label class="text-sm font-semibold text-gray-400">{{
+                t('modals.changeSkin.custom')
+              }}</label>
+              <p class="text-[var(--text-secondary)] text-xs text-center">
+                {{ t('modals.changeSkin.hint') }}
+              </p>
+              <div
+                class="flex w-32 h-32 bg-black/20 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:border-white/30 transition-colors items-center justify-center overflow-hidden relative"
+                @click="fileInputRef?.click()"
+              >
+                <!-- Replace with actual SkinViewer if available, or image preview -->
+                <SkinViewer :skin="skinUrl" class="w-full h-full" />
+                <div
+                  class="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
+                >
+                  <i class="fas fa-upload text-white text-xl"></i>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn-primary" @click="handleSubmit">Zatwierdź</button>
-          <button class="btn-secondary" @click="handleExit">Anuluj</button>
+
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleExit">
+              {{ t('modals.changeSkin.cancel') }}
+            </button>
+            <button class="g-btn primary flex-1" @click="handleSubmit">
+              <i class="fas fa-check"></i>
+              {{ t('modals.changeSkin.confirm') }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 420px;
-  padding: 1.5rem 2rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-}
-
-.log-description {
-  font-size: 0.7rem;
-  width: 100%;
-  min-height: 7vh;
-  border-radius: 0.5rem;
-  background-color: var(--bg-light);
-  padding: 0.25rem 0.5rem;
-  display: flex;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-}
-
-.ban-reason {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  user-select: text;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

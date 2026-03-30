@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
 const useGeneralStore = defineStore('general', () => {
+  const searchQuery = ref<string>('')
   const appVersion = ref<string>('dev')
   const isUpdateAvailable = ref<boolean>(false)
   const mcInstance = ref<number | null>(null)
@@ -23,8 +24,17 @@ const useGeneralStore = defineStore('general', () => {
     autoUpdate: true,
     updateChannel: 'beta',
     isSidebarCollapsed: false,
-    gameMode: 'Pokemons'
+    gameMode: 'Pokemons',
+    language: 'pl',
+    customTheme: localStorage.getItem('customTheme')
+      ? JSON.parse(localStorage.getItem('customTheme') || '')
+      : null
   }
+
+  const availableGameModes = [
+    { label: 'Pokemony', value: 'Pokemons', icon: 'fas fa-ghost' },
+    { label: 'Fantasy', value: 'fantasy', icon: 'fas fa-hat-wizard' }
+  ]
 
   const savedSettings = localStorage.getItem('launcherSettings')
 
@@ -93,6 +103,7 @@ const useGeneralStore = defineStore('general', () => {
     if (loaded.updateChannel) settings.updateChannel = loaded.updateChannel
     if (loaded.isSidebarCollapsed) settings.isSidebarCollapsed = loaded.isSidebarCollapsed
     if (loaded.gameMode) settings.gameMode = loaded.gameMode
+    if (loaded.language) settings.language = loaded.language
   }
 
   const saveSettings = (): void => {
@@ -111,6 +122,7 @@ const useGeneralStore = defineStore('general', () => {
     settings.autoUpdate = true
     settings.updateChannel = 'beta'
     settings.isSidebarCollapsed = false
+    settings.language = 'pl'
     saveSettings()
   }
 
@@ -118,13 +130,32 @@ const useGeneralStore = defineStore('general', () => {
     settings.machineId = machineId
     settings.macAddress = macAdress
     settings.ipAddress = ipAddress
+    saveSettings()
   }
 
   const setShowNotifications = (show: boolean): void => {
     settings.showNotifications = show
   }
 
+  const setCustomTheme = (theme: Record<string, string>): void => {
+    setTheme('custom')
+    settings.customTheme = theme
+    localStorage.setItem('customTheme', JSON.stringify(theme))
+  }
+
+  const setLanguage = (lang: string): void => {
+    settings.language = lang
+    saveSettings()
+  }
+
+  const setGameMode = (mode: string): void => {
+    settings.gameMode = mode
+    saveSettings()
+  }
+
   return {
+    availableGameModes,
+    searchQuery,
     mcInstance,
     settings,
     appVersion,
@@ -145,7 +176,10 @@ const useGeneralStore = defineStore('general', () => {
     setHideToTray,
     setShowNotifications,
     getTheme,
-    setTheme
+    setTheme,
+    setLanguage,
+    setGameMode,
+    setCustomTheme
   }
 })
 

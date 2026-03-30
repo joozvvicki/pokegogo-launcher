@@ -5,9 +5,13 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { type SavedAccount } from '@ui/types/app'
 import { useChatsStore } from '@ui/stores/chats-store'
+import { loadCustomOrFallbackHead } from '@ui/utils'
+import { useUserCacheStore } from './user-cache-store'
 
 const useUserStore = defineStore('user', () => {
+  const selectedProfile = ref<IUser | null>(null)
   const chatsStore = useChatsStore()
+  const userCache = useUserCacheStore()
 
   const savedAccounts = ref<SavedAccount[]>(
     JSON.parse(localStorage.getItem('savedAccounts') ?? '[]')
@@ -16,7 +20,9 @@ const useUserStore = defineStore('user', () => {
   const user = ref(null as IUser | null)
   const router = useRouter()
 
-  const setUser = (newUser: IUser): void => {
+  const setUser = async (newUser: IUser): Promise<void> => {
+    newUser.headUrl = await loadCustomOrFallbackHead(newUser)
+
     user.value = newUser
   }
 
@@ -34,6 +40,8 @@ const useUserStore = defineStore('user', () => {
   const logout = async (): Promise<void> => {
     resetUser()
     chatsStore.resetChats()
+    userCache.resetCache()
+    selectedProfile.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('mcToken')
@@ -46,10 +54,21 @@ const useUserStore = defineStore('user', () => {
     setUser(profile)
   }
 
+  const updateSelectedProfile = (player: IUser | null): void => {
+    selectedProfile.value = player
+  }
+
+  const resetSelectedProfile = (): void => {
+    selectedProfile.value = null
+  }
+
   return {
     user,
     hwidBanned,
     savedAccounts,
+    selectedProfile,
+    updateSelectedProfile,
+    resetSelectedProfile,
     setUser,
     resetUser,
     logout,

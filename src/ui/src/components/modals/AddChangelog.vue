@@ -7,7 +7,11 @@ import useVuelidate from '@vuelidate/core'
 import { helpers, required } from '@vuelidate/validators'
 import { parseISO } from 'date-fns'
 import DatePicker from 'primevue/datepicker'
+
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
@@ -30,22 +34,22 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const rules = computed(() => {
   return {
     name: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     version: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     type: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     photo: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     startDate: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     changes: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     }
   }
 })
@@ -95,7 +99,7 @@ const addChangelog = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie dodano nowy changelog ' + state.name + '.')
+      showToast(`${t('changelog.addSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -122,7 +126,7 @@ const editChangelog = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie edytowano changelog ' + state.name + '.')
+      showToast(`${t('changelog.editSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -151,6 +155,19 @@ const handleCancel = (): void => {
   modalVisible.value = false
 }
 
+const getBadgeColor = (type: string): string => {
+  switch (type) {
+    case 'new':
+      return 'bg-green-500/20 text-green-400'
+    case 'fix':
+      return 'bg-red-500/20 text-red-400'
+    case 'improve':
+      return 'bg-blue-500/20 text-blue-400'
+    default:
+      return 'bg-gray-500/20 text-gray-400'
+  }
+}
+
 defineExpose({
   openModal
 })
@@ -158,395 +175,242 @@ defineExpose({
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="launch-title">
-            <div class="flex gap-4 items-center">
-              <div class="nav-icon">
-                <i class="fas fa-plus"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-edit"></i>
               </div>
-              <h2 id="ban-title">{{ actionType === 'add' ? 'Dodaj' : 'Edytuj' }} changelog</h2>
+              <h3>
+                {{ actionType === 'add' ? t('changelog.addTitle') : t('changelog.editTitle') }}
+              </h3>
             </div>
+            <button class="g-close-btn" @click="handleCancel">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div class="nav-icon ml-auto" @click="handleCancel">
-            <i class="fas fa-x"></i>
-          </div>
-        </div>
-        <div class="modal-content">
-          <div class="flex gap-3 w-full">
-            <div class="flex flex-col min-w-[5.5rem] mr-2">
-              <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
-              <div
-                v-if="state.photo"
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <img
-                  :src="preview?.length > 0 ? preview : `${url}/changelog/image/${uuid}`"
-                  class="h-[4rem]"
-                  @dragstart.prevent="null"
-                />
+
+          <div class="g-modal-content custom-scrollbar">
+            <div class="flex gap-4 w-full">
+              <!-- Photo Upload -->
+              <div class="flex flex-col min-w-[5.5rem]">
+                <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
+                <div
+                  v-if="state.photo"
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer overflow-hidden text-center relative hover:opacity-80 transition-opacity"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <img
+                    :src="preview?.length > 0 ? preview : `${url}/changelog/image/${uuid}`"
+                    class="w-full h-full object-cover"
+                    @dragstart.prevent="null"
+                  />
+                </div>
+                <button
+                  v-else
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer hover:bg-white/5 transition-colors"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <i class="fa fa-image text-2xl text-gray-400" />
+                </button>
               </div>
-              <button
-                v-else
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <i class="fa fa-image text-[3rem]" />
-              </button>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Nazwa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Nazwa changeloga</small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
+
+              <!-- Main Fields -->
+              <div class="flex flex-col gap-3 w-full">
+                <!-- Name -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('changelog.labels.name')
+                  }}</label>
                   <input
                     v-model="state.name"
                     type="text"
-                    class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
-                    :class="{ invalid: v$.name.$error }"
-                    aria-required="true"
-                    required
+                    class="g-input"
+                    :placeholder="t('changelog.placeholders.name')"
+                    :class="{ '!border-red-500': v$.name.$error }"
                   />
-                  <div class="input-line"></div>
+                  <span v-if="v$.name.$error" class="text-xs text-red-500">{{
+                    v$.name.$errors[0]?.$message
+                  }}</span>
                 </div>
-                <div class="error-message" :class="{ show: v$.name.$error }">
-                  {{ v$.name.$errors[0]?.$message }}
+
+                <!-- Version & Date -->
+                <div class="flex gap-2">
+                  <div class="flex flex-col gap-1 w-full">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('changelog.labels.version')
+                    }}</label>
+                    <input
+                      v-model="state.version"
+                      type="text"
+                      class="g-input"
+                      :placeholder="t('changelog.placeholders.version')"
+                      :class="{ '!border-red-500': v$.version.$error }"
+                    />
+                    <span v-if="v$.version.$error" class="text-xs text-red-500">{{
+                      v$.version.$errors[0]?.$message
+                    }}</span>
+                  </div>
+                  <div class="flex flex-col gap-1 w-full">
+                    <label class="text-sm font-semibold text-gray-400">{{
+                      t('changelog.labels.date')
+                    }}</label>
+                    <DatePicker
+                      v-model="state.startDate"
+                      :placeholder="t('changelog.placeholders.date')"
+                      class="w-full"
+                      fluid
+                      :pt="{
+                        root: { class: 'w-full' },
+                        input: {
+                          class: 'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
+                        },
+                        pcPanel: {
+                          root: { class: '!w-full' }
+                        }
+                      }"
+                    />
+                    <span v-if="v$.startDate.$error" class="text-xs text-red-500">{{
+                      v$.startDate.$errors[0]?.$message
+                    }}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Wersja</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Wersja changeloga</small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
-                  <input
-                    v-model="state.version"
-                    type="text"
-                    class="form-input !pl-[1rem]"
-                    placeholder="Podaj wersję"
-                    :class="{ invalid: v$.version.$error }"
-                    aria-required="true"
-                    required
-                  />
-                  <div class="input-line"></div>
-                </div>
-                <div class="error-message" :class="{ show: v$.version.$error }">
-                  {{ v$.version.$errors[0]?.$message }}
-                </div>
-              </div>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data wydania changeloga </small>
-              <div class="form-group">
-                <DatePicker
-                  v-model="state.startDate"
-                  placeholder="Wybierz datę"
-                  class="w-full"
-                  input-class="!text-[0.8rem] w-full"
-                  :class="{ invalid: v$.startDate.$error }"
-                  required
-                  aria-required="true"
-                />
-                <div class="error-message" :class="{ show: v$.startDate.$error }">
-                  {{ v$.startDate.$errors[0]?.$message }}
+
+                <!-- Type Toggle -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('changelog.labels.type')
+                  }}</label>
+                  <div class="flex bg-black/20 p-1 rounded-xl">
+                    <button
+                      class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                      :class="
+                        state.type === 'launcher'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      :disabled="actionType === 'edit'"
+                      @click="state.type = 'launcher'"
+                    >
+                      {{ t('changelog.types.launcher') }}
+                    </button>
+                    <button
+                      class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                      :class="
+                        state.type === 'server'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      :disabled="actionType === 'edit'"
+                      @click="state.type = 'server'"
+                    >
+                      {{ t('changelog.types.server') }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Typ</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Typ dodawanego changeloga </small>
-              <div class="toggle-group">
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'launcher' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'launcher'"
-                >
-                  Launcher
-                </button>
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'server' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'server'"
-                >
-                  Serwer
+            <!-- Changes Table -->
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="flex justify-between items-center">
+                <label class="text-sm font-semibold text-gray-400">{{
+                  t('changelog.labels.changes')
+                }}</label>
+                <button class="g-btn text-xs !py-1 !px-2" @click="state.changes.push({})">
+                  <i class="fas fa-plus mr-1"></i> {{ t('general.add') }}
                 </button>
               </div>
-            </div>
-          </div>
 
-          <div class="flex flex-col">
-            <label class="input-label mb-1">Lista zmian</label>
-            <small class="mb-1 text-[var(--text-secondary)]">
-              Lista zmian wykonanych w danym changelogu
-            </small>
-            <div class="logs-table-wrapper">
-              <table class="logs-table">
-                <thead>
-                  <tr class="font-black text-[0.9rem]">
-                    <th>Typ</th>
-                    <th>Opis</th>
-                    <th>
-                      <div class="relative flex flex-row-reverse gap-2">
-                        <button class="info-btn" @click="state.changes.push({})">
-                          <i :class="'fas fa-plus'"></i>
+              <div class="g-card bg-black/20 overflow-hidden !p-0 border border-white/5 rounded-xl">
+                <table class="w-full text-sm text-left text-gray-400">
+                  <thead class="text-xs uppercase bg-black/40 text-gray-300">
+                    <tr>
+                      <th class="px-4 py-3">{{ t('changelog.table.type') }}</th>
+                      <th class="px-4 py-3">{{ t('changelog.table.desc') }}</th>
+                      <th class="px-4 py-3 text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-white/5">
+                    <tr v-for="(change, i) in state.changes" :key="i" class="hover:bg-white/5">
+                      <td class="px-4 py-2 w-48">
+                        <div class="flex bg-black/20 p-0.5 rounded-lg gap-1">
+                          <button
+                            v-for="ctype in ['new', 'fix', 'improve']"
+                            :key="ctype"
+                            class="flex-1 py-1 text-[10px] font-bold uppercase rounded transition-all text-center"
+                            :class="
+                              change.type === ctype
+                                ? getBadgeColor(ctype)
+                                : 'text-gray-500 hover:text-gray-300'
+                            "
+                            @click="change.type = ctype"
+                          >
+                            {{ ctype[0] }}
+                          </button>
+                        </div>
+                      </td>
+                      <td class="px-4 py-2">
+                        <input
+                          v-model="change.desc"
+                          type="text"
+                          class="bg-transparent border-none text-white w-full focus:ring-0 placeholder-gray-600 text-sm"
+                          :placeholder="t('changelog.placeholders.desc')"
+                        />
+                      </td>
+                      <td class="px-4 py-2 text-right">
+                        <button
+                          class="text-red-400 hover:text-red-300 transition-colors"
+                          @click="state.changes.splice(i, 1)"
+                        >
+                          <i class="fas fa-trash"></i>
                         </button>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <template v-if="state.changes.length">
-                    <tr v-for="(change, i) in state.changes" :key="i">
-                      <td>
-                        <div class="flex items-start gap-2">
-                          <button
-                            class="toggle-option !py-1"
-                            :class="{
-                              active: change.type === 'new'
-                            }"
-                            @click="change.type = 'new'"
-                          >
-                            Nowość
-                          </button>
-                          <button
-                            class="toggle-option !py-1"
-                            :class="{ active: change.type === 'fix' }"
-                            @click="change.type = 'fix'"
-                          >
-                            Poprawka
-                          </button>
-                          <button
-                            class="toggle-option !py-1"
-                            :class="{ active: change.type === 'improve' }"
-                            @click="change.type = 'improve'"
-                          >
-                            Ulepszenie
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="input-wrapper">
-                          <div class="form-group !my-0">
-                            <div class="flex">
-                              <input
-                                v-model="change.desc"
-                                type="text"
-                                class="form-input !py-1 !pl-[1rem]"
-                                placeholder="Co zmieniono?"
-                                aria-required="true"
-                                required
-                              />
-                              <div class="input-line"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div class="flex flex-row-reverse gap-2">
-                          <button class="ban-btn" @click="state.changes.splice(i, 1)">
-                            <i :class="'fas fa-trash'"></i>
-                          </button>
-                        </div>
                       </td>
                     </tr>
-                  </template>
-                  <tr v-else>
-                    <td class="px-4 py-2 text-[var(--text-secondary)]" :colspan="3">Brak zmian</td>
-                  </tr>
-                </tbody>
-              </table>
+                    <tr v-if="state.changes.length === 0">
+                      <td colspan="3" class="px-4 py-8 text-center text-gray-500 italic">
+                        {{ t('changelog.noChanges', 'No changes added yet.') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="modal-footer flex ml-auto max-w-1/3">
-          <button
-            type="button"
-            class="btn-primary"
-            @click="actionType === 'add' ? addChangelog() : editChangelog()"
-          >
-            <i class="fa fa-save" />
-            Zapisz
-          </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleCancel">
+              {{ t('changelog.cancel') }}
+            </button>
+            <button
+              class="g-btn primary flex-1"
+              @click="actionType === 'add' ? addChangelog() : editChangelog()"
+            >
+              <i class="fa fa-save" />
+              {{ t('changelog.save') }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 800;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 80vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  border-radius: 1rem;
-  padding: 0 2rem;
-  padding-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.modal-header {
-  position: sticky;
-  z-index: 700;
-  padding: 1rem 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-}
-
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.input-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.input-field,
-.textarea-field {
-  background: rgba(30, 35, 45, 0.85);
-  border-radius: 0.5rem;
-  border: none;
-  color: white;
-  padding: 0.5rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.input-field::placeholder,
-.textarea-field::placeholder {
-  color: var(--text-secondary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: var(--primary);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.logs-table-wrapper {
-  width: 100%;
-  max-height: 250px;
-  overflow-y: auto;
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  position: relative;
-  overflow-y: auto;
-  border: 1px dashed var(--border);
-}
-.logs-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.logs-table th {
-  background: var(--primary-dark);
-  padding: 0.5rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.logs-table td {
-  padding: 0.25rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.logs-table tr {
-  background: #0000004d;
-}
-
-.logs-table tr:hover {
-  background: var(--bg-card);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

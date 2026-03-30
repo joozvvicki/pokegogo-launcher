@@ -5,6 +5,7 @@ import { UserRole } from './types/app'
 interface ImportMetaEnv {
   readonly RENDERER_VITE_API_URL: string
   readonly RENDERER_VITE_SERVER_IP: string
+  readonly VITE_DISCORD_ERROR_URL: string
 }
 
 interface ImportMeta {
@@ -37,4 +38,5 @@ export interface IUser {
   friends: string[]
   friendRequests: string[]
   headUrl?: string
+  hwidAccountCount?: number
 }

@@ -8,6 +8,9 @@ import { parseISO } from 'date-fns'
 import DatePicker from 'primevue/datepicker'
 import { computed, reactive, ref } from 'vue'
 import { FTPChannel } from '@ui/types/ftp'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
@@ -29,24 +32,24 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const rules = computed(() => {
   return {
     name: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     type: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     desc: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     photo: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     startDate: {
-      required: helpers.withMessage('Pole jest wymagane', required)
+      required: helpers.withMessage(t('general.required'), required)
     },
     ...(state.type !== 'mega'
       ? {
           endDate: {
-            required: helpers.withMessage('Pole jest wymagane', required)
+            required: helpers.withMessage(t('general.required'), required)
           }
         }
       : {})
@@ -97,7 +100,7 @@ const addEvent = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie dodano nowe wydarzenie ' + state.name + '.')
+      showToast(`${t('events.addSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -124,7 +127,7 @@ const editEvent = async (): Promise<void> => {
     })
 
     if (res) {
-      showToast('Pomyślnie edytowano wydarzenie ' + state.name + '.')
+      showToast(`${t('events.editSuccess')} ${state.name}.`)
       handleCancel()
       await emits('refreshData')
     }
@@ -160,297 +163,201 @@ defineExpose({
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="launch-title">
-            <div class="flex gap-4 items-center">
-              <div class="nav-icon">
-                <i class="fas fa-plus"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box">
+                <i class="fas fa-calendar-plus"></i>
               </div>
-              <h2 id="ban-title">{{ actionType === 'add' ? 'Dodaj' : 'Edytuj' }} wydarzenie</h2>
+              <h3>{{ actionType === 'add' ? t('events.addTitle') : t('events.editTitle') }}</h3>
             </div>
+            <button class="g-close-btn" @click="handleCancel">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div class="nav-icon ml-auto" @click="handleCancel">
-            <i class="fas fa-x"></i>
-          </div>
-        </div>
-        <div class="modal-content">
-          <div class="flex gap-3 w-full">
-            <div class="flex flex-col min-w-[5.5rem] mr-2">
-              <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
-              <div
-                v-if="state.photo"
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <img
-                  :src="preview?.length ? preview : `${url}/events/image/${uuid}`"
-                  class="h-[4rem]"
-                  @dragstart.prevent="null"
-                />
+
+          <div class="g-modal-content custom-scrollbar">
+            <div class="flex gap-4 w-full">
+              <!-- Photo Upload -->
+              <div class="flex flex-col min-w-[5.5rem]">
+                <input ref="fileInputRef" type="file" hidden @change="handleUpdatePhoto" />
+                <div
+                  v-if="state.photo"
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer overflow-hidden text-center relative hover:opacity-80 transition-opacity"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <img
+                    :src="preview?.length ? preview : `${url}/events/image/${uuid}`"
+                    class="w-full h-full object-cover"
+                    @dragstart.prevent="null"
+                  />
+                </div>
+                <button
+                  v-else
+                  class="g-input flex items-center justify-center !p-0 cursor-pointer hover:bg-white/5 transition-colors"
+                  style="height: 5.5rem; width: 5.5rem"
+                  :class="{ '!border-red-500': v$.photo.$error }"
+                  @click="fileInputRef?.click()"
+                >
+                  <i class="fa fa-image text-2xl text-gray-400" />
+                </button>
               </div>
-              <button
-                v-else
-                class="nav-icon !w-full !h-[5.5rem]"
-                :class="{ 'border border-red-500': v$.photo.$error }"
-                @click="fileInputRef?.click()"
-              >
-                <i class="fa fa-image text-[3rem]" />
-              </button>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Nazwa</label>
-              <small class="mb-1 text-[var(--text-secondary)]">
-                Nazwa wydarzenia wyświetlana na stronie głównej launchera.
-              </small>
-              <div class="form-group h-full">
-                <div class="input-wrapper flex">
+
+              <!-- Main Fields -->
+              <div class="flex flex-col gap-3 w-full">
+                <!-- Name -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('events.labels.name')
+                  }}</label>
                   <input
                     v-model="state.name"
                     type="text"
-                    class="form-input !pl-[1rem]"
-                    placeholder="Podaj nazwę"
-                    :class="{ invalid: v$.name.$error }"
-                    aria-required="true"
-                    required
+                    class="g-input"
+                    :placeholder="t('events.placeholders.name')"
+                    :class="{ '!border-red-500': v$.name.$error }"
                   />
-                  <div class="input-line"></div>
+                  <span v-if="v$.name.$error" class="text-xs text-red-500">{{
+                    v$.name.$errors[0]?.$message
+                  }}</span>
                 </div>
-                <div class="error-message" :class="{ show: v$.name.$error }">
-                  {{ v$.name.$errors[0]?.$message }}
+
+                <!-- Type Toggle -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-sm font-semibold text-gray-400">{{
+                    t('events.labels.type')
+                  }}</label>
+                  <div class="flex bg-black/20 p-1 rounded-xl">
+                    <button
+                      v-if="actionType === 'edit'"
+                      class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                      :class="
+                        state.type === 'mega'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      :disabled="actionType === 'edit'"
+                      @click="state.type = 'mega'"
+                    >
+                      {{ t('events.types.mega') }}
+                    </button>
+                    <button
+                      class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
+                      :class="
+                        state.type === 'normal'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      :disabled="actionType === 'edit'"
+                      @click="state.type = 'normal'"
+                    >
+                      {{ t('events.types.normal') }}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Typ</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Typ dodawanego wydarzenia </small>
-              <div class="toggle-group">
-                <button
-                  v-if="actionType === 'edit'"
-                  class="toggle-option"
-                  :class="{ active: state.type === 'mega' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'mega'"
-                >
-                  MEGA
-                </button>
-                <button
-                  class="toggle-option"
-                  :class="{ active: state.type === 'normal' }"
-                  :disabled="actionType === 'edit'"
-                  @click="state.type = 'normal'"
-                >
-                  Normalny
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex flex-col">
-            <label class="input-label mb-1">Opis</label>
-            <small class="mb-1 text-[var(--text-secondary)]">
-              Opis wydarzenia wyświetlany na stronie głównej launchera.
-            </small>
-            <div class="form-group">
+            <!-- Description -->
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-semibold text-gray-400">{{
+                t('events.labels.desc')
+              }}</label>
               <textarea
                 v-model="state.desc"
-                placeholder="Podaj opis.."
-                :rows="3"
-                class="form-input !pl-[1rem] !resize-none !outline-none"
-                :class="{ invalid: v$.desc.$error }"
-                required
-                aria-required="true"
+                class="g-input !h-auto resize-none"
+                rows="3"
+                :placeholder="t('events.placeholders.desc')"
+                :class="{ '!border-red-500': v$.desc.$error }"
               ></textarea>
-              <div class="error-message" :class="{ show: v$.desc.$error }">
-                {{ v$.desc.$errors[0]?.$message }}
-              </div>
+              <span v-if="v$.desc.$error" class="text-xs text-red-500">{{
+                v$.desc.$errors[0]?.$message
+              }}</span>
             </div>
-          </div>
 
-          <div class="flex gap-2 w-full">
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data początkowa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data początku wydarzenia </small>
-              <div class="form-group">
+            <!-- Dates -->
+            <div class="grid grid-cols-2 pt-2 gap-4 w-full">
+              <div class="flex flex-col gap-1">
+                <label class="text-sm font-semibold text-gray-400">{{
+                  t('events.labels.startDate')
+                }}</label>
                 <DatePicker
                   v-model="state.startDate"
-                  placeholder="Wybierz datę"
-                  class="w-full my-app-dark"
-                  input-class="!text-[0.8rem] w-full"
-                  :class="{ invalid: v$.startDate.$error }"
-                  required
-                  aria-required="true"
+                  :placeholder="t('events.placeholders.date')"
+                  class="w-full"
+                  fluid
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full ' + (v$.startDate.$error ? '!border-red-500' : '')
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
+                    }
+                  }"
                 />
-                <div class="error-message" :class="{ show: v$.startDate.$error }">
-                  {{ v$.startDate.$errors[0]?.$message }}
-                </div>
+                <span v-if="v$.startDate.$error" class="text-xs text-red-500">{{
+                  v$.startDate.$errors[0]?.$message
+                }}</span>
               </div>
-            </div>
-            <div class="flex flex-col w-full">
-              <label class="input-label mb-1">Data końcowa</label>
-              <small class="mb-1 text-[var(--text-secondary)]"> Data końca wydarzenia </small>
-              <div class="form-group">
+              <div class="flex flex-col gap-1 w-full">
+                <label class="text-sm font-semibold text-gray-400">{{
+                  t('events.labels.endDate')
+                }}</label>
                 <DatePicker
                   v-model="state.endDate"
-                  placeholder="Wybierz datę"
+                  :placeholder="t('events.placeholders.date')"
                   class="w-full"
-                  input-class="!text-[0.8rem] w-full"
-                  :class="{ invalid: v$.endDate?.$error }"
-                  required
+                  fluid
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full ' + (v$.endDate?.$error ? '!border-red-500' : '')
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
+                    }
+                  }"
                   show-clear
-                  aria-required="true"
                 />
-                <div class="error-message" :class="{ show: v$.endDate?.$error }">
-                  {{ v$.endDate?.$errors[0]?.$message }}
-                </div>
+                <span v-if="v$.endDate?.$error" class="text-xs text-red-500">{{
+                  v$.endDate?.$errors[0]?.$message
+                }}</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="modal-footer flex ml-auto max-w-1/3">
-          <button
-            type="button"
-            class="btn-primary"
-            @click="actionType === 'add' ? addEvent() : editEvent()"
-          >
-            <i class="fa fa-save" />
-            Zapisz
-          </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleCancel">
+              {{ t('events.cancel') }}
+            </button>
+            <button
+              class="g-btn primary flex-1"
+              @click="actionType === 'add' ? addEvent() : editEvent()"
+            >
+              <i class="fa fa-save" />
+              {{ t('events.save') }}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 800;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 80vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  border-radius: 1rem;
-  padding: 0 2rem;
-  padding-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.modal-header {
-  position: sticky;
-  z-index: 700;
-  padding: 1rem 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.input-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.input-field,
-.textarea-field {
-  background: rgba(30, 35, 45, 0.85);
-  border-radius: 0.5rem;
-  border: none;
-  color: white;
-  padding: 0.5rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.input-field::placeholder,
-.textarea-field::placeholder {
-  color: var(--text-secondary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: var(--primary);
-  font-weight: 700;
-  cursor: pointer;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

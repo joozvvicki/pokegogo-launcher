@@ -1,87 +1,129 @@
 <script lang="ts" setup>
 import {
   acceptFriendRequest,
-  getFriends,
-  getPlayers,
+  cancelFriendRequest,
   rejectFriendRequest,
   removeFriend,
   requestFriend
 } from '@ui/api/endpoints'
-import BanPlayerModal from '@ui/components/modals/BanPlayerModal.vue'
-import PasswordResetConfirm from '@ui/components/modals/PasswordResetConfirm.vue'
 import { IUser } from '@ui/env'
-import { IChat, useChatsStore } from '@ui/stores/chats-store'
+import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
-import { loadCustomOrFallbackHead, showToast } from '@ui/utils'
-import { nextTick } from 'process'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { showToast } from '@ui/utils'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
+const { t } = useI18n()
 
-const chatsStore = useChatsStore()
+const props = defineProps<{
+  filteredPlayers: IUser[]
+  hasMorePlayers: boolean
+  isLoadingPlayers: boolean
+  allPlayers: IUser[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'fetch-players', query?: string, reset?: boolean): Promise<void>
+  (e: 'refresh-data', query?: string, reset?: boolean): Promise<void>
+  (e: 'ban-player', player: IUser): Promise<void>
+  (e: 'unban-player', player: IUser): Promise<void>
+  (e: 'reset-password', player: IUser): Promise<void>
+}>()
+
+const generalStore = useGeneralStore()
 const userStore = useUserStore()
 
-const allPlayers = ref<IUser[]>([])
-const isLoadingPlayers = ref<boolean>(false)
-const hasMorePlayers = ref<boolean>(true)
-const observerTarget = ref<HTMLElement | null>(null)
-const filteredPlayers = ref<IUser[]>([])
-const searchQuery = ref('')
-const banPlayerModalRef = ref()
-const passwordResetModalRef = ref()
+const filterGroups = [
+  {
+    label: 'Status',
+    filters: [
+      { label: 'Online', value: 'q:online', icon: 'fas fa-signal' },
+      { label: 'Offline', value: 'q:offline', icon: 'fas fa-power-off' },
+      { label: 'Banned', value: 'q:banned', icon: 'fas fa-ban' }
+    ]
+  },
+  {
+    label: 'Hardware',
+    filters: [
+      { label: 'No HWID', value: 'q:nohwid', icon: 'fas fa-user-slash' },
+      { label: 'Multi 2+', value: 'q:hwid>1', icon: 'fas fa-user-friends' },
+      { label: 'Multi 3+', value: 'q:hwid>2', icon: 'fas fa-users' },
+      { label: 'Multi 4+', value: 'q:hwid>3', icon: 'fas fa-layer-group' }
+    ]
+  },
+  {
+    label: 'Account Type',
+    filters: [
+      { label: 'Microsoft', value: 'q:microsoft', icon: 'fab fa-microsoft' },
+      { label: 'Standard', value: 'q:standard', icon: 'fas fa-user' }
+    ]
+  }
+]
 
-const currentPage = ref(1)
-const itemsPerPage = ref(14)
-let observer: IntersectionObserver | null = null
+const allFilters = filterGroups.flatMap((group) => group.filters)
 
-async function fetchPlayers(query?: string, reset: boolean = false): Promise<void> {
-  if (isLoadingPlayers.value || (!hasMorePlayers.value && !reset)) return
+const activeFilters = ref<string[]>([])
 
-  isLoadingPlayers.value = true
-
-  if (reset) {
-    currentPage.value = 1
-    hasMorePlayers.value = true
+const toggleFilter = async (filterValue: string): Promise<void> => {
+  // Toggle the specific filter in the active list
+  if (activeFilters.value.includes(filterValue)) {
+    activeFilters.value = activeFilters.value.filter((f) => f !== filterValue)
+  } else {
+    activeFilters.value.push(filterValue)
   }
 
-  try {
-    const res = await getPlayers(currentPage.value, itemsPerPage.value, query ?? searchQuery.value)
+  // Regex to identify any "special" server filter or custom prefix
+  const serverFilterRegex =
+    /^q:(online|offline|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
 
-    if (res) {
-      if (res.length < itemsPerPage.value) {
-        hasMorePlayers.value = false
-      }
+  // Strip all matching keywords from current query
+  const remainingParts = searchQuery.value
+    .split(/\s+/)
+    .filter((part) => !serverFilterRegex.test(part))
 
-      const mappedPlayers = await Promise.all(
-        res.map(async (player) => {
-          const headUrl = await loadCustomOrFallbackHead(player)
-          return {
-            ...player,
-            headUrl
-          }
-        })
-      )
+  // Re-append all currently active chips
+  searchQuery.value = [...remainingParts, ...activeFilters.value].join(' ').trim()
 
-      if (reset) {
-        allPlayers.value = mappedPlayers
-        filteredPlayers.value = mappedPlayers
-      } else {
-        allPlayers.value = [...allPlayers.value, ...mappedPlayers]
-        filteredPlayers.value = [...filteredPlayers.value, ...mappedPlayers]
-      }
-
-      if (res.length > 0) {
-        currentPage.value++
-      }
-    } else {
-      hasMorePlayers.value = false
-    }
-  } catch (error) {
-    console.error('Błąd pobierania graczy:', error)
-    showToast('Błąd pobierania listy graczy', 'error')
-  } finally {
-    isLoadingPlayers.value = false
-  }
+  generalStore.searchQuery = searchQuery.value
+  await emit('refresh-data', searchQuery.value, true)
 }
+
+const isFilterActive = (filterValue: string): boolean => activeFilters.value.includes(filterValue)
+
+const clearAllFilters = async (): Promise<void> => {
+  activeFilters.value = []
+  const serverFilterRegex =
+    /^q:(online|offline|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
+  const remainingParts = searchQuery.value
+    .split(/\s+/)
+    .filter((part) => !serverFilterRegex.test(part))
+  searchQuery.value = remainingParts.join(' ').trim()
+  generalStore.searchQuery = searchQuery.value
+  await emit('refresh-data', searchQuery.value, true)
+}
+
+const showInstruction = ref(false)
+
+const searchQuery = ref<string>(generalStore.searchQuery ?? '')
+const observerTarget = ref<HTMLElement | null>(null)
+
+// Watch for manual search query changes to sync chips
+watch(searchQuery, (newQuery) => {
+  const queryParts = newQuery.split(/\s+/)
+  const matched: string[] = []
+
+  allFilters.forEach((f) => {
+    // For exact match filters
+    if (queryParts.some((p) => p.toLowerCase() === f.value.toLowerCase())) {
+      matched.push(f.value)
+      return
+    }
+  })
+
+  activeFilters.value = matched
+})
+
+let observer: IntersectionObserver | null = null
 
 const debounce = (func: () => void | Promise<void>, delay: number) => {
   let timeout: ReturnType<typeof setTimeout>
@@ -93,112 +135,124 @@ const debounce = (func: () => void | Promise<void>, delay: number) => {
 }
 
 const debounceSearchInput = debounce(async () => {
-  await fetchPlayers(searchQuery.value, true)
+  generalStore.searchQuery = searchQuery.value
+  await emit('refresh-data', searchQuery.value, true)
 }, 500)
 
 const handleSearchInput = (): void => {
   debounceSearchInput()
 }
 
-const handleLauncherBan = async (player: IUser): Promise<void> => {
-  banPlayerModalRef.value?.openModal(player)
-}
-
-const handleLauncherUnban = async (player: IUser): Promise<void> => {
-  banPlayerModalRef.value?.openModal(player, 'unban')
-}
-
-const handleResetPassword = async (player: IUser): Promise<void> => {
-  passwordResetModalRef.value?.openModal(player)
-}
-
 const getPlayerID = (player: IUser): string => {
   if (player?.mcid) return player.mcid
   if (player?.uuid) return player.uuid
-  return '(Brak)'
+  return t('users.none')
 }
 
 const handleRequestFriend = async (player: IUser): Promise<void> => {
   try {
-    const res = await requestFriend(getPlayerID(player))
+    const res = await requestFriend(player.nickname)
 
     if (res) {
-      await fetchPlayers(searchQuery.value, true)
+      await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
 
-      showToast(`Wysłano zaproszenie do ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteSent')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się wysłać zaproszenia do ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteFailed')} ${player.nickname}`, 'error')
   }
 }
 
-const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
+const handleCancelRequest = async (player: IUser): Promise<void> => {
   try {
-    const res = await acceptFriendRequest(player.uuid)
-
+    const res = await cancelFriendRequest(player.nickname)
     if (res) {
-      await fetchPlayers(searchQuery.value, true)
+      await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
-      await chatsStore.setFriends(await getFriends())
 
-      showToast(`Zaakceptowano zaproszenie od ${player.nickname}`, 'success')
+      showToast(`${t('users.toasts.inviteCancelled')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się zaakceptować zaproszenia od ${player.nickname}`, 'error')
-  }
-}
-
-const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
-  try {
-    const res = await rejectFriendRequest(player.uuid)
-
-    if (res) {
-      await fetchPlayers(searchQuery.value, true)
-      await userStore.updateProfile()
-      await chatsStore.setFriends(await getFriends())
-
-      showToast(`Odrzucono zaproszenie od ${player.nickname}`, 'success')
-    }
-  } catch {
-    showToast(`Nie udało się odrzucić zaproszenia od ${player.nickname}`, 'error')
+    showToast(`${t('users.toasts.inviteCancelFailed')} ${player.nickname}`, 'error')
   }
 }
 
 const handleRemoveFriend = async (player: IUser): Promise<void> => {
   try {
-    const res = await removeFriend(player.uuid)
+    const res = await removeFriend(player.nickname)
 
     if (res) {
-      await fetchPlayers(searchQuery.value, true)
+      await emit('fetch-players', searchQuery.value, true)
       await userStore.updateProfile()
-      await chatsStore.setFriends(await getFriends())
 
-      showToast(`Usunięto ${player.nickname} z listy znajomych`, 'success')
+      showToast(`${t('users.toasts.friendRemoved')} ${player.nickname}`, 'success')
     }
   } catch {
-    showToast(`Nie udało się usunąć ${player.nickname} z listy znajomych`, 'error')
+    showToast(`${t('users.toasts.friendRemoveFailed')} ${player.nickname}`, 'error')
   }
 }
 
-const refreshPlayerList = ref()
+const handleOpenUserProfile = (player: IUser): void => {
+  userStore.updateSelectedProfile(player)
+}
 
-const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.uuid)
+const isMod = computed(() =>
+  [UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
+)
 
-const sentRequest = (player: IUser): boolean =>
-  !!player?.friendRequests?.includes(userStore.user?.uuid ?? '')
+const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
 
-const hasFriendRequest = (player: IUser): boolean =>
-  !!userStore.user?.friendRequests?.includes(player.uuid)
+const hasFriendRequestFromMe = (player: IUser): boolean =>
+  !!player?.friendRequests?.includes(userStore.user?.nickname ?? '')
+
+const hasFriendRequestFromPlayer = (player: IUser): boolean =>
+  !!userStore.user?.friendRequests?.includes(player.nickname)
+
+const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
+  try {
+    const res = await acceptFriendRequest(player.nickname)
+
+    if (res) {
+      await emit('refresh-data')
+      await userStore.updateProfile()
+
+      showToast(`${t('users.toasts.inviteAccepted')} ${player.nickname}`, 'success')
+    }
+  } catch {
+    showToast(`${t('users.toasts.inviteAcceptFailed')} ${player.nickname}`, 'error')
+  }
+}
+
+const handleRejectFriendRequest = async (player: IUser): Promise<void> => {
+  try {
+    const res = await rejectFriendRequest(player.nickname)
+
+    if (res) {
+      await emit('refresh-data')
+      await userStore.updateProfile()
+
+      showToast(`${t('users.toasts.inviteRejected')} ${player.nickname}`, 'success')
+    }
+  } catch {
+    showToast(`${t('users.toasts.inviteRejectFailed')} ${player.nickname}`, 'error')
+  }
+}
+
+const handleUsersListRefresh = async (): Promise<void> => {
+  await emit('fetch-players', searchQuery.value, true)
+}
 
 onMounted(async () => {
-  await fetchPlayers(searchQuery.value, true)
+  await emit('fetch-players', searchQuery.value, true)
+
+  window.addEventListener('users:list-refresh', handleUsersListRefresh)
 
   observer = new IntersectionObserver(
     (entries) => {
       const target = entries[0]
-      if (target.isIntersecting && hasMorePlayers.value && !isLoadingPlayers.value) {
-        fetchPlayers()
+      if (target.isIntersecting && props.hasMorePlayers && !props.isLoadingPlayers) {
+        emit('fetch-players', searchQuery.value)
       }
     },
     {
@@ -216,243 +270,255 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  clearInterval(refreshPlayerList.value)
   if (observer) observer.disconnect()
+  window.removeEventListener('users:list-refresh', handleUsersListRefresh)
 })
 </script>
 
 <template>
-  <div class="users-container h-full flex">
-    <div v-if="chatsStore.friends.length" class="flex flex-col gap-2 h-full w-12">
-      <div v-for="friend in chatsStore.friends" :key="friend.uuid" class="!relative !w-10 !h-10">
-        <img
-          v-if="friend.headUrl"
-          :src="friend.headUrl"
-          class="!w-10 !h-10 !shrink-0 rounded-full cursor-pointer hover:opacity-80"
-          alt="Avatar"
-          @click="chatsStore.addActiveChat(friend as IChat)"
-        />
-        <div
-          v-else
-          class="!w-10 !h-10 !shrink-0 rounded-full overflow-hidden flex items-center justify-center"
-        >
-          <i class="fas fa-user"></i>
+  <div class="players-page-container">
+    <div class="relative flex flex-col w-full flex-1 min-h-0">
+      <div class="players-header flex items-center justify-between gap-4 mb-6">
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('users.searchPlaceholder')"
+            @input="handleSearchInput"
+          />
         </div>
-        <div
-          class="absolute -bottom-1 right-0 z-10 w-2 h-2 rounded-full"
-          :style="{ background: !friend?.isOnline ? '#ff4757' : '#00ff88' }"
-        ></div>
-      </div>
-    </div>
 
-    <div class="flex flex-col w-full">
-      <div class="search-input-wrapper mb-2">
-        <i class="fas fa-search search-icon !text-[0.9rem] ml-3"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="search-input !p-2 !py-1 !pl-8 !text-[0.8rem]"
-          :placeholder="`Wyszukaj gracza po nicku${[UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER) ? ', UUID/MCID, Machine ID lub Mac adresie lub słowach kluczowych: banned, premium, nohwid, online, role:rola' : ''}...`"
-          @input="handleSearchInput"
-        />
+        <div class="header-actions">
+          <button v-if="isMod" class="info-btn" @click="showInstruction = !showInstruction">
+            <i class="fas fa-terminal"></i>
+          </button>
+        </div>
+
+        <Transition name="fade-slide">
+          <div v-if="showInstruction" class="instruction-panel">
+            <div class="instruction-header">
+              <h3>{{ t('users.keywords.title') }}</h3>
+              <button class="close-instruction" @click="showInstruction = false">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="instruction-content">
+              <div class="keyword-item">
+                <code>q:hwid</code> <span>{{ t('users.keywords.hwid') }}</span>
+              </div>
+              <div class="keyword-item">
+                <code>q:nohwid</code> <span>{{ t('users.keywords.nohwid') }}</span>
+              </div>
+              <div class="keyword-item">
+                <code>q:hwid>x</code> <span>{{ t('users.keywords.hwidCount') }}</span>
+              </div>
+              <div class="keyword-item">
+                <code>hwid:[hwid]</code> <span>{{ t('users.keywords.hwidSpecific') }}</span>
+              </div>
+              <div class="keyword-item">
+                <code>q:banned</code> <span>{{ t('users.keywords.banned') }}</span>
+              </div>
+              <div class="keyword-item">
+                <code>q:online</code> <span>{{ t('users.keywords.online') }}</span>
+              </div>
+              <div class="keyword-item"><code>role:admin</code> <span>Filter by role</span></div>
+              <div class="keyword-item">
+                <code>ip:1.2.3.4</code> <span>Filter by IP address</span>
+              </div>
+              <div class="keyword-item">
+                <code>email:test@gg.pl</code> <span>Filter by email</span>
+              </div>
+              <div class="keyword-item"><code>id:uuid</code> <span>Filter by UUID/MCID</span></div>
+            </div>
+            <div class="instructions-section">
+              <h4>Tips</h4>
+              <div class="keywords-grid">
+                <div class="keyword-item">
+                  <span>Combine filters for precision: <code>q:online q:hwid>1</code></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
       </div>
 
-      <div class="h-[calc(100vh-54.5px)] overflow-y-auto scroll-container">
+      <div class="filter-section mb-6">
+        <div class="filter-header">
+          <h4>{{ t('users.filters.title') }}</h4>
+          <button
+            v-if="activeFilters.length > 0"
+            class="clear-filters-btn"
+            @click="clearAllFilters"
+          >
+            <i class="fas fa-times-circle"></i>
+            {{ t('users.filters.clearAll') }}
+          </button>
+        </div>
+        <div class="filter-groups">
+          <div v-for="group in filterGroups" :key="group.label" class="filter-group">
+            <span class="group-label">{{ group.label }}</span>
+            <div class="filter-chips-wrapper">
+              <button
+                v-for="filter in group.filters"
+                :key="filter.value"
+                class="filter-chip"
+                :class="{ active: isFilterActive(filter.value) }"
+                @click="toggleFilter(filter.value)"
+              >
+                <i :class="filter.icon"></i>
+                <span>{{ filter.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="players-scroll-container scroll-container">
         <TransitionGroup
           v-if="filteredPlayers.length > 0"
           name="list"
           tag="div"
-          class="w-full grid grid-cols-2 gap-2"
+          class="players-grid"
         >
           <article
             v-for="player in filteredPlayers"
-            :key="player.mcid ? player.mcid : player.uuid"
-            class="flex flex-col gap-2 backdrop-blur-xl border rounded-xl px-4 py-3 border-[var(--primary)]/10"
-            :class="player.isBanned ? 'bg-red-400/20' : 'bg-[var(--bg-card)]'"
+            :key="player.nickname"
+            class="player-card"
+            :class="{ 'is-banned': player.isBanned }"
+            @click="handleOpenUserProfile(player)"
           >
-            <div class="flex gap-2 w-full justify-between shrink-0">
-              <div class="news-thumbnail !relative">
+            <div class="player-card-inner">
+              <div class="player-avatar-wrapper">
                 <img
                   v-if="player.headUrl"
                   :src="player.headUrl"
-                  class="!w-16 !h-16 !shrink-0 rounded-full"
+                  class="player-avatar-img"
                   alt="Avatar"
                 />
-                <div
-                  v-else
-                  class="!w-16 !h-16 !shrink-0 rounded-full overflow-hidden flex items-center justify-center"
-                >
+                <div v-else class="player-avatar-placeholder">
                   <i class="fas fa-user"></i>
                 </div>
+
+                <div v-if="player.isBanned" class="banned-overlay">
+                  <i class="fas fa-gavel"></i>
+                </div>
+
+                <div v-if="player.isOnline" class="online-indicator"></div>
+
                 <div
-                  class="online-dot absolute !bottom-0 !right-0"
-                  :style="{ background: !player?.isOnline ? '#ff4757' : '#00ff88' }"
-                ></div>
+                  v-if="!player.machineId"
+                  class="no-hwid-badge-avatar"
+                  :title="t('users.keywords.nohwid')"
+                >
+                  <i class="fas fa-microchip"></i>
+                </div>
               </div>
-              <div class="flex w-full">
-                <div class="flex justify-between w-full">
-                  <div class="flex h-1/3 gap-2">
-                    <div>
-                      <h1 class="font-bold text-lg">{{ player.nickname }}</h1>
-                    </div>
 
-                    <span
-                      v-if="isFriend(player)"
-                      :style="`
-                      background: #ff4757;
-                      color: white;
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                    `"
-                    >
-                      <i class="fas fa-user-friends"></i>
-                      Friends
-                    </span>
-                    <span
-                      v-if="sentRequest(player)"
-                      :style="`
-                      background: #ff4757;
-                      color: white;
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                    `"
-                    >
-                      <i class="fas fa-user-friends"></i>
-                      Request sent
-                    </span>
+              <div class="player-card-info">
+                <h2 class="player-nickname">{{ player.nickname }}</h2>
+                <div class="flex items-center gap-2 justify-center flex-wrap">
+                  <span class="player-role-label">{{ player.role }}</span>
+                  <span
+                    v-if="player.machineId && (player.hwidAccountCount ?? 0) > 1"
+                    class="shared-hwid-badge"
+                    :title="`${player.hwidAccountCount} accounts sharing this HWID`"
+                  >
+                    <i class="fas fa-users-cog"></i>
+                    <span>{{ player.hwidAccountCount }} ACCOUNTS</span>
+                  </span>
+                </div>
+              </div>
 
-                    <span
-                      v-if="player.isBanned"
-                      :style="`
-                      background: #ff4757;
-                      color: white;
-                      font-size: 0.6rem;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      margin-top: 4px;
-                      height: 1.2rem;
-                      font-weight: 800;
-                    `"
-                    >
-                      Banned
-                    </span>
-                    <span
-                      v-if="player.mcid"
-                      :style="`
-                      background: var(--primary);
-                      font-size: 0.6rem;
-                      color: white;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      font-weight: 800;
-                      height: 1.2rem;
-                      margin-top: 4px;
-                    `"
-                    >
-                      Premium
-                    </span>
-                    <span
-                      v-if="!player.machineId"
-                      :style="`
-                      background: var(--text-secondary);
-                      font-size: 0.6rem;
-                      color: black;
-                      padding: 2px 6px;
-                      border-radius: 4px;
-                      font-weight: 800;
-                      height: 1.2rem;
-                      margin-top: 4px;
-                    `"
-                    >
-                      Missing HWID
-                    </span>
-                  </div>
-                  <div
+              <div class="player-card-actions" @click.stop>
+                <div class="action-group">
+                  <template
                     v-if="
                       userStore.user &&
                       !player.isBanned &&
-                      getPlayerID(player) !== getPlayerID(userStore.user) &&
-                      !sentRequest(player)
+                      getPlayerID(player) !== getPlayerID(userStore.user)
                     "
-                    class="flex gap-2 flex-row-reverse w-2/5"
                   >
                     <button
-                      v-if="userStore.user.friendRequests?.includes(player.uuid)"
-                      class="nav-icon !w-1/2 gap-2"
-                      @click="handleRejectFriendRequest(player)"
-                    >
-                      <i :class="'fas fa-envelope-open'" />
-                      Reject
-                    </button>
-                    <button
-                      v-if="userStore.user.friendRequests?.includes(player.uuid)"
-                      class="nav-icon !w-1/2 gap-2"
-                      @click="handleAcceptFriendRequest(player)"
-                    >
-                      <i :class="'fas fa-envelope-open'" />
-                      Accept
-                    </button>
-
-                    <button
-                      v-if="!isFriend(player) && !hasFriendRequest(player)"
-                      class="nav-icon !w-full gap-2"
+                      v-if="
+                        !isFriend(player) &&
+                        !hasFriendRequestFromMe(player) &&
+                        !hasFriendRequestFromPlayer(player)
+                      "
+                      class="card-action-btn"
+                      :title="t('users.requestFriend')"
                       @click="handleRequestFriend(player)"
                     >
-                      <i :class="'fas fa-user-plus'" />
-                      Add to friends
+                      <i class="fas fa-user-plus"></i>
+                    </button>
+                    <button
+                      v-if="hasFriendRequestFromMe(player)"
+                      class="card-action-btn warning"
+                      :title="t('users.cancelRequest')"
+                      @click="handleCancelRequest(player)"
+                    >
+                      <i class="fas fa-user-clock"></i>
+                    </button>
+                    <button
+                      v-if="!isFriend(player) && hasFriendRequestFromPlayer(player)"
+                      class="card-action-btn success"
+                      :title="t('users.acceptFriend')"
+                      @click="handleAcceptFriendRequest(player)"
+                    >
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      v-if="!isFriend(player) && hasFriendRequestFromPlayer(player)"
+                      class="card-action-btn danger"
+                      :title="t('users.rejectFriend')"
+                      @click="handleRejectFriendRequest(player)"
+                    >
+                      <i class="fas fa-times"></i>
                     </button>
                     <button
                       v-if="isFriend(player)"
-                      class="nav-icon !w-full gap-2"
+                      class="card-action-btn danger"
+                      :title="t('users.removeFriend')"
                       @click="handleRemoveFriend(player)"
                     >
-                      <i :class="'fas fa-user-minus'" />
-                      Remove from friends
+                      <i class="fas fa-user-minus"></i>
                     </button>
-                  </div>
+                  </template>
+                </div>
+
+                <div
+                  v-if="
+                    isMod &&
+                    ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
+                  "
+                  class="action-group mod-actions"
+                >
+                  <button
+                    v-if="!player?.isBanned"
+                    class="card-action-btn danger"
+                    title="Ban Player"
+                    @click="$emit('ban-player', player)"
+                  >
+                    <i class="fas fa-ban"></i>
+                  </button>
+                  <button
+                    v-else
+                    class="card-action-btn success"
+                    title="Unban Player"
+                    @click="$emit('unban-player', player)"
+                  >
+                    <i class="fas fa-undo"></i>
+                  </button>
+                  <button
+                    v-if="player?.accountType !== AccountType.MICROSOFT"
+                    class="card-action-btn"
+                    title="Reset Password"
+                    @click="$emit('reset-password', player)"
+                  >
+                    <i class="fas fa-key"></i>
+                  </button>
                 </div>
               </div>
-            </div>
-            <div class="flex gap-2 flex-row-reverse">
-              <template
-                v-if="
-                  [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-                    userStore.user?.role ?? UserRole.USER
-                  ) && ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
-                "
-              >
-                <button v-if="userStore.user?.role === UserRole.ADMIN" class="nav-icon">
-                  <i class="fa fa-trash" />
-                </button>
-
-                <button
-                  v-if="!player?.isBanned"
-                  class="nav-icon"
-                  @click="handleLauncherBan(player)"
-                >
-                  <i :class="'fas fa-ban text-red-400'"></i>
-                </button>
-
-                <button v-else class="nav-icon" @click="handleLauncherUnban(player)">
-                  <i :class="'fas fa-rotate-left text-green-400'"></i>
-                </button>
-
-                <button
-                  v-if="player?.accountType !== AccountType.MICROSOFT"
-                  class="nav-icon"
-                  @click="handleResetPassword(player)"
-                >
-                  <i :class="'fas fa-key'"></i>
-                </button>
-              </template>
             </div>
           </article>
         </TransitionGroup>
@@ -460,86 +526,493 @@ onUnmounted(() => {
         <div ref="observerTarget" class="w-full py-4 flex justify-center items-center h-20 mt-2">
           <div v-if="isLoadingPlayers" class="flex flex-col items-center gap-2">
             <i class="fas fa-circle-notch fa-spin text-2xl text-[var(--primary)]"></i>
-            <span class="text-xs opacity-70">Ładowanie graczy...</span>
+            <span class="text-xs opacity-70">{{ t('users.loading') }}</span>
           </div>
           <div v-if="!hasMorePlayers" class="flex flex-col items-center gap-2">
-            <span class="text-xs opacity-70">Koniec wyników</span>
+            <span class="text-xs opacity-70">{{ t('users.endOfResults') }}</span>
           </div>
         </div>
       </div>
     </div>
-
-    <BanPlayerModal ref="banPlayerModalRef" @refresh-data="fetchPlayers" />
-    <PasswordResetConfirm ref="passwordResetModalRef" />
   </div>
 </template>
 
 <style scoped>
-.users-container {
-  padding: 0.5rem;
+.players-page-container {
+  padding: 1.5rem 2rem;
   width: 100%;
-  height: calc(100vh - 54.5px);
+  height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.copy-btn {
-  margin-left: 0.4rem;
-  font-size: 0.7rem;
-  padding: 0.2rem 0.3rem;
-  border-radius: 0.3rem;
-  background: rgba(0, 0, 0, 0.3);
-  color: rgba(255, 255, 255, 0.4);
+.players-header {
+  position: relative;
+  z-index: 10;
 }
 
-.copy-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.2);
-}
-
-.online-dot {
-  bottom: 4px;
-  right: -2px;
-  width: 4px;
-  height: 4px;
-  border: 2px solid var(--bg-dark);
-  border-radius: 50%;
-}
-
-.unban-btn {
-  background: rgba(0, 255, 0, 0.6);
-  color: var(--bg-primary);
-  border: none;
-  border-radius: var(--border-radius-small);
-  padding: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
+.search-bar {
+  flex: 1;
+  max-width: 400px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 0.25rem 1rem;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: lightgreen;
+  gap: 0.75rem;
+  transition: all 0.3s;
 }
 
-.unban-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+.search-bar:focus-within {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.1);
 }
 
-.list-move,
+.search-bar i {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.search-bar input {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  width: 100%;
+  padding: 0.6rem 0;
+}
+
+.search-bar input:focus {
+  outline: none;
+}
+
+.info-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.info-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.instruction-panel {
+  position: absolute;
+  top: calc(100% + 15px);
+  right: 0;
+  width: 320px;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.instruction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.instruction-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.close-instruction {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.keyword-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.keyword-item code {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--primary);
+  font-family: inherit;
+  font-weight: 700;
+}
+
+.players-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1.5rem;
+}
+
+.player-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 24px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.player-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.player-card.is-banned {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.player-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.2rem;
+}
+
+.player-avatar-wrapper {
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+
+.player-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  object-fit: cover;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s;
+}
+
+.player-card:hover .player-avatar-img {
+  transform: scale(1.05) rotate(2deg);
+}
+
+.player-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: var(--text-secondary);
+}
+
+.online-indicator {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 14px;
+  height: 14px;
+  background: #22c55e;
+  border: 3px solid var(--bg-card);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.banned-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(239, 68, 68, 0.4);
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.8rem;
+  border: 2px solid #ef4444;
+}
+
+.player-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.player-nickname {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.player-role-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+}
+
+.no-hwid-badge-avatar i {
+  font-size: 0.6rem;
+}
+
+.shared-hwid-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 6px;
+  color: var(--primary);
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.shared-hwid-badge i {
+  font-size: 0.55rem;
+}
+
+.no-hwid-badge-avatar {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  background: #eab308;
+  border: 2px solid var(--bg-card);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 0.7rem;
+  box-shadow: 0 0 10px rgba(234, 179, 8, 0.4);
+  z-index: 5;
+}
+
+.player-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s;
+}
+
+.player-card:hover .player-card-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.action-group {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.card-action-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.card-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.card-action-btn.success:hover {
+  background: #22c55e;
+  color: white;
+}
+.card-action-btn.danger:hover {
+  background: #ef4444;
+  color: white;
+}
+.card-action-btn.warning:hover {
+  background: #eab308;
+  color: black;
+}
+
+.filter-section {
+  margin-bottom: 1rem;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.filter-header h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clear-filters-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-filters-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.filter-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.filter-chips-wrapper {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.filter-chip i {
+  font-size: 0.65rem;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.filter-chip.active {
+  background: rgba(var(--primary-rgb), 0.1);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--primary);
+  box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.15);
+}
+
+.filter-chip.active i {
+  color: var(--primary);
+}
+
+.filter-chip i {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover i {
+  opacity: 1;
+}
+
+/* Transitions */
 .list-enter-active,
 .list-leave-active {
-  transition: transform 0.5s ease-in-out;
+  transition: all 0.4s ease;
 }
 
 .list-enter-from,
 .list-leave-to {
   opacity: 0;
+  transform: translateY(20px);
 }
 
-.list-leave-active {
-  position: absolute;
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
+```

@@ -34,6 +34,7 @@ export const useFTPService = (): {
 } => {
   let clientInstance: Client | null = null
   let isConnecting = false
+  let activeOperationAborted = false
 
   const MANIFEST_FILE = '.hashes'
 
@@ -148,6 +149,10 @@ export const useFTPService = (): {
   }
 
   const createHandlers = (mainWindow: BrowserWindow): void => {
+    ipcMain.on('ftp:abort-all', () => {
+      activeOperationAborted = true
+    })
+
     ipcMain.handle('ftp:create-folder', async (_, folder, newFolder) => {
       const client = await connect()
       const fullPath = remoteJoin(folder, newFolder)
@@ -321,6 +326,8 @@ export const useFTPService = (): {
         const localHashesPath = join(tmpDir, 'hashes.temp.txt')
         const localUploadTempPath = join(tmpDir, 'upload.temp.bin')
 
+        activeOperationAborted = false
+
         try {
           const client = await connect()
           const pwd = await client.cwd()
@@ -352,6 +359,7 @@ export const useFTPService = (): {
               await writeFile(localUploadTempPath, Buffer.from(buffer))
 
               try {
+                if (activeOperationAborted) throw new Error('ABORTED')
                 await client.put(localUploadTempPath, remoteJoin(currentRemoteDir, fileName))
                 mainWindow.webContents.send('ftp:upload-folder-progress', ++fileIndex)
               } catch (e) {
@@ -490,6 +498,7 @@ export const useFTPService = (): {
     )
 
     ipcMain.handle('ftp:zip-folder', async (event, folderPath: string) => {
+      activeOperationAborted = false
       const client = await connect()
       const rootPath = '.'
       const fullRemotePath = remoteJoin(rootPath, folderPath)
@@ -513,9 +522,22 @@ export const useFTPService = (): {
 
         await mkdir(tempDir, { recursive: true })
 
-        // downloadDir nie ma wbudowanego progress callback w tej wersji biblioteki,
-        // więc symulujemy start.
-        await client.downloadDir(fullRemotePath, tempDir)
+        // Download manually to get granular progress (0% - 30%)
+        const downloadQueue = await buildDownloadQueue(client, fullRemotePath, tempDir)
+        const totalFiles = downloadQueue.length
+
+        for (let i = 0; i < totalFiles; i++) {
+          if (activeOperationAborted) throw new Error('ABORTED')
+          const task = downloadQueue[i]
+
+          const downloadPercent = (i / totalFiles) * 30
+          sendProgress(
+            downloadPercent,
+            `Pobieranie plików (${i + 1}/${totalFiles}): ${basename(task.remote)}`
+          )
+
+          await client.get(task.remote, task.local)
+        }
 
         sendProgress(30, 'Pakowanie plików...')
 
@@ -529,6 +551,11 @@ export const useFTPService = (): {
 
           // Możemy nasłuchiwać postępu pakowania, ale jest to bardzo szybkie
           archive.on('progress', (progress) => {
+            if (activeOperationAborted) {
+              archive.abort()
+              reject(new Error('ABORTED'))
+              return
+            }
             // Opcjonalnie: mikro-aktualizacje w zakresie 30-40%
             const percent = 30 + (progress.entries.processed / progress.entries.total) * 10
             sendProgress(percent, `Pakowanie: ${Math.round(percent)}%`)
@@ -548,6 +575,7 @@ export const useFTPService = (): {
         // ZMIANA: Używamy fastPut zamiast put
         await client.fastPut(tempZipPath, remoteZipPath, {
           step: (total_transferred, _, total) => {
+            if (activeOperationAborted) throw new Error('ABORTED')
             const uploadPercent = total_transferred / total // 0.0 do 1.0
 
             // Skalujemy to do zakresu 40-100% ogólnego paska
@@ -868,6 +896,7 @@ export const useFTPService = (): {
       'ftp:download-folder',
       async (_, localDir: string, remoteFolder: string, folder: string) => {
         let client: Client | null = null
+        activeOperationAborted = false
         try {
           client = await connect()
 
@@ -884,6 +913,7 @@ export const useFTPService = (): {
           const totalFiles = downloadQueue.length
 
           for (let i = 0; i < totalFiles; i++) {
+            if (activeOperationAborted) throw new Error('ABORTED')
             const task = downloadQueue[i]
 
             mainWindow.webContents.send('ftp:download-folder-progress', {

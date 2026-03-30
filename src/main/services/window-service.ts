@@ -9,17 +9,20 @@ import Logger from 'electron-log'
 
 const createMainWindow = (): BrowserWindow => {
   const mainWindow = new BrowserWindow({
-    minWidth: 1280,
-    width: 1280,
-    minHeight: 720,
-    height: 720,
+    minWidth: 1366,
+    width: 1366,
+    minHeight: 768,
+    height: 768,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     darkTheme: true,
     accentColor: 'black',
+    backgroundColor: 'black',
+    backgroundMaterial: 'acrylic',
     frame: false,
     webPreferences: {
+      backgroundThrottling: true,
       nodeIntegration: false,
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -28,14 +31,22 @@ const createMainWindow = (): BrowserWindow => {
   })
 
   if (process.platform !== 'darwin') {
-    // Opcjonalny warunek, by uniknąć problemów na macOS
-    // Włączenie software WebGL
     app.commandLine.appendSwitch('enable-unsafe-swiftshader')
   }
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.webContents.send('change:max-ram', Math.floor(getMaxRAMInGB() * 0.95))
     mainWindow.webContents.send('change:version', app.getVersion())
+
+    if (is.dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
+  })
+
+  mainWindow.on('blur', () => {
+    mainWindow.webContents.send('window-focus-changed', false)
+  })
+
+  mainWindow.on('focus', () => {
+    mainWindow.webContents.send('window-focus-changed', true)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -64,6 +75,8 @@ const createLoadingWindow = (): {
     ...(process.platform === 'linux' ? { icon } : {}),
     darkTheme: true,
     accentColor: 'black',
+    backgroundColor: 'black',
+    backgroundMaterial: 'acrylic',
     alwaysOnTop: true,
     frame: false,
     resizable: false,

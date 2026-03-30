@@ -26,7 +26,7 @@ const routes = [
         name: 'home',
         component: HomePage,
         meta: {
-          displayName: 'Graj'
+          displayName: 'router.home'
         }
       },
       {
@@ -34,7 +34,7 @@ const routes = [
         name: 'news',
         component: NewsPage,
         meta: {
-          displayName: 'Aktualności'
+          displayName: 'router.news'
         }
       },
       {
@@ -42,7 +42,7 @@ const routes = [
         name: 'shop',
         component: ShopPage,
         meta: {
-          displayName: 'Sklep'
+          displayName: 'router.shop'
         }
       },
       {
@@ -50,7 +50,7 @@ const routes = [
         name: 'settings',
         component: SettingsPage,
         meta: {
-          displayName: 'Ustawienia'
+          displayName: 'router.settings'
         }
       },
       {
@@ -58,7 +58,7 @@ const routes = [
         name: 'changelog',
         component: ChangelogPage,
         meta: {
-          displayName: 'Changelog'
+          displayName: 'router.changelog'
         }
       },
       {
@@ -66,7 +66,7 @@ const routes = [
         name: 'users',
         component: UsersPage,
         meta: {
-          displayName: 'Gracze'
+          displayName: 'router.users'
         }
       },
       {
@@ -74,7 +74,7 @@ const routes = [
         name: 'ftp',
         component: FTPPage,
         meta: {
-          displayName: 'FTP'
+          displayName: 'router.ftp'
         }
       },
       {
@@ -82,7 +82,7 @@ const routes = [
         name: 'items',
         component: ItemsPage,
         meta: {
-          displayName: 'Itemy'
+          displayName: 'router.items'
         }
       },
       {
@@ -90,7 +90,7 @@ const routes = [
         name: 'events',
         component: EventsPage,
         meta: {
-          displayName: 'Wydarzenia'
+          displayName: 'router.events'
         }
       }
     ]

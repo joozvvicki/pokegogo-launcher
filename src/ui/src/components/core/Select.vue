@@ -44,7 +44,7 @@ const props = withDefaults(
 const emit = defineEmits(['update:modelValue'])
 
 const open = ref(false)
-const dropdown = ref<string | number | null>(null)
+const dropdown = ref<HTMLElement | null>(null)
 
 const selectedLabel = computed(() => {
   const selectedOption = props.options.find((opt) => opt.value === props.modelValue)
@@ -60,12 +60,8 @@ function selectOption(option: IOption): void {
   open.value = false
 }
 
-function onClickOutside(event: any): void {
-  if (
-    dropdown.value &&
-    typeof dropdown.value === 'string' &&
-    dropdown.value?.includes(event.target)
-  ) {
+function onClickOutside(event: MouseEvent): void {
+  if (dropdown.value && !dropdown.value.contains(event.target as Node)) {
     open.value = false
   }
 }

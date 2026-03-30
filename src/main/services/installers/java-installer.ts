@@ -6,38 +6,68 @@ import { app } from 'electron'
 import { downloadFile, ensureDir } from '../../utils'
 import Logger from 'electron-log'
 
-const JAR_URLS = {
-  21: {
-    win: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_windows-x64_bin.zip',
-    linux: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_linux-x64_bin.tar.gz',
-    mac: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_macos-x64_bin.tar.gz'
+interface JavaInfo {
+  urls: {
+    win: string
+    linux: string
+    mac: string
+  }
+  folderName: string
+}
+
+const JAVA_CONFIG: Record<string, JavaInfo> = {
+  '17': {
+    urls: {
+      win: 'https://download.oracle.com/java/17/archive/jdk-17.0.12_windows-x64_bin.zip',
+      linux: 'https://download.oracle.com/java/17/archive/jdk-17.0.12_linux-x64_bin.tar.gz',
+      mac: 'https://download.oracle.com/java/17/archive/jdk-17.0.12_macos-x64_bin.tar.gz'
+    },
+    folderName: 'jdk-17.0.12'
+  },
+  '21': {
+    urls: {
+      win: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_windows-x64_bin.zip',
+      linux: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_linux-x64_bin.tar.gz',
+      mac: 'https://download.oracle.com/java/21/archive/jdk-21.0.8_macos-x64_bin.tar.gz'
+    },
+    folderName: 'jdk-21.0.8'
   }
 }
 
-function checkJavaInstalled(): Promise<boolean | string> {
+function checkJavaInstalled(version: string): Promise<boolean | string> {
   const plt = platform()
+  const config = JAVA_CONFIG[version]
+  if (!config) return Promise.resolve(false)
+
+  const folderName = plt === 'darwin' ? `${config.folderName}.jdk` : config.folderName
+  const binPath =
+    plt === 'darwin'
+      ? join('java', folderName, 'Contents', 'Home', 'bin')
+      : join('java', folderName, 'bin')
 
   return new Promise((resolve) => {
     fsPromises
-      .readdir(
-        join(
-          app.getPath('userData'),
-          plt !== 'darwin' ? 'java/jdk-21.0.8/bin' : 'java/jdk-21.0.8.jdk/Contents/Home/bin'
-        )
-      )
+      .readdir(join(app.getPath('userData'), binPath))
       .then((res) => {
-        if (res) {
+        if (res && res.length > 0) {
           resolve(true)
+        } else {
+          resolve(false)
         }
       })
       .catch(() => resolve(false))
   })
 }
 export async function installJava(version: string): Promise<string> {
-  const javaInstalled = await checkJavaInstalled()
-  Logger.log('Java: ', javaInstalled)
+  const javaInstalled = await checkJavaInstalled(version)
+  Logger.log(`Java ${version} install check:`, javaInstalled)
   if (javaInstalled) {
-    return Promise.resolve('Java jest już zainstalowana')
+    return Promise.resolve(`Java ${version} jest już zainstalowana`)
+  }
+
+  const config = JAVA_CONFIG[version]
+  if (!config) {
+    return Promise.reject(`Wersja Javy ${version} nie jest wspierana`)
   }
 
   const plt = platform()
@@ -54,15 +84,15 @@ export async function installJava(version: string): Promise<string> {
   mkdirSync(destDir, { recursive: true })
 
   if (plt === 'win32' && architecture === 'x64') {
-    javaUrl = JAR_URLS[version].win
+    javaUrl = config.urls.win
     // Zmieniamy rozszerzenie na .zip
-    installerPath = path.join(installerDir, 'java_installer.zip')
+    installerPath = path.join(installerDir, `java_installer_${version}.zip`)
   } else if (plt === 'linux' && architecture === 'x64') {
-    javaUrl = JAR_URLS[version].linux
-    installerPath = path.join(installerDir, 'java_installer.tar.gz')
+    javaUrl = config.urls.linux
+    installerPath = path.join(installerDir, `java_installer_${version}.tar.gz`)
   } else if (plt === 'darwin') {
-    javaUrl = JAR_URLS[version].mac
-    installerPath = path.join(installerDir, 'java_installer.tar.gz')
+    javaUrl = config.urls.mac
+    installerPath = path.join(installerDir, `java_installer_${version}.tar.gz`)
   } else {
     return Promise.reject('Platforma lub architektura nie jest wspierana')
   }
@@ -111,12 +141,12 @@ export async function installJava(version: string): Promise<string> {
         }
 
         try {
-          const jdkFolder = path.join(destDir, 'jdk-21.0.8.jdk')
-          const jdkHome = path.join(destDir, 'jdk-21.0.8.jdk', 'Contents', 'Home')
-          // const javaBinary = path.join(jdkHome, 'bin', 'java')
+          const folderName = `${config.folderName}.jdk`
+          const jdkFolder = path.join(destDir, folderName)
+          const jdkHome = path.join(jdkFolder, 'Contents', 'Home')
 
           // 2. Usuwamy kwarantannę dla całego folderu .jdk
-          const removeQuarantine = `chmod -R 755 "${jdkFolder}" && xattr -rd com.apple.quarantine "${path.join(destDir, 'jdk-21.0.8.jdk')}"`
+          const removeQuarantine = `chmod -R 755 "${jdkFolder}" && xattr -rd com.apple.quarantine "${jdkFolder}"`
 
           // 3. Nadajemy uprawnienia wykonywania dla binarów
           const addPermissions = `chmod -R +x "${jdkHome}/bin"`
@@ -127,7 +157,7 @@ export async function installJava(version: string): Promise<string> {
             }
 
             await fsPromises.unlink(installerPath)
-            resolve('Java zainstalowana, odblokowana i gotowa do użycia')
+            resolve(`Java ${version} zainstalowana, odblokowana i gotowa do użycia`)
           })
         } catch (e) {
           reject(`Błąd post-instalacji: ${e}`)

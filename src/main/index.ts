@@ -1,10 +1,10 @@
 import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-import { app, BrowserWindow, ipcMain, Menu, Notification } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, Notification, shell } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
 import { createTray } from './services/tray-service'
-import { ensureDir } from './utils'
+import { ensureDir, getPersistentMachineId } from './utils'
 import { useFTPService } from './services/ftp-service'
 import { join } from 'path'
 import discordRpc, { type RP } from 'discord-rich-presence'
@@ -13,22 +13,34 @@ import { machineId } from 'node-machine-id'
 import { address } from 'address/promises'
 import { platform } from 'os'
 
+import { discordLogger } from './services/discord-logger'
+
 const CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID
 let rpc: RP | null = null
+
+process.on('uncaughtException', (error) => {
+  Logger.error('Uncaught Exception:', error)
+  discordLogger.sendError('Main Process Uncaught Exception', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  Logger.error('Unhandled Rejection:', reason)
+  discordLogger.sendError('Main Process Unhandled Rejection', reason)
+})
 
 function initDiscord(): void {
   try {
     rpc = discordRpc(CLIENT_ID)
 
     rpc.on('error', (err: string) => {
-      Logger.warn('Discord RPC napotkał błąd (może Discord jest wyłączony?):', err)
+      Logger.warn('Discord RPC Error (Discord is running?):', err)
     })
 
     rpc.on('connected', () => {
-      Logger.log('Połączono z Discordem!')
+      Logger.log('Connected to Discord')
     })
   } catch (err) {
-    Logger.warn('Inicjalizacja Discord RPC nieudana:', err)
+    Logger.warn('Discord IPC not connected: ', err)
   }
 }
 
@@ -44,7 +56,9 @@ if (!gotTheLock) {
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId('pl.pokemongogo.launcher')
     const { createHandlers } = useFTPService()
+    await installExtension(VUEJS_DEVTOOLS)
 
+    initDiscord()
     ensureDir(process.cwd() + '/tmp')
 
     const { createMainWindow, createLoadingWindow } = useWindowService()
@@ -52,12 +66,9 @@ if (!gotTheLock) {
     const { startApp } = createLoadingWindow()
     useAppUpdater(mainWindow)
 
-    await startApp(mainWindow)
     createTray(mainWindow)
-    await installExtension(VUEJS_DEVTOOLS)
     createHandlers(mainWindow)
-
-    initDiscord()
+    await startApp(mainWindow)
 
     if (!ipcMain.listenerCount('notification:show'))
       ipcMain.handle(
@@ -81,7 +92,17 @@ if (!gotTheLock) {
 
     if (!ipcMain.listenerCount('data:machine'))
       ipcMain.handle('data:machine', async () => {
-        const hwid = await machineId()
+        let hwid = ''
+        try {
+          hwid = await machineId()
+        } catch (err) {
+          Logger.warn('Failed to get machineId:', err)
+        }
+
+        if (!hwid) {
+          Logger.log('HWID not found, using persistent fallback')
+          hwid = getPersistentMachineId()
+        }
         const addr = await address()
         return {
           machineId: hwid,
@@ -112,6 +133,16 @@ if (!gotTheLock) {
         }
       })
 
+    ipcMain.handle('logs:open-launcher', async () => {
+      const logPath = join(app.getPath('userData'), 'logs')
+      await shell.openPath(logPath)
+    })
+
+    ipcMain.handle('logs:open-game', async (_, gameMode: string) => {
+      const logPath = join(app.getPath('userData'), 'instances', gameMode.toLowerCase(), 'logs')
+      await shell.openPath(logPath)
+    })
+
     ipcMain.on('discord:update-activity', (_, activity) => {
       if (rpc) {
         rpc.updatePresence({
@@ -124,10 +155,8 @@ if (!gotTheLock) {
       }
     })
 
-    app.on('activate', () => {
-      if (mainWindow) return
-      mainWindow = createMainWindow()
-      mainWindow.show()
+    app.on('activate', async () => {
+      mainWindow?.show()
     })
 
     const template: Electron.MenuItemConstructorOptions[] = [
@@ -135,32 +164,52 @@ if (!gotTheLock) {
         label: 'File',
         submenu: [
           {
-            label: 'New Window',
-            accelerator: 'CmdOrCtrl+N',
+            label: 'Quit app',
+            accelerator: 'CmdOrCtrl+Q',
             click: () => {
               try {
-                if (mainWindow) return
-                mainWindow = createMainWindow()
-                mainWindow.show()
+                app.quit()
+              } catch (err) {
+                console.error('[Menu] Failed to quit app:', err)
+              }
+            }
+          },
+          {
+            label: 'Show window',
+            accelerator: 'CmdOrCtrl+N',
+            click: async () => {
+              try {
+                mainWindow?.show()
               } catch (err) {
                 console.error('[Menu] Failed to open new window:', err)
               }
             }
           },
           {
-            label: 'Close window',
+            label: 'Hide window',
             accelerator: 'CmdOrCtrl+W',
             click: () => {
               try {
-                if (!mainWindow) return
-
-                mainWindow.close()
-                mainWindow = null
+                mainWindow?.hide()
               } catch (err) {
-                console.error('[Menu] Failed to open new window:', err)
+                console.error('[Menu] Failed to close window:', err)
               }
             }
           }
+        ]
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          { role: 'pasteAndMatchStyle' },
+          { role: 'delete' },
+          { role: 'selectAll' }
         ]
       }
     ]

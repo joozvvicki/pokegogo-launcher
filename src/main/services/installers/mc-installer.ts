@@ -134,6 +134,7 @@ async function executeSyncPlan(
   // 1. Usuwanie
   if (plan.deletes.length > 0) {
     log(`Usuwanie ${plan.deletes.length} zbędnych elementów...`)
+    Logger.log(`Usuwanie ${plan.deletes.length} zbędnych elementów...`)
     for (const delTask of plan.deletes) {
       try {
         const stats = await fs.promises.stat(delTask.localPath)
@@ -171,6 +172,9 @@ async function executeSyncPlan(
         ? Math.floor((globalProgress.downloadedSizeBase / globalProgress.totalSize) * 100)
         : 100
     log(
+      `Pobieranie: ${byteToMB(globalProgress.downloadedSizeBase)}/${byteToMB(globalProgress.totalSize)} MB (${percent}%) • ETA: ${remainingText}`
+    )
+    Logger.log(
       `Pobieranie: ${byteToMB(globalProgress.downloadedSizeBase)}/${byteToMB(globalProgress.totalSize)} MB (${percent}%) • ETA: ${remainingText}`
     )
   }
@@ -282,7 +286,7 @@ export async function copyMCFiles(
     state = { client: await ftpService.connect() }
 
     const currentVersionFolder =
-      gameMode === 'Pokemons' ? (isDev ? 'dev-mc' : 'mc') : gameMode.toLowerCase()
+      gameMode === 'Pokemons' ? 'mc' : gameMode === 'fantasy' ? 'dev-mc' : gameMode.toLowerCase()
 
     const globalProgress: GlobalProgress = {
       totalFiles: 0,

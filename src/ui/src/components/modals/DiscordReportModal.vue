@@ -4,8 +4,11 @@ import useUserStore from '@ui/stores/user-store'
 import { FTPChannel } from '@ui/types/ftp'
 import { showToast } from '@ui/utils'
 import { useVuelidate } from '@vuelidate/core'
-import { helpers, maxLength, minLength, required } from '@vuelidate/validators'
+import { helpers, minLength, required } from '@vuelidate/validators'
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const userStore = useUserStore()
 const generalStore = useGeneralStore()
@@ -25,9 +28,8 @@ const rules = computed(() => {
   return modalVisible.value
     ? {
         description: {
-          required: helpers.withMessage('Nazwa jest wymagana', required),
-          minLength: helpers.withMessage('Nazwa musi mieć co najmniej 2 znaki', minLength(2)),
-          maxLength: helpers.withMessage('Nazwa może mieć maksymalnie 50 znaków', maxLength(50))
+          required: helpers.withMessage(t('modals.discordReport.required'), required),
+          minLength: helpers.withMessage(t('modals.discordReport.minLength'), minLength(2))
         }
       }
     : {}
@@ -54,36 +56,24 @@ const handleSubmit = async (): Promise<void> => {
   const logsFile = await window?.electron?.ipcRenderer?.invoke(FTPChannel.GET_LOGS)
   const logsBlob = new Blob([logsFile], { type: 'text/plain' })
 
-  let mcLogsFile, mcLogsBlob
-
-  try {
-    mcLogsFile = await window?.electron?.ipcRenderer?.invoke(FTPChannel.GET_LOGS, 'minecraft')
-    mcLogsBlob = new Blob([mcLogsFile], { type: 'text/plain' })
-  } catch {
-    /* ignore */
-  } finally {
-    const formData = new FormData()
-    formData.append('files[0]', logsBlob, 'main.log')
-    if (mcLogsFile) {
-      formData.append('files[1]', mcLogsBlob, 'minecraft.log')
-    }
-    formData.append(
-      'payload_json',
-      JSON.stringify({
-        content: `**Nickname**: ${userStore.user?.nickname ?? 'Brak Nicku'}\n**Wersja**: ${
-          generalStore.appVersion
-        }\n**Treść zgłoszenia**:\n${state.description}`
-      })
-    )
-
-    const result = await fetch(webhookURL, {
-      method: 'POST',
-      body: formData
+  const formData = new FormData()
+  formData.append('files[0]', logsBlob, 'main.log')
+  formData.append(
+    'payload_json',
+    JSON.stringify({
+      content: `**Nickname**: ${userStore.user?.nickname ?? t('modals.discordReport.noNick')}\n**Wersja**: ${
+        generalStore.appVersion
+      }\n**${t('modals.discordReport.content')}**:\n${state.description}`
     })
+  )
 
-    if (result.ok) {
-      showToast('Zgłoszenie zostało wysłane', 'success')
-    }
+  const result = await fetch(webhookURL, {
+    method: 'POST',
+    body: formData
+  })
+
+  if (result.ok) {
+    showToast(t('modals.discordReport.success'), 'success')
   }
 
   handleExit()
@@ -92,136 +82,74 @@ const handleSubmit = async (): Promise<void> => {
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="alert"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-      aria-describedby="ban-desc"
-    >
-      <div class="modal-card">
-        <div class="modal-header flex justify-between">
-          <div class="launch-title">
-            <div class="nav-icon">
-              <i class="fa fa-warning" aria-hidden="true"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div
+                class="g-icon-box"
+                style="
+                  color: #5865f2;
+                  background: rgba(88, 101, 242, 0.15);
+                  border-color: rgba(88, 101, 242, 0.3);
+                "
+              >
+                <i class="fab fa-discord"></i>
+              </div>
+              <h3>{{ t('modals.discordReport.title') }}</h3>
             </div>
-            <h2>Zgłoszenie</h2>
+            <button class="g-close-btn" @click="handleExit">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <div>
-            <button class="nav-icon" @click="handleExit">
-              <i class="fa fa-x" />
+
+          <div class="g-modal-content">
+            <div class="flex flex-col gap-1 w-full">
+              <label class="text-sm font-semibold text-gray-400">{{
+                t('modals.discordReport.content')
+              }}</label>
+              <textarea
+                v-model="state.description"
+                class="g-input !h-auto resize-none"
+                :placeholder="t('modals.discordReport.placeholder')"
+                :class="{ '!border-red-500': v$.description?.$error }"
+                rows="5"
+              ></textarea>
+              <span v-if="v$.description?.$error" class="text-xs text-red-500">{{
+                v$.description?.$errors[0]?.$message
+              }}</span>
+            </div>
+          </div>
+
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleExit">
+              {{ t('modals.discordReport.cancel') }}
+            </button>
+            <button
+              class="g-btn primary flex-1"
+              style="background: #5865f2; border-color: #5865f2"
+              @click="handleSubmit"
+            >
+              <i class="fab fa-discord"></i>
+              {{ t('modals.discordReport.send') }}
             </button>
           </div>
         </div>
-        <div class="modal-content">
-          <div class="flex flex-col w-full">
-            <label class="input-label mb-1 text-[var(--text-secondary))]">Treść zgłoszenia</label>
-            <div class="form-group h-full">
-              <div class="input-wrapper flex">
-                <textarea
-                  v-model="state.description"
-                  class="form-input !pl-[1rem] resize-none"
-                  placeholder="Treść zgłoszenia.."
-                  :class="{ invalid: v$.description?.$error }"
-                  rows="5"
-                  aria-required="true"
-                  required
-                />
-                <div class="input-line"></div>
-              </div>
-              <div class="error-message" :class="{ show: v$.description?.$error }">
-                {{ v$.description?.$errors[0]?.$message }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="flex gap-2 mt-2">
-          <button class="btn-secondary" @click="handleExit">Anuluj</button>
-          <button class="btn-primary" @click="handleSubmit">Wyślij</button>
-        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1100;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 420px;
-  padding: 1.5rem 2rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--primary);
-}
-
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-content {
-  flex: 1;
-}
-
-.log-description {
-  font-size: 0.7rem;
-  width: 100%;
-  min-height: 7vh;
-  border-radius: 0.5rem;
-  background-color: var(--bg-light);
-  padding: 0.25rem 0.5rem;
-  display: flex;
-  align-items: center;
-  text-align: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  margin-bottom: 0.75rem;
-}
-
-.ban-reason {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  user-select: text;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

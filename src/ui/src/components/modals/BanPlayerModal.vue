@@ -1,18 +1,27 @@
+// BanModal.vue
 <script lang="ts" setup>
 import { banPlayer, unbanPlayer } from '@ui/api/endpoints'
 import { IUser } from '@ui/env'
 import useUserStore from '@ui/stores/user-store'
 import { UserRole } from '@ui/types/app'
-import { defaultDatePickerTime, showToast } from '@ui/utils'
+import { showToast } from '@ui/utils'
 import DatePicker from 'primevue/datepicker'
-import { ref } from 'vue'
+import { discordLogger } from '@ui/services/discord-service'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+type BanType = 'nickname' | 'hwid'
+type BanMode = 'temporary' | 'permanent'
 
 const modalVisible = ref(false)
 const banReasonInput = ref('')
-const banType = ref('nickname')
+const banType = ref<BanType>('nickname')
+const banMode = ref<BanMode>('temporary')
 const banTime = ref<Date | null>(null)
 const playerData = ref<IUser>()
-const actionType = ref<string>('')
+const actionType = ref<'ban' | 'unban'>('ban')
 
 const userStore = useUserStore()
 
@@ -20,28 +29,78 @@ const emits = defineEmits<{
   (e: 'refreshData'): Promise<void> | void
 }>()
 
+const isPermanentBan = computed(() => banMode.value === 'permanent')
+
+const isBanDisabled = computed(() => {
+  if (actionType.value !== 'ban') return false
+
+  const hasReason = !!banReasonInput.value.trim()
+
+  if (isPermanentBan.value) {
+    return !hasReason
+  }
+
+  return !hasReason || !banTime.value
+})
+
 const openModal = async (player: IUser, type: 'unban' | 'ban' = 'ban'): Promise<void> => {
   modalVisible.value = true
   playerData.value = player
   actionType.value = type
+
+  // reset stanu przy każdym otwarciu
+  banReasonInput.value = ''
+  banType.value = 'nickname'
+  banMode.value = 'temporary'
+  banTime.value = null
 }
 
 const banUser = async (): Promise<void> => {
   if (!playerData.value) return
 
-  const res = await banPlayer({
+  const payload: {
+    nickname: string
+    machineId?: string
+    macAddress?: string
+    type: BanType
+    banEndDate?: Date
+    reason: string
+  } = {
     nickname: playerData.value.nickname,
     machineId: playerData.value.machineId,
     macAddress: playerData.value.macAddress,
     type: banType.value,
-    banEndDate: banTime.value as Date,
-    reason: banReasonInput.value
-  })
+    reason: banReasonInput.value.trim()
+  }
+
+  // przy banie czasowym wysyłamy banEndDate
+  if (!isPermanentBan.value && banTime.value) {
+    payload.banEndDate = banTime.value
+  }
+
+  const res = await banPlayer(payload)
 
   if (res) {
     await emits('refreshData')
+
+    await discordLogger.sendLog('Player Banned', [
+      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+      { name: 'Target', value: playerData.value.nickname },
+      { name: 'Type', value: banType.value },
+      {
+        name: 'Duration',
+        value: isPermanentBan.value ? 'Permanent' : banTime.value?.toLocaleString() || 'Unknown'
+      },
+      { name: 'Reason', value: banReasonInput.value.trim() }
+    ])
+
     modalVisible.value = false
-    showToast('Pomyślnie zbanowano użytkownika ', 'error')
+    showToast(
+      isPermanentBan.value
+        ? `${t('modals.banPlayer.successPerm')} ${playerData.value.nickname}`
+        : `${t('modals.banPlayer.successTemp')} ${playerData.value.nickname}`,
+      'error'
+    )
   }
 }
 
@@ -57,7 +116,13 @@ const unbanUser = async (): Promise<void> => {
 
   if (res) {
     await emits('refreshData')
-    showToast('Pomyślnie odbanowano użytkownika')
+
+    await discordLogger.sendLog('Player Unbanned', [
+      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+      { name: 'Target', value: playerData.value.nickname }
+    ])
+
+    showToast(`${t('modals.banPlayer.successUnban')} ${playerData.value.nickname}`)
     handleCancel()
   }
 }
@@ -66,6 +131,7 @@ const handleCancel = (): void => {
   banReasonInput.value = ''
   banTime.value = null
   banType.value = 'nickname'
+  banMode.value = 'temporary'
   modalVisible.value = false
 }
 
@@ -76,197 +142,201 @@ defineExpose({
 
 <template>
   <Teleport to="#modalsContainer">
-    <div
-      v-if="modalVisible"
-      class="modal-container"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="ban-title"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="launch-title">
-            <div class="nav-icon">
-              <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+    <Transition name="fade">
+      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true">
+        <div class="g-card g-modal-card ban-modal-compact">
+          <div class="g-card-header">
+            <div class="flex items-center gap-4">
+              <div class="g-icon-box danger">
+                <i class="fas fa-gavel"></i>
+              </div>
+              <h3>
+                {{
+                  actionType === 'ban'
+                    ? t('modals.banPlayer.titleBan')
+                    : t('modals.banPlayer.titleUnban')
+                }}
+              </h3>
             </div>
-            <h2 id="ban-title">{{ actionType === 'ban' ? 'Zbanuj' : 'Odbanuj' }} gracza</h2>
+            <button class="g-close-btn" @click="handleCancel">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="g-modal-content">
+            <template v-if="actionType === 'ban'">
+              <!-- Grid layer for selectors -->
+              <div class="grid grid-cols-2 gap-4 mb-3">
+                <!-- Ban Type -->
+                <div v-if="userStore.user" class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-gray-400">{{
+                    t('modals.banPlayer.type')
+                  }}</label>
+                  <div class="flex bg-black/20 p-1 rounded-xl">
+                    <button
+                      v-if="
+                        [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
+                          userStore.user.role
+                        ) && !!playerData?.machineId
+                      "
+                      class="flex-1 py-1 text-[10px] font-semibold rounded-lg transition-all"
+                      :class="
+                        banType === 'hwid'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      @click="banType = 'hwid'"
+                    >
+                      {{ t('modals.banPlayer.hwid') }}
+                    </button>
+                    <button
+                      class="flex-1 py-1 text-[10px] font-semibold rounded-lg transition-all"
+                      :class="
+                        banType === 'nickname'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      @click="banType = 'nickname'"
+                    >
+                      {{ t('modals.banPlayer.nick') }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Ban Mode -->
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-semibold text-gray-400">{{
+                    t('modals.banPlayer.duration')
+                  }}</label>
+                  <div class="flex bg-black/20 p-1 rounded-xl">
+                    <button
+                      class="flex-1 py-1 text-[10px] font-semibold rounded-lg transition-all"
+                      :class="
+                        banMode === 'temporary'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      @click="banMode = 'temporary'"
+                    >
+                      {{ t('modals.banPlayer.temp') }}
+                    </button>
+                    <button
+                      class="flex-1 py-1 text-[10px] font-semibold rounded-lg transition-all"
+                      :class="
+                        banMode === 'permanent'
+                          ? 'bg-[var(--bg-card)] text-white shadow-sm'
+                          : 'text-gray-400 hover:text-white'
+                      "
+                      @click="banMode = 'permanent'"
+                    >
+                      {{ t('modals.banPlayer.perm') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Date Picker for Temporary Ban -->
+              <div v-if="!isPermanentBan" class="flex flex-col gap-1 mb-3">
+                <label class="text-xs font-semibold text-gray-400">{{
+                  t('modals.banPlayer.endTime')
+                }}</label>
+                <DatePicker
+                  v-model="banTime"
+                  :placeholder="t('modals.banPlayer.datePlaceholder')"
+                  class="w-full compact-datepicker"
+                  panel-class="extreme-compact-datepicker"
+                  fluid
+                  :pt="{
+                    root: { class: 'w-full' },
+                    input: {
+                      class: 'g-input w-full'
+                    },
+                    pcPanel: {
+                      root: { class: '!w-full' }
+                    }
+                  }"
+                  show-time
+                  hour-format="24"
+                />
+              </div>
+
+              <!-- Reason -->
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-gray-400">
+                  {{ t('modals.banPlayer.reason') }} <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  v-model="banReasonInput"
+                  :placeholder="t('modals.banPlayer.reasonPlaceholder')"
+                  rows="2"
+                  class="g-input !h-auto resize-none text-sm"
+                ></textarea>
+              </div>
+            </template>
+            <div v-else class="text-center py-4 text-gray-300">
+              {{ t('modals.banPlayer.confirmUnban', { player: playerData?.nickname }) }}
+            </div>
+          </div>
+
+          <div class="g-modal-footer">
+            <button class="g-btn" @click="handleCancel">
+              {{ t('modals.banPlayer.cancel') }}
+            </button>
+            <button
+              class="g-btn primary flex-1"
+              :class="{ '!bg-red-500 hover:!bg-red-600': actionType === 'ban' }"
+              :disabled="isBanDisabled"
+              @click="actionType === 'ban' ? banUser() : unbanUser()"
+            >
+              <i class="fas" :class="actionType === 'ban' ? 'fa-gavel' : 'fa-unlock'"></i>
+              {{ actionType === 'ban' ? t('modals.banPlayer.ban') : t('modals.banPlayer.unban') }}
+            </button>
           </div>
         </div>
-        <div class="modal-content flex-col">
-          <template v-if="actionType === 'ban'">
-            <div v-if="userStore.user" class="flex gap-2">
-              <button
-                v-if="
-                  [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-                    userStore.user.role
-                  ) && !!playerData?.machineId
-                "
-                class="toggle-option !py-[0.25rem]"
-                :class="{ active: banType === 'hwid' }"
-                @click="banType = 'hwid'"
-              >
-                HWID
-              </button>
-              <button
-                class="toggle-option !py-[0.25rem]"
-                :class="{ active: banType === 'nickname' }"
-                @click="banType = 'nickname'"
-              >
-                Nick
-              </button>
-            </div>
-            <div class="flex gap-2 flex-col">
-              <label for="banReason" class="input-label">Czas zakończenia bana</label>
-              <DatePicker
-                v-model="banTime"
-                placeholder="Wybierz datę"
-                :pt="defaultDatePickerTime"
-                input-class="!w-full"
-              />
-              <DatePicker
-                v-model="banTime"
-                placeholder="Wybierz datę"
-                :pt="defaultDatePickerTime"
-                time-only
-                inline
-              />
-            </div>
-            <label for="banReason" class="input-label">Powód bana</label>
-            <textarea
-              v-model="banReasonInput"
-              placeholder="Wpisz powód bana"
-              rows="4"
-              class="jvm-args !resize-none !outline-none"
-            ></textarea>
-          </template>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn-primary"
-            :disabled="actionType === 'ban' && !banReasonInput"
-            aria-label="Zbanuj gracza"
-            @click="actionType === 'ban' ? banUser() : unbanUser()"
-          >
-            {{ actionType === 'ban' ? 'Zbanuj' : 'Odbanuj' }}
-          </button>
-          <button type="button" class="btn-secondary" @click="handleCancel">Anuluj</button>
-        </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
 <style scoped>
-.modal-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 900;
+/* Transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.modal-card {
-  width: 90%;
-  max-width: 420px;
-  padding: 1.5rem 2rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 1rem var(--border-2);
-  background: var(--bg-card);
-  border-radius: 1rem;
-  border: 1px dashed var(--border-2);
-  backdrop-filter: blur(10px);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
+/* Compact DatePicker */
+.ban-modal-compact {
+  max-width: 440px !important;
+  gap: 0.75rem !important;
+  padding: 1rem !important;
+  overflow: visible !important; /* Critical to show the date picker panel if it's not teleported */
 }
 
-.launch-title {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  font-weight: 700;
-  font-size: 1.4rem;
-  color: var(--primary);
+:deep(.compact-datepicker .g-input) {
+  padding: 0.35rem 0.6rem !important;
+  font-size: 0.75rem !important;
+  border-radius: 10px !important;
 }
 
-.nav-icon {
-  width: 36px;
-  height: 36px;
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.g-card-header {
+  padding-bottom: 0.5rem !important;
 }
 
-.modal-content {
-  flex: 1;
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.g-icon-box {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 0.9rem !important;
 }
 
-.input-label {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-.input-field,
-.textarea-field {
-  background: rgba(30, 35, 45, 0.85);
-  border-radius: 0.5rem;
-  border: none;
-  color: white;
-  padding: 0.5rem;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-.input-field::placeholder,
-.textarea-field::placeholder {
-  color: var(--text-secondary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-}
-
-.btn-primary {
-  background-color: var(--primary);
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  border: 1px solid var(--primary);
-  border-radius: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  color: var(--primary);
-  font-weight: 700;
-  cursor: pointer;
+/* Reduce label size further */
+label {
+  font-size: 10px !important;
+  margin-bottom: 2px !important;
 }
 </style>
