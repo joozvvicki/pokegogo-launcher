@@ -67,7 +67,7 @@ onMounted(async () => {
           <div v-if="megaEvent" class="hero-tag">Active Event</div>
           <h1 class="hero-title">{{ megaEvent?.name || 'Welcome to PokeGoGo' }}</h1>
           <p class="hero-desc">
-            {{ megaEvent?.desc || 'Join the adventure on the best Pixelmon server!' }}
+            {{ megaEvent?.desc || 'Join the adventure on the best Cobblemon server!' }}
           </p>
           <div v-if="megaEvent?.startDate" class="hero-meta">
             <i class="far fa-calendar-alt"></i>
