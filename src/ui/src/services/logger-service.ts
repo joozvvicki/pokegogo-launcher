@@ -37,6 +37,14 @@ class LoggerService {
       ...args
     )
   }
+
+  warn(...args: string[]): void {
+    console.warn(
+      `%c${this.name}`,
+      'background: #ffcc00; color: black; border-radius: 5px; padding: 2px 4px;',
+      ...args
+    )
+  }
 }
 
 export const LOGGER = new LoggerService('Launcher')

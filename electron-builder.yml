@@ -1,8 +1,11 @@
 appId: pl.pokemongogo.launcher
 productName: PokeGoGo Launcher
+copyright: Copyright 2026 Dominik Jozwicki
 directories:
   buildResources: build
 files:
+  - out/**/*
+  - resources/**/*
   - '!**/.vscode/*'
   - '!src/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'

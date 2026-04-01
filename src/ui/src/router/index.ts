@@ -12,6 +12,7 @@ import UsersPage from '@ui/pages/Users.vue'
 import FTPPage from '@ui/pages/FTP.vue'
 import ItemsPage from '@ui/pages/Items.vue'
 import EventsPage from '@ui/pages/Events.vue'
+import GameControlPage from '@ui/pages/GameControl.vue'
 
 const routes = [
   { path: '/', component: LoginPage },
@@ -91,6 +92,14 @@ const routes = [
         component: EventsPage,
         meta: {
           displayName: 'router.events'
+        }
+      },
+      {
+        path: 'game-control',
+        name: 'gameControl',
+        component: GameControlPage,
+        meta: {
+          displayName: 'router.gameControl'
         }
       }
     ]

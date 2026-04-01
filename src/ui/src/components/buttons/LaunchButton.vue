@@ -1,15 +1,16 @@
 <script lang="ts" setup>
-import { connectPlayer, disconnectPlayer } from '@ui/api/endpoints'
 import { LOGGER } from '@ui/services/logger-service'
 import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
+import { useSocketService } from '@ui/services/socket-service'
 import { createParticles, refreshMicrosoftToken, showToast } from '@ui/utils'
 import { differenceInMilliseconds, intervalToDuration, parseISO } from 'date-fns'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const generalStore = useGeneralStore()
+const { emit: emitSocket } = useSocketService()
 
 const states = computed<Record<string, string>>(() => ({
   start: t('launcher.launchButton.states.start'),
@@ -28,6 +29,19 @@ const isBanned = computed(() => {
     : userStore.user?.banEndDate
       ? differenceInMilliseconds(parseISO(userStore.user?.banEndDate as string), new Date()) > 0
       : !!userStore.user?.isBanned
+})
+
+watch(isBanned, async (newVal) => {
+  if (
+    newVal &&
+    (generalStore.currentState === 'minecraft-started' ||
+      generalStore.currentState === 'minecraft-start' ||
+      generalStore.currentState === 'files-verify')
+  ) {
+    LOGGER.with('Launch State').warn('Banned during session. Killing game.')
+    await handleKillGame()
+    showToast(t('launcher.launchButton.ban.bannedTitle'), 'error')
+  }
 })
 
 const handleToggleGame = async (e: Event): Promise<void> => {
@@ -52,11 +66,17 @@ const handleToggleGame = async (e: Event): Promise<void> => {
   } catch (err) {
     LOGGER.with('Launch State').err((err as Error).toString())
     showToast(t('launcher.launchButton.errors.generic'), 'error')
+    generalStore.setCurrentState('start')
+    generalStore.setIsOpeningGame(false)
   }
 }
 
 const handleLaunchGame = async (e: Event): Promise<void> => {
   createParticles(e.target as HTMLElement)
+
+  // Natychmiastowa reakcja UI
+  generalStore.setIsOpeningGame(true)
+  generalStore.setCurrentState('minecraft-start')
 
   let mcToken = localStorage.getItem('mcToken')
 
@@ -106,7 +126,10 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
     accountType: userStore.user?.accountType
   })
 
-  if (res) generalStore.mcInstance = parseInt(res)
+  if (res) {
+    generalStore.mcInstance = res as number
+    emitSocket('player:mc-started', { nickname: userStore.user?.nickname })
+  }
 }
 
 const state = computed(() => {
@@ -114,9 +137,8 @@ const state = computed(() => {
 })
 
 const handleKillGame = async (): Promise<void> => {
-  if (!generalStore.isOpeningGame) return
-
   await window.electron?.ipcRenderer?.invoke('launch:exit', generalStore.mcInstance)
+  emitSocket('player:mc-closed', { nickname: userStore.user?.nickname })
   generalStore.mcInstance = null
   generalStore.setCurrentState('start')
   setTimeout(() => {
@@ -157,42 +179,8 @@ const formattedBanTime = computed(() => {
   return t('launcher.launchButton.ban.remaining', { time: `${hours}:${minutes}:${seconds}` })
 })
 
-window.electron?.ipcRenderer?.on('launch:change-state', async (_event, state: string) => {
-  const parsedState = JSON.parse(state)
-  generalStore.setCurrentState(parsedState)
-
-  if (parsedState === 'minecraft-start') {
-    window.discord.setActivity(
-      `W PokeGoGo Launcher`,
-      t('launcher.launchButton.states.minecraftStart')
-    )
-  }
-
-  if (parsedState === 'minecraft-started') {
-    LOGGER.with('Launch State').log('Minecraft is running..')
-    generalStore.setIsOpeningGame(true)
-    window.discord.setActivity(`W PokeGoGo Launcher`, 'Gram..')
-    await connectPlayer()
-  }
-
-  if (parsedState === 'minecraft-closed') {
-    generalStore.setCurrentState('start')
-    generalStore.setIsOpeningGame(false)
-    generalStore.setCurrentLog('')
-    window.discord.setActivity(`W PokeGoGo Launcher`, 'Przeglądam..')
-    LOGGER.with('Launch State').log('Minecraft is closed.')
-    await disconnectPlayer()
-  }
-})
-
-window.electron?.ipcRenderer?.on('launch:show-log', (_event, data: string, ended?: string) => {
-  if (!ended) {
-    generalStore.setCurrentLog(data)
-    return
-  }
-
-  generalStore.setCurrentLog('')
-})
+// State tracking and listeners moved to App.vue for global persistence.
+// This component now relies solely on generalStore for its reactive state.
 
 const currentState = computed(() => {
   return generalStore.currentState
@@ -228,24 +216,13 @@ onMounted(async (): Promise<void> => {
     now.value = new Date()
   }, 1000)
 
-  try {
-    const isRunning = generalStore.mcInstance
-
-    if (isRunning) {
-      generalStore.setIsOpeningGame(true)
-      generalStore.setCurrentState('minecraft-started')
-      LOGGER.with('Launch State').log('Minecraft is running..')
-      window.discord.setActivity(`W PokeGoGo Launcher`, 'Gram..')
-    }
-  } catch {
-    LOGGER.with('Launch State').log('Minecraft is not running.')
-  }
+  // Initialization check moved to App.vue or handled by store persistence
 })
 
 // Clean up listener
-import { onBeforeUnmount } from 'vue'
 onBeforeUnmount(() => {
   document.removeEventListener('click', onClickOutside)
+  // Global listeners in App.vue handle the lifecycle now
 })
 </script>
 
@@ -289,15 +266,13 @@ onBeforeUnmount(() => {
       <button class="main-action" :disabled="isBanned" @click="(e) => handleToggleGame(e)">
         <div class="launch-button-bg"></div>
 
-        <template v-if="currentState === 'start'">
+        <template v-if="currentState === 'start' || isBanned">
           <div class="action-content">
             <template v-if="isBanned">
-              <i class="fas fa-exclamation-triangle"></i>
-              <div class="flex flex-col items-start leading-none">
-                <span class="text-sm font-bold">{{
-                  t('launcher.launchButton.ban.bannedTitle')
-                }}</span>
-                <span class="text-[0.6rem] opacity-70">{{
+              <i class="fas fa-exclamation-triangle ban-icon"></i>
+              <div class="ban-text-container">
+                <span class="ban-title">{{ t('launcher.launchButton.ban.bannedTitle') }}</span>
+                <span class="ban-timer">{{
                   userStore.user?.banEndDate ? formattedBanTime : ''
                 }}</span>
               </div>
@@ -353,17 +328,18 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   background: var(--gradient-primary);
-  border-radius: 18px;
+  border-radius: 16px;
   padding: 0;
   transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   border: 1px solid rgba(255, 255, 255, 0.12);
   overflow: hidden;
   width: 100%;
-  max-width: 300px;
+  max-width: 280px;
 }
 
 .split-button-wrapper.running {
   animation: pulse-border 2s infinite;
+  max-width: 280px;
 }
 
 .split-button-wrapper.banned {
@@ -377,14 +353,15 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex: 1;
-  min-width: 120px;
-  height: 52px;
-  padding: 0 16px 0 20px;
+  min-width: 100px;
+  height: 48px;
+  padding: 0 12px 0 16px;
   background: transparent;
   border: none;
   border-radius: 0;
   color: #fff;
   font-weight: 800;
+  font-size: 0.85rem;
   letter-spacing: 0.5px;
   cursor: pointer;
   overflow: hidden;
@@ -407,14 +384,14 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 54px;
-  padding: 0 1rem;
-  height: 52px;
+  width: 48px;
+  padding: 0 0.8rem;
+  height: 48px;
   background: transparent;
   border: none;
   border-radius: 0;
   color: #fff;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -527,19 +504,65 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 2px;
   z-index: 2;
+  width: 100%;
+  max-width: 100%;
 }
 
 .action-running .title {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  width: 100%;
+  padding: 0 10px;
+}
+
+.action-running .truncate {
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
 }
 
 .action-running .info {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+/* Ban UI refinement */
+.ban-icon {
+  font-size: 0.9rem;
+  color: #fff;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.ban-text-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.1;
+  min-width: 0;
+  max-width: 100%;
+  padding-right: 4px;
+}
+
+.ban-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.ban-timer {
+  font-size: 0.55rem;
   opacity: 0.7;
   font-weight: 600;
 }

@@ -27,6 +27,7 @@ export interface IUser {
   banType?: string
   banEndDate: Date | string
   isOnline: boolean
+  isMcOpened: boolean
   machineId?: string
   lastLoginAt: string
   totalPlayTime: string
@@ -39,4 +40,23 @@ export interface IUser {
   friendRequests: string[]
   headUrl?: string
   hwidAccountCount?: number
+}
+
+declare global {
+  interface Window {
+    electron: {
+      ipcRenderer: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        on: (channel: string, listener: (event: any, ...args: any[]) => void) => void
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        send: (channel: string, ...args: any[]) => void
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        invoke: (channel: string, ...args: any[]) => Promise<any>
+        removeAllListeners: (channel: string) => void
+      }
+    }
+    discord: {
+      setActivity: (details: string, state: string) => void
+    }
+  }
 }

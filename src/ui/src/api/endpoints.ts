@@ -65,7 +65,8 @@ export const getPlayers = async (
   limit: number = 10,
   query?: string
 ): Promise<any> => {
-  const res = await api.post(`/users/all?page=${page}&limit=${limit}&query=${query}`)
+  const q = query && query !== 'undefined' ? encodeURIComponent(query) : ''
+  const res = await api.post(`/users/all?page=${page}&limit=${limit}&query=${q}`)
 
   return res.data
 }

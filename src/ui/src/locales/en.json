@@ -532,7 +532,17 @@
     "users": "Players",
     "ftp": "FTP",
     "items": "Items",
-    "events": "Events"
+    "events": "Events",
+    "gameControl": "Game Management"
+  },
+  "gameControl": {
+    "title": "Remote Game Management",
+    "warning": "Are you sure you want to close Minecraft for everyone?",
+    "actionButton": "Close all games",
+    "successToast": "Sent kill game command to everyone",
+    "errorToast": "Failed to send kill game command",
+    "description": "This action will force an immediate shutdown of Minecraft for all connected users. Use only in emergency or technical situations.",
+    "confirmTitle": "Confirm action"
   },
   "general": {
     "loading": "Loading..",

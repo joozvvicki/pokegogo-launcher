@@ -369,10 +369,8 @@ onMounted(async () => {
 }
 
 .dock-launch-btn {
-  width: 240px !important;
-  height: 52px !important;
-  font-size: 0.95rem !important;
-  letter-spacing: 0.5px !important;
+  width: 220px;
+  height: 48px;
 }
 
 /* Custom Scrollbar for news items */

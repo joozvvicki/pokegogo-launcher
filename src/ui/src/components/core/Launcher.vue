@@ -1,3 +1,4 @@
+<!-- eslint-disable prettier/prettier -->
 <!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
 import Header from '@ui/components/core/Header.vue'
@@ -20,9 +21,9 @@ const transitionName = ref('slide-up')
 
 const { useMethods, useFetches, useVariables } = useLauncherService()
 
-const { startMicrosoftTokenRefreshInterval, handleRefreshDataAndProfile, disconnect } = useMethods()
+const { startMicrosoftTokenRefreshInterval, handleRefreshDataAndProfile, setItemsPerPage, disconnect } = useMethods()
 const { fetchUpdateData, fetchEvents, fetchPlayers } = useFetches()
-const { refreshInterval, events, allPlayers, filteredPlayers, hasMorePlayers, isLoadingPlayers } =
+const { refreshInterval, events, allPlayers, filteredPlayers, hasMorePlayers, isLoadingPlayers, itemsPerPage } =
   useVariables()
 
 const routeOrder = [
@@ -98,8 +99,10 @@ onUnmounted(() => {
             :filtered-players="filteredPlayers"
             :has-more-players="hasMorePlayers"
             :is-loading-players="isLoadingPlayers"
+            :items-per-page="itemsPerPage"
             @fetch-players="fetchPlayers"
             @refresh-data="fetchPlayers"
+            @update-limit="setItemsPerPage"
             @ban-player="handleLauncherBan"
             @unban-player="handleLauncherUnban"
             @reset-password="handleResetPassword"

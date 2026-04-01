@@ -10,15 +10,22 @@ import { IChat, useChatsStore } from '@ui/stores/chats-store'
 import { connectPlayer, disconnectPlayer } from '@ui/api/endpoints'
 import type { IMessage } from '@ui/types/app'
 import { useUserCacheStore } from '@ui/stores/user-cache-store'
+import { usePlayersStore } from '@ui/stores/players-store'
+import useGeneralStore from '@ui/stores/general-store'
+
+// Global shared instances (Singleton)
+let socket: Socket | null = null
 
 export const useSocketService = (): {
   connect: (uuid: string, nickname?: string) => void
   disconnect: () => void
+  emit: (event: string, data: unknown) => void
 } => {
-  let socket: Socket | null = null
   const chatsStore = useChatsStore()
   const userStore = useUserStore()
   const userCache = useUserCacheStore()
+  const playersStore = usePlayersStore()
+  const generalStore = useGeneralStore()
   const router = useRouter()
 
   const refreshToken = async (): Promise<void> => {
@@ -73,9 +80,18 @@ export const useSocketService = (): {
           userStore.user?.nickname === data.nickname
 
         if (isCurrentPlayerBanned) {
-          userStore.user!.banReason = data.reason
+          if (userStore.user) {
+            userStore.user.isBanned = true
+            userStore.user.banReason = data.reason
+          }
+          generalStore.setCurrentState('start')
+
           await refreshToken()
           await userStore.updateProfile()
+
+          // KILL GAME ON BAN
+          window.electron?.ipcRenderer?.invoke('launch:exit')
+          showToast(`Zostałeś zbanowany! Powód: ${data.reason}`, 'error')
         }
       }
     )
@@ -103,6 +119,32 @@ export const useSocketService = (): {
         await userStore.updateProfile()
         router.go(0)
       }
+    })
+
+    socket.on('player:online', (data: { uuid: string; nickname: string }) => {
+      playersStore.updatePlayerStatus(data.uuid, true)
+      playersStore.updatePlayerStatus(data.nickname, true)
+    })
+
+    socket.on('player:offline', (data: { uuid: string; nickname: string }) => {
+      playersStore.updatePlayerStatus(data.uuid, false)
+      playersStore.updatePlayerStatus(data.nickname, false)
+    })
+
+    socket.on('player:mc-status-update', (data: { nickname: string; isMcOpened: boolean }) => {
+      playersStore.updatePlayerMcStatus(data.nickname, data.isMcOpened)
+    })
+
+    socket.on('player:force-kill-game', async () => {
+      LOGGER.with('Socket Service').log('Remote kill command received from admin')
+      await window.electron?.ipcRenderer?.invoke('launch:exit')
+
+      // Sync local state
+      generalStore.setCurrentState('start')
+      generalStore.setIsOpeningGame(false)
+      generalStore.mcInstance = null
+
+      showToast('Twoja gra została zdalnie wyłączona przez administratora', 'warning')
     })
 
     // CHAT FLOW
@@ -235,5 +277,9 @@ export const useSocketService = (): {
     )
   }
 
-  return { disconnect, connect }
+  const emit = (event: string, data: unknown): void => {
+    socket?.emit(event, data)
+  }
+
+  return { disconnect, connect, emit }
 }

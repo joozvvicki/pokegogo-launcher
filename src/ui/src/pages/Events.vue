@@ -4,7 +4,9 @@ import AddEvent from '@ui/components/modals/AddEvent.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
 import { ref, onMounted, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { UserRole } from '@ui/types/app'
 
 const { t } = useI18n()
 const url = import.meta.env.RENDERER_VITE_API_URL
@@ -46,7 +48,7 @@ watch(searchQuery, () => {
     filteredEvents.value = [...allEvents.value]
     return
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   filteredEvents.value = allEvents.value.filter(
     (event: any) =>
       event.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -56,7 +58,18 @@ watch(searchQuery, () => {
 
 const hasResults = computed(() => filteredEvents.value && filteredEvents.value.length > 0)
 
+const router = useRouter()
+
 onMounted(async () => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  const isAdmin = [UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(
+    role as UserRole
+  )
+
+  if (!isAdmin) {
+    router.push('/app/home')
+    return
+  }
   await fetchEvents()
 })
 </script>

@@ -10,21 +10,26 @@ import { IUser } from '@ui/env'
 import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { AccountType, UserRole } from '@ui/types/app'
+import { useSocketService } from '@ui/services/socket-service'
 import { showToast } from '@ui/utils'
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
+
+const pollInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
 const props = defineProps<{
   filteredPlayers: IUser[]
   hasMorePlayers: boolean
   isLoadingPlayers: boolean
   allPlayers: IUser[]
+  itemsPerPage: number
 }>()
 
 const emit = defineEmits<{
   (e: 'fetch-players', query?: string, reset?: boolean): Promise<void>
   (e: 'refresh-data', query?: string, reset?: boolean): Promise<void>
+  (e: 'update-limit', limit: number): Promise<void>
   (e: 'ban-player', player: IUser): Promise<void>
   (e: 'unban-player', player: IUser): Promise<void>
   (e: 'reset-password', player: IUser): Promise<void>
@@ -32,14 +37,21 @@ const emit = defineEmits<{
 
 const generalStore = useGeneralStore()
 const userStore = useUserStore()
+const { emit: emitSocket } = useSocketService()
+
+const handleKillPlayerGame = (player: IUser): void => {
+  emitSocket('admin:kill-player-game', { targetNickname: player.nickname })
+  showToast(`${t('users.toasts.killGameSent')} ${player.nickname}`, 'info')
+}
 
 const filterGroups = [
   {
     label: 'Status',
     filters: [
       { label: 'Online', value: 'q:online', icon: 'fas fa-signal' },
+      { label: 'W grze', value: 'q:ingame', icon: 'fas fa-gamepad' },
       { label: 'Offline', value: 'q:offline', icon: 'fas fa-power-off' },
-      { label: 'Banned', value: 'q:banned', icon: 'fas fa-ban' }
+      { label: 'Zbanowani', value: 'q:banned', icon: 'fas fa-ban' }
     ]
   },
   {
@@ -74,7 +86,7 @@ const toggleFilter = async (filterValue: string): Promise<void> => {
 
   // Regex to identify any "special" server filter or custom prefix
   const serverFilterRegex =
-    /^q:(online|offline|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
+    /^q:(online|offline|ingame|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
 
   // Strip all matching keywords from current query
   const remainingParts = searchQuery.value
@@ -93,7 +105,7 @@ const isFilterActive = (filterValue: string): boolean => activeFilters.value.inc
 const clearAllFilters = async (): Promise<void> => {
   activeFilters.value = []
   const serverFilterRegex =
-    /^q:(online|offline|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
+    /^q:(online|offline|ingame|banned|nohwid|microsoft|standard|hwid[><= ]{1,2}\d+)|(role|ip|email|id|hwid):[^\s]+$/i
   const remainingParts = searchQuery.value
     .split(/\s+/)
     .filter((part) => !serverFilterRegex.test(part))
@@ -197,9 +209,10 @@ const handleOpenUserProfile = (player: IUser): void => {
   userStore.updateSelectedProfile(player)
 }
 
-const isMod = computed(() =>
-  [UserRole.ADMIN, UserRole.MODERATOR, UserRole.DEV].includes(userStore.user?.role ?? UserRole.USER)
-)
+const isMod = computed(() => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(role as UserRole)
+})
 
 const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
 
@@ -214,7 +227,7 @@ const handleAcceptFriendRequest = async (player: IUser): Promise<void> => {
     const res = await acceptFriendRequest(player.nickname)
 
     if (res) {
-      await emit('refresh-data')
+      await emit('refresh-data', searchQuery.value, true)
       await userStore.updateProfile()
 
       showToast(`${t('users.toasts.inviteAccepted')} ${player.nickname}`, 'success')
@@ -243,8 +256,19 @@ const handleUsersListRefresh = async (): Promise<void> => {
   await emit('fetch-players', searchQuery.value, true)
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const startPolling = () => {
+  if (pollInterval.value) clearInterval(pollInterval.value)
+  pollInterval.value = setInterval(async () => {
+    if (!props.isLoadingPlayers) {
+      await emit('fetch-players', searchQuery.value, true)
+    }
+  }, 60000) // Poll every 60 seconds
+}
+
 onMounted(async () => {
   await emit('fetch-players', searchQuery.value, true)
+  startPolling()
 
   window.addEventListener('users:list-refresh', handleUsersListRefresh)
 
@@ -271,6 +295,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (observer) observer.disconnect()
+  if (pollInterval.value) clearInterval(pollInterval.value)
   window.removeEventListener('users:list-refresh', handleUsersListRefresh)
 })
 </script>
@@ -355,20 +380,41 @@ onUnmounted(() => {
             {{ t('users.filters.clearAll') }}
           </button>
         </div>
-        <div class="filter-groups">
-          <div v-for="group in filterGroups" :key="group.label" class="filter-group">
-            <span class="group-label">{{ group.label }}</span>
-            <div class="filter-chips-wrapper">
-              <button
-                v-for="filter in group.filters"
-                :key="filter.value"
-                class="filter-chip"
-                :class="{ active: isFilterActive(filter.value) }"
-                @click="toggleFilter(filter.value)"
+
+        <div class="filter-controls-row">
+          <div class="filter-groups">
+            <div v-for="group in filterGroups" :key="group.label" class="filter-group">
+              <span class="group-label">{{ group.label }}</span>
+              <div class="filter-chips-wrapper">
+                <button
+                  v-for="filter in group.filters"
+                  :key="filter.value"
+                  class="filter-chip"
+                  :class="{ active: isFilterActive(filter.value) }"
+                  @click="toggleFilter(filter.value)"
+                >
+                  <i :class="filter.icon"></i>
+                  <span>{{ filter.label }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pagination-limit-selector">
+            <span class="limit-label">{{ t('users.showMax', 'Pokazuj max:') }}</span>
+            <div class="limit-dropdown-wrapper">
+              <select
+                :value="itemsPerPage"
+                class="limit-select"
+                @change="(e) => $emit('update-limit', parseInt((e.target as any).value))"
               >
-                <i :class="filter.icon"></i>
-                <span>{{ filter.label }}</span>
-              </button>
+                <option :value="-1">{{ t('users.limitAll', 'Wszystkie') }}</option>
+                <option :value="100">100</option>
+                <option :value="50">50</option>
+                <option :value="25">25</option>
+                <option :value="10">10</option>
+              </select>
+              <i class="fas fa-chevron-down select-icon"></i>
             </div>
           </div>
         </div>
@@ -412,6 +458,14 @@ onUnmounted(() => {
                   :title="t('users.keywords.nohwid')"
                 >
                   <i class="fas fa-microchip"></i>
+                </div>
+
+                <div
+                  v-if="player.isMcOpened"
+                  class="mc-opened-indicator"
+                  :title="t('users.gameRunning')"
+                >
+                  <i class="fas fa-gamepad"></i>
                 </div>
               </div>
 
@@ -489,7 +543,9 @@ onUnmounted(() => {
                 <div
                   v-if="
                     isMod &&
-                    ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
+                    ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
+                      player.role?.toLowerCase() as UserRole
+                    )
                   "
                   class="action-group mod-actions"
                 >
@@ -518,6 +574,20 @@ onUnmounted(() => {
                     <i class="fas fa-key"></i>
                   </button>
                 </div>
+
+                <!-- Technical actions (visible even for staff targets) -->
+                <div
+                  v-if="userStore.user?.role === UserRole.DEV && player.isMcOpened"
+                  class="action-group tech-actions"
+                >
+                  <button
+                    class="card-action-btn danger"
+                    :title="t('users.killGame')"
+                    @click="handleKillPlayerGame(player)"
+                  >
+                    <i class="fas fa-stop-circle"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </article>
@@ -538,6 +608,100 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.filter-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 1.25rem;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.filter-controls-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+}
+
+.pagination-limit-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 170px;
+}
+
+.limit-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  padding-left: 2px;
+}
+
+.limit-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.limit-select {
+  appearance: none;
+  background: #141419;
+  border: 1.5px solid #ff4081;
+  border-radius: 12px;
+  padding: 0.6rem 2.5rem 0.6rem 1rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.limit-select:hover {
+  background: #1a1a22;
+  box-shadow: 0 0 15px rgba(255, 64, 129, 0.2);
+}
+
+.select-icon {
+  position: absolute;
+  right: 1.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.limit-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.select-icon {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
 .players-page-container {
   padding: 1.5rem 2rem;
   width: 100%;
@@ -745,6 +909,36 @@ onUnmounted(() => {
   border: 3px solid var(--bg-card);
   border-radius: 50%;
   box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.mc-opened-indicator {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 24px;
+  height: 24px;
+  background: var(--primary);
+  border: 2px solid var(--bg-card);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.7rem;
+  box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .banned-overlay {

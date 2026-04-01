@@ -1,0 +1,8 @@
+﻿
+> pokemongogo-launcher@0.7.9-dev typecheck:web
+> vue-tsc --noEmit -p tsconfig.web.json --composite false
+
+src/ui/src/components/buttons/LaunchButton.vue(43,33): error TS2339: Property 'warn' does not exist on type 'LoggerService'.
+src/ui/src/pages/FTP.vue(20,3): error TS6133: 'createFolderModal' is declared but its value is never read.
+src/ui/src/pages/FTP.vue(21,3): error TS6133: 'inputFile' is declared but its value is never read.
+src/ui/src/pages/FTP.vue(22,3): error TS6133: 'inputFolder' is declared but its value is never read.

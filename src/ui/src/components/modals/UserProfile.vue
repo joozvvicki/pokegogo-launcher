@@ -10,6 +10,7 @@ import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
 import ChangeNicknameModal from '@ui/components/modals/ChangeNicknameModal.vue'
 import { useChatsStore } from '@ui/stores/chats-store'
+import { usePlayersStore } from '@ui/stores/players-store'
 import {
   acceptFriendRequest,
   getFriendRequests,
@@ -37,6 +38,7 @@ const skinUrl = computed(() => {
 
 const chatsStore = useChatsStore()
 const userStore = useUserStore()
+const playersStore = usePlayersStore()
 const player = computed(() => userStore.selectedProfile)
 const friends = ref<IUser[]>([])
 const friendRequests = ref<IUser[]>([])
@@ -186,13 +188,22 @@ const getPlayerID = (player: IUser): string => {
 }
 
 const isAdmin = computed(() => {
-  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-    userStore.user?.role ?? UserRole.USER
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
+    role as UserRole
   )
 })
 
 const onlyForAdmin = (player: IUser): boolean => {
-  return isAdmin.value && ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(player.role)
+  const staffRoles = [
+    UserRole.ADMIN,
+    UserRole.DEV,
+    UserRole.MODERATOR,
+    UserRole.MOD,
+    UserRole.HELPER,
+    UserRole.POMOCNIK
+  ]
+  return isAdmin.value && !staffRoles.includes(player.role?.toLowerCase() as UserRole)
 }
 
 const now = ref(new Date())
@@ -320,6 +331,16 @@ const handleEscape = (e: KeyboardEvent): void => {
   if (e.key === 'Escape') {
     closeModal()
   }
+}
+
+const getIsOnline = (friend: IUser): boolean => {
+  const storePlayer = playersStore.allPlayers.find((p) => p.nickname === friend.nickname)
+  return storePlayer ? storePlayer.isOnline : friend.isOnline
+}
+
+const getIsMcOpened = (friend: IUser): boolean => {
+  const storePlayer = playersStore.allPlayers.find((p) => p.nickname === friend.nickname)
+  return storePlayer ? storePlayer.isMcOpened : friend.isMcOpened
 }
 </script>
 
@@ -519,8 +540,19 @@ const handleEscape = (e: KeyboardEvent): void => {
                   <div v-else class="friend-avatar-placeholder">
                     <i class="fas fa-user"></i>
                   </div>
-                  <div class="status-indicator online"></div>
-                  <!-- Placeholder for status -->
+                  <div
+                    class="status-indicator"
+                    :class="{ online: getIsOnline(friend) }"
+                    :title="getIsOnline(friend) ? t('users.online') : t('users.offline')"
+                  ></div>
+
+                  <div
+                    v-if="getIsMcOpened(friend)"
+                    class="mc-status-dot"
+                    :title="t('users.gameRunning')"
+                  >
+                    <i class="fas fa-gamepad"></i>
+                  </div>
                 </div>
                 <div class="friend-details">
                   <span class="friend-name">{{ friend.nickname }}</span>
@@ -1058,6 +1090,28 @@ const handleEscape = (e: KeyboardEvent): void => {
 .status-indicator.online {
   background: #22c55e;
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.mc-status-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 16px;
+  height: 16px;
+  background: var(--primary);
+  border: 2px solid var(--bg-card);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  color: white;
+  box-shadow: 0 0 8px rgba(var(--primary-rgb), 0.4);
+  z-index: 2;
+}
+
+.mc-status-dot i {
+  transform: scale(0.8);
 }
 
 .friend-details {
