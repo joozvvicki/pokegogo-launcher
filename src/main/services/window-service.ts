@@ -21,6 +21,9 @@ const createMainWindow = (): BrowserWindow => {
     backgroundColor: 'black',
     backgroundMaterial: 'acrylic',
     frame: false,
+    maximizable: false,
+    fullscreenable: false,
+    resizable: false,
     webPreferences: {
       backgroundThrottling: true,
       nodeIntegration: false,

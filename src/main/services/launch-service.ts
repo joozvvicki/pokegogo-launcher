@@ -67,22 +67,39 @@ export const useLaunchService = (win: BrowserWindow): void => {
       Logger.log('Cancel process triggered via launch:exit')
     }
 
-    // 2. Kill specific process if running
+    // 2. Kill specific process if running or ALL if pid is null
     if (pid) {
-      const instance = minecraftInstances.find((instance) => instance.process === pid)
+      let instance = minecraftInstances.find((instance) => instance.process === pid)
+
+      // Fallback: if we didn't find the exact PID but there's exactly one running instance, kill it
+      if (!instance && minecraftInstances.length === 1) {
+        Logger.log('launch:exit PID mismatch, falling back to the only running instance')
+        instance = minecraftInstances[0]
+      }
+
       if (instance) {
         await instance.stop()
         // Remove from list
         const index = minecraftInstances.indexOf(instance)
         if (index > -1) minecraftInstances.splice(index, 1)
       }
-    } else if (pendingInstance) {
-      // 3. Fallback: Kill pending instance (stuck in start/launch phase)
-      Logger.log('Killing pending instance via launch:exit fallback')
-      await pendingInstance.stop()
-      const index = minecraftInstances.indexOf(pendingInstance)
-      if (index > -1) minecraftInstances.splice(index, 1)
-      pendingInstance = null
+    } else {
+      // 3. Kill ALL running instances (e.g. on BAN or forced close)
+      Logger.log(`Killing all active Minecraft instances (${minecraftInstances.length})`)
+      for (const instance of [...minecraftInstances]) {
+        await instance.stop()
+        const index = minecraftInstances.indexOf(instance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+      }
+
+      // 4. Fallback: Kill pending instance (stuck in start/launch phase)
+      if (pendingInstance) {
+        Logger.log('Killing pending instance via launch:exit fallback')
+        await pendingInstance.stop()
+        const index = minecraftInstances.indexOf(pendingInstance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+        pendingInstance = null
+      }
     }
   })
 
@@ -148,5 +165,25 @@ export const useLaunchService = (win: BrowserWindow): void => {
     }
 
     return Promise.resolve()
+  })
+
+  // Ensure game processes are killed if the launcher dies or gets closed.
+  app.on('will-quit', () => {
+    minecraftInstances.forEach((instance) => {
+      if (instance.process) {
+        try {
+          Logger.log(`Launcher quitting: Terminating orphaned Minecraft PID ${instance.process}`)
+          if (process.platform === 'win32') {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { execSync } = require('child_process')
+            execSync(`taskkill /pid ${instance.process} /T /F`, { stdio: 'ignore' })
+          } else {
+            process.kill(instance.process, 'SIGTERM')
+          }
+        } catch (e) {
+          Logger.error('Failed to kill stray minecraft process on app quit', e)
+        }
+      }
+    })
   })
 }

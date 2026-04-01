@@ -8,10 +8,11 @@ import {
   refreshMicrosoftToken,
   showToast
 } from '@ui/utils'
-import { ref, watch, type Ref } from 'vue'
+import { ref, watch, computed, type Ref } from 'vue'
 import { useSocketService } from './socket-service'
 import { AccountType } from '@ui/types/app'
 import { IUser } from '@ui/env'
+import { usePlayersStore } from '@ui/stores/players-store'
 
 export const useLauncherService = (): {
   useVariables: () => {
@@ -21,6 +22,7 @@ export const useLauncherService = (): {
     filteredPlayers: Ref<IUser[]>
     isLoadingPlayers: Ref<boolean>
     hasMorePlayers: Ref<boolean>
+    itemsPerPage: Ref<number>
   }
   useFetches: () => {
     fetchUpdateData: () => Promise<void>
@@ -31,15 +33,15 @@ export const useLauncherService = (): {
     startMicrosoftTokenRefreshInterval: () => void
     setMachineData: () => Promise<void>
     handleRefreshDataAndProfile: () => Promise<void>
+    setItemsPerPage: (limit: number) => void
     disconnect: () => void
   }
 } => {
-  const currentPage = ref(1)
-  const itemsPerPage = ref(24)
-  const allPlayers = ref<IUser[]>([])
-  const filteredPlayers = ref<IUser[]>([])
-  const isLoadingPlayers = ref<boolean>(false)
-  const hasMorePlayers = ref<boolean>(true)
+  const playersStore = usePlayersStore()
+  const itemsPerPage = ref(
+    localStorage.getItem('players_limit') ? parseInt(localStorage.getItem('players_limit')!) : -1
+  )
+  let fetchAbortController: AbortController | null = null
 
   const refreshInterval = ref<any>(null)
   const generalStore = useGeneralStore()
@@ -51,7 +53,7 @@ export const useLauncherService = (): {
   watch(
     () => userStore.user,
     () => {
-      if (userStore.user) connect(userStore.user.uuid)
+      if (userStore.user) connect(userStore.user.uuid, userStore.user.nickname)
     }
   )
 
@@ -128,29 +130,38 @@ export const useLauncherService = (): {
   }
 
   async function fetchPlayers(query?: string, reset: boolean = false): Promise<void> {
-    if (isLoadingPlayers.value || (!hasMorePlayers.value && !reset)) return
+    // If not a reset (infinite scroll), and already loading or no more items, skip
+    if (!reset && (playersStore.isLoading || !playersStore.hasMore)) return
 
-    isLoadingPlayers.value = true
-
-    if (reset) {
-      currentPage.value = 1
-      hasMorePlayers.value = true
+    // If it's a reset (search/refresh), abort previous request if in flight
+    if (reset && fetchAbortController) {
+      fetchAbortController.abort()
     }
 
+    playersStore.isLoading = true
+
+    if (reset) {
+      playersStore.reset()
+    }
+
+    fetchAbortController = new AbortController()
+
     try {
-      const res = await getPlayers(
-        currentPage.value,
-        itemsPerPage.value,
-        query ?? generalStore.searchQuery
-      )
+      const q = query ?? generalStore.searchQuery
+      const isFixedLimit = itemsPerPage.value !== -1
+      const limit = isFixedLimit ? itemsPerPage.value : 20
+
+      const res = await getPlayers(playersStore.currentPage, limit, q)
 
       if (res) {
-        if (res.length < itemsPerPage.value) {
-          hasMorePlayers.value = false
+        if (isFixedLimit) {
+          playersStore.hasMore = false
+        } else if (res.length < limit) {
+          playersStore.hasMore = false
         }
 
         const mappedPlayers = await Promise.all(
-          res.map(async (player) => {
+          res.map(async (player: IUser) => {
             const headUrl = await loadCustomOrFallbackHead(player)
             return {
               ...player,
@@ -160,32 +171,34 @@ export const useLauncherService = (): {
         )
 
         if (reset) {
-          allPlayers.value = mappedPlayers
-          filteredPlayers.value = mappedPlayers
+          playersStore.setPlayers(mappedPlayers)
         } else {
-          allPlayers.value = [...allPlayers.value, ...mappedPlayers]
-          filteredPlayers.value = [...filteredPlayers.value, ...mappedPlayers]
-        }
-
-        if (res.length > 0) {
-          currentPage.value++
+          playersStore.appendPlayers(mappedPlayers)
         }
       } else {
-        hasMorePlayers.value = false
+        playersStore.hasMore = false
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') return
       console.error('Błąd pobierania graczy:', error)
       showToast('Błąd pobierania listy graczy', 'error')
     } finally {
-      isLoadingPlayers.value = false
+      playersStore.isLoading = false
+      fetchAbortController = null
     }
+  }
+
+  function setItemsPerPage(limit: number): void {
+    itemsPerPage.value = limit
+    localStorage.setItem('players_limit', limit.toString())
+    fetchPlayers(generalStore.searchQuery, true)
   }
 
   const handleRefreshDataAndProfile = async (): Promise<void> => {
     await fetchPlayers(generalStore.searchQuery, true)
 
     if (userStore.selectedProfile) {
-      const newProfile = allPlayers.value.find(
+      const newProfile = playersStore.allPlayers.find(
         (player) => player.uuid === userStore.selectedProfile?.uuid
       )
 
@@ -197,10 +210,11 @@ export const useLauncherService = (): {
     useVariables: () => ({
       refreshInterval,
       events,
-      allPlayers,
-      filteredPlayers,
-      isLoadingPlayers,
-      hasMorePlayers
+      allPlayers: computed(() => playersStore.allPlayers),
+      filteredPlayers: computed(() => playersStore.filteredPlayers),
+      isLoadingPlayers: computed(() => playersStore.isLoading),
+      hasMorePlayers: computed(() => playersStore.hasMore),
+      itemsPerPage
     }),
     useFetches: () => ({
       fetchUpdateData,
@@ -211,6 +225,7 @@ export const useLauncherService = (): {
       startMicrosoftTokenRefreshInterval,
       setMachineData,
       handleRefreshDataAndProfile,
+      setItemsPerPage,
       disconnect
     })
   }

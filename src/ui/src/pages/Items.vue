@@ -4,7 +4,9 @@ import AddItem from '@ui/components/modals/AddItem.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
 import { ref, onMounted, watch, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { UserRole } from '@ui/types/app'
 
 const { t } = useI18n()
 const url = import.meta.env.RENDERER_VITE_API_URL
@@ -55,7 +57,7 @@ watch(searchQuery, () => {
   }
   filteredItems.value = allItems.value
     .sort((a, b) => (a.index > b.index ? 1 : -1))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     .filter(
       (item: any) =>
         item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
@@ -65,7 +67,16 @@ watch(searchQuery, () => {
 
 const hasResults = computed(() => filteredItems.value && filteredItems.value.length > 0)
 
+const router = useRouter()
+
 onMounted(async () => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  const isFullAdmin = [UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+
+  if (!isFullAdmin) {
+    router.push('/app/home')
+    return
+  }
   await fetchItems()
 })
 </script>

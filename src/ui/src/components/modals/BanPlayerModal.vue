@@ -175,9 +175,15 @@ defineExpose({
                   <div class="flex bg-black/20 p-1 rounded-xl">
                     <button
                       v-if="
-                        [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-                          userStore.user.role
-                        ) && !!playerData?.machineId
+                        [
+                          UserRole.ADMIN,
+                          UserRole.DEV,
+                          UserRole.MODERATOR,
+                          UserRole.MOD,
+                          UserRole.HELPER,
+                          UserRole.POMOCNIK
+                        ].includes(userStore.user.role?.toLowerCase() as UserRole) &&
+                        !!playerData?.machineId
                       "
                       class="flex-1 py-1 text-[10px] font-semibold rounded-lg transition-all"
                       :class="

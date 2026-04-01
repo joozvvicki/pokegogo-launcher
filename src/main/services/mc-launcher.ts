@@ -1,6 +1,6 @@
 import { Authenticator, Client } from 'minecraft-launcher-core'
 import path, { join } from 'path'
-import { readFileSync } from 'fs'
+import { readFileSync, readdirSync, statSync, unlinkSync, existsSync } from 'fs'
 import { app, BrowserWindow, screen } from 'electron'
 import os from 'os'
 import Logger from 'electron-log'
@@ -106,6 +106,29 @@ function computeResolution(
   return { width, height, fullscreen }
 }
 
+/**
+ * Scan the config directory and remove any 0-byte files that could cause crashes.
+ */
+function fixCorruptedConfigs(minecraftDir: string): void {
+  const configDir = join(minecraftDir, 'config')
+  if (!existsSync(configDir)) return
+
+  try {
+    const files = readdirSync(configDir)
+    for (const file of files) {
+      const filePath = join(configDir, file)
+      const stats = statSync(filePath)
+
+      if (stats.isFile() && stats.size === 0) {
+        Logger.log(`PokeGoGo Launcher > Cleaning up corrupted (0-byte) config file: ${file}`)
+        unlinkSync(filePath)
+      }
+    }
+  } catch (e) {
+    Logger.error('PokeGoGo Launcher > Error while cleaning up corrupted config files:', e)
+  }
+}
+
 export function createMinecraftInstance(config: MinecraftInstanceConfig): MinecraftInstance {
   const { token, accessToken, accountType, settings, window } = config
 
@@ -137,6 +160,9 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
     Logger.log('PokeGoGo Launcher > MC Starting')
     window.webContents.send('launch:change-state', JSON.stringify('minecraft-start'))
+
+    // Pre-launch cleanup
+    fixCorruptedConfigs(minecraftDir)
 
     const baseVersion = getBaseVersionByMode(settings.gameMode.toLowerCase())
     const customVersion = getCustomVersionByMode(settings.gameMode.toLowerCase())
@@ -178,7 +204,15 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       window.show()
     })
 
-    let customArgs: string[] = [`-DaccessToken=${accessToken}`]
+    let customArgs: string[] = [
+      `-DaccessToken=${accessToken}`,
+      '-Dforge.updateCheckEnable=false',
+      '-Dchecker.update=false',
+      '-DCDAGaming.update_check=false',
+      '-DCDAGaming.updateCheck=false',
+      '-Dunilib.check_updates=false',
+      '-Dversioncheck.enable=false'
+    ]
 
     if (settings.gameMode === 'fantasy' && customVersion) {
       const versionJsonPath = join(minecraftDir, 'versions', customVersion, `${customVersion}.json`)
@@ -226,7 +260,11 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
       Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
 
-      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'))
+      window.webContents.send(
+        'launch:change-state',
+        JSON.stringify('minecraft-started'),
+        childProcess?.pid
+      )
       mcOpened = true
     } catch (e) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
@@ -236,9 +274,24 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   }
 
   const stop = async (): Promise<void> => {
+    const processToKill = childProcess
     try {
       client.emit('close', 1)
-      if (childProcess) childProcess.kill('SIGTERM')
+      if (processToKill) {
+        if (os.platform() === 'win32') {
+          import('child_process')
+            .then((cp) => {
+              cp.exec(`taskkill /pid ${processToKill.pid} /T /F`, (err) => {
+                if (err) processToKill.kill('SIGTERM')
+              })
+            })
+            .catch(() => {
+              processToKill.kill('SIGTERM')
+            })
+        } else {
+          processToKill.kill('SIGTERM')
+        }
+      }
     } catch (e) {
       Logger.error('PokeGoGo Launcher > Error killing minecraft process', e)
     } finally {

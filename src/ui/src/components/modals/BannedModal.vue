@@ -10,11 +10,15 @@ const modalVisible = ref(true)
 const userStore = useUserStore()
 
 const isBanned = computed(() => {
+  // Use a local copy of state to prevent flickering during store updates
+  const user = userStore.user
+  if (!user && !userStore.hwidBanned) return false
+
   return (
     userStore.hwidBanned ||
-    (userStore.user?.banEndDate
-      ? differenceInMilliseconds(parseISO(userStore.user?.banEndDate as string), new Date()) > 0
-      : !!userStore.user?.isBanned)
+    (user?.banEndDate
+      ? differenceInMilliseconds(parseISO(user.banEndDate as string), new Date()) > 0
+      : !!user?.isBanned)
   )
 })
 
@@ -39,7 +43,7 @@ const openDiscord = (): void => {
   <Teleport to="#modalsContainer">
     <Transition name="fade">
       <div v-if="isBanned && modalVisible" class="g-modal-overlay" role="alert" aria-modal="true">
-        <div class="g-card g-modal-card alert-theme">
+        <div class="g-card g-modal-card alert-theme !w-[440px] !max-w-[90%]">
           <div class="g-card-header">
             <div class="flex items-center gap-4">
               <div class="g-icon-box danger">
@@ -103,37 +107,53 @@ const openDiscord = (): void => {
 }
 
 .ban-icon-large {
-  font-size: 3rem;
-  color: #ef4444;
-  margin-bottom: 1rem;
-  opacity: 0.8;
-  animation: pulse 2s infinite;
+  height: 5rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
   display: flex;
+  align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.ban-icon-large i {
+  font-size: 3.5rem;
+  color: #ef4444;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.4));
+  animation: pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
 }
 
 .ban-reason-box {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  min-height: 100px; /* Fixed height to prevent modal resizing */
+  justify-content: center;
 }
 
 .ban-reason-box .label {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  color: rgba(239, 68, 68, 0.8);
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 .ban-reason-box .reason {
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.1rem;
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .ban-info-row {
@@ -143,6 +163,8 @@ const openDiscord = (): void => {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   font-size: 0.9rem;
+  min-height: 2.5rem;
+  align-items: center;
 }
 
 .ban-info-row .label {
@@ -156,15 +178,15 @@ const openDiscord = (): void => {
 
 @keyframes pulse {
   0% {
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
     opacity: 0.8;
   }
   50% {
-    transform: scale(1.05);
+    transform: scale(1.05) translateZ(0);
     opacity: 1;
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) translateZ(0);
     opacity: 0.8;
   }
 }

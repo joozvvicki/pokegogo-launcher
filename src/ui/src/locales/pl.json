@@ -177,7 +177,8 @@
       "inviteAccepted": "Zaakceptowano zaproszenie od",
       "inviteAcceptFailed": "Nie udało się zaakceptować zaproszenia od",
       "inviteRejected": "Odrzucono zaproszenie od",
-      "inviteRejectFailed": "Nie udało się odrzucić zaproszenia od"
+      "inviteRejectFailed": "Nie udało się odrzucić zaproszenia od",
+      "killGameSent": "Wysłano polecenie wyłączenia gry dla"
     },
     "searchPlaceholder": "Wyszukaj gracza...",
     "keywords": {
@@ -196,6 +197,8 @@
     "requestFriend": "Dodaj znajomego",
     "removeFriend": "Usuń znajomego",
     "banned": "BANNED",
+    "gameRunning": "Gra uruchomiona",
+    "killGame": "Wyłącz grę",
     "loading": "Ładowanie graczy...",
     "endOfResults": "Koniec wyników",
     "none": "(Brak)"
@@ -532,7 +535,17 @@
     "users": "Gracze",
     "ftp": "FTP",
     "items": "Itemy",
-    "events": "Wydarzenia"
+    "events": "Wydarzenia",
+    "gameControl": "Zarządzanie Grą"
+  },
+  "gameControl": {
+    "title": "Zdalne Zarządzanie Grą",
+    "warning": "Czy na pewno chcesz wszystkim zamknąć Minecrafta?",
+    "actionButton": "Zamknij wszystkim grę",
+    "successToast": "Wysłano polecenie zamknięcia gry do wszystkich",
+    "errorToast": "Nie udało się wysłać polecenia zamknięcia gry",
+    "description": "Ta akcja wymusi natychmiastowe zamknięcie gry Minecraft u wszystkich połączonych użytkowników. Używaj tylko w sytuacjach awaryjnych lub technicznych.",
+    "confirmTitle": "Potwierdź działanie"
   },
   "general": {
     "loading": "Ładowanie..",

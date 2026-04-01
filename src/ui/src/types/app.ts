@@ -22,8 +22,10 @@ export enum SearchKeyWord {
 export enum UserRole {
   ADMIN = 'admin',
   MODERATOR = 'moderator',
+  MOD = 'mod',
   DEV = 'technik',
   HELPER = 'helper',
+  POMOCNIK = 'pomocnik',
   USER = 'gracz'
 }
 

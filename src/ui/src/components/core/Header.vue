@@ -18,9 +18,17 @@ const generalStore = useGeneralStore()
 const userStore = useUserStore()
 
 const isAdmin = computed(() => {
-  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR].includes(
-    userStore.user?.role ?? UserRole.USER
-  )
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
+})
+
+const isFullAdmin = computed(() => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+})
+
+const isTechnician = computed(() => {
+  return userStore.user?.role?.toLowerCase() === UserRole.DEV
 })
 
 const isAdminMenuOpen = ref(false)
@@ -139,19 +147,35 @@ onUnmounted(() => {
 
         <Transition name="fade-slide">
           <div v-if="isAdminMenuOpen" class="admin-dropdown">
-            <button class="dropdown-item" @click="router.push('/app/users')">
-              <i class="fas fa-users"></i>
-              <span>{{ t('router.users') }}</span>
+            <button
+              v-if="isTechnician"
+              class="dropdown-item"
+              @click="router.push('/app/game-control')"
+            >
+              <i class="fas fa-gamepad"></i>
+              <span>{{ t('router.gameControl') }}</span>
             </button>
-            <button class="dropdown-item" @click="router.push('/app/ftp')">
+            <button
+              v-if="isFullAdmin"
+              class="dropdown-item"
+              @click="router.push('/app/ftp')"
+            >
               <i class="fas fa-folder-tree"></i>
               <span>{{ t('router.ftp') }}</span>
             </button>
-            <button class="dropdown-item" @click="router.push('/app/items')">
+            <button
+              v-if="isFullAdmin"
+              class="dropdown-item"
+              @click="router.push('/app/items')"
+            >
               <i class="fas fa-boxes-stacked"></i>
               <span>{{ t('router.items') }}</span>
             </button>
-            <button class="dropdown-item" @click="router.push('/app/events')">
+            <button
+              v-if="isAdmin"
+              class="dropdown-item"
+              @click="router.push('/app/events')"
+            >
               <i class="fas fa-calendar-alt"></i>
               <span>{{ t('router.events') }}</span>
             </button>

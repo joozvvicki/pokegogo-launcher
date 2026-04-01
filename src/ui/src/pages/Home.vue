@@ -67,7 +67,7 @@ onMounted(async () => {
           <div v-if="megaEvent" class="hero-tag">Active Event</div>
           <h1 class="hero-title">{{ megaEvent?.name || 'Welcome to PokeGoGo' }}</h1>
           <p class="hero-desc">
-            {{ megaEvent?.desc || 'Join the adventure on the best Pixelmon server!' }}
+            {{ megaEvent?.desc || 'Join the adventure on the best Cobblemon server!' }}
           </p>
           <div v-if="megaEvent?.startDate" class="hero-meta">
             <i class="far fa-calendar-alt"></i>
@@ -369,10 +369,8 @@ onMounted(async () => {
 }
 
 .dock-launch-btn {
-  width: 240px !important;
-  height: 52px !important;
-  font-size: 0.95rem !important;
-  letter-spacing: 0.5px !important;
+  width: 220px;
+  height: 48px;
 }
 
 /* Custom Scrollbar for news items */

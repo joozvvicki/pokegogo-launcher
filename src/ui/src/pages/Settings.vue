@@ -210,6 +210,13 @@ const handleCustomTheme = (customConfig: Record<string, string>): void => {
 onUnmounted(() => {
   generalStore.saveSettings()
 })
+
+const resolutions = [
+  { value: '1920x1080', label: 'FHD', icon: 'fa-desktop' },
+  { value: '1600x900', label: 'HD+', icon: 'fa-desktop' },
+  { value: '1366x768', label: 'HD', icon: 'fa-laptop' },
+  { value: '1280x720', label: 'HD-', icon: 'fa-laptop' }
+]
 </script>
 
 <template>
@@ -248,16 +255,25 @@ onUnmounted(() => {
 
           <div class="setting-item">
             <label>{{ t('settings.resolution') }}</label>
-            <div class="select-wrapper">
-              <select
-                :value="generalStore.settings.resolution"
-                @change="(e) => changeResolution((e.target as HTMLSelectElement).value)"
+            <div class="resolution-grid">
+              <div
+                v-for="res in resolutions"
+                :key="res.value"
+                class="res-card"
+                :class="{ active: generalStore.settings.resolution === res.value }"
+                @click="changeResolution(res.value)"
               >
-                <option value="1920x1080">1920x1080 (FHD)</option>
-                <option value="1366x768">1366x768 (HD)</option>
-                <option value="1200x720">1200x720 (HD-)</option>
-              </select>
-              <i class="fas fa-chevron-down"></i>
+                <div class="res-icon">
+                  <i :class="['fas', res.icon]"></i>
+                </div>
+                <div class="res-info">
+                  <span class="res-value">{{ res.value }}</span>
+                  <span class="res-label">{{ res.label }}</span>
+                </div>
+                <div v-if="generalStore.settings.resolution === res.value" class="active-indicator">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -364,9 +380,14 @@ onUnmounted(() => {
           <div
             v-if="
               userStore.user?.enableUpdateChannel ||
-              [UserRole.HELPER, UserRole.MODERATOR, UserRole.DEV, UserRole.ADMIN].includes(
-                userStore.user?.role ?? UserRole.USER
-              )
+              [
+                UserRole.HELPER,
+                UserRole.POMOCNIK,
+                UserRole.MODERATOR,
+                UserRole.MOD,
+                UserRole.DEV,
+                UserRole.ADMIN
+              ].includes((userStore.user?.role as string)?.toLowerCase() as UserRole)
             "
             class="setting-item row"
           >
@@ -651,6 +672,106 @@ onUnmounted(() => {
   transform: translateY(-50%);
   color: var(--text-secondary);
   pointer-events: none;
+}
+
+/* Resolution Grid */
+.resolution-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.res-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.res-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  transform: translateY(-2px);
+}
+
+.res-card.active {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.res-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  color: var(--text-muted);
+  transition: all 0.3s;
+  font-size: 1.1rem;
+}
+
+.res-card:hover .res-icon {
+  color: var(--text-secondary);
+}
+
+.res-card.active .res-icon {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4);
+}
+
+.res-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.res-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.res-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.res-card.active .res-label {
+  color: var(--primary);
+}
+
+.active-indicator {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  color: var(--primary);
+  font-size: 0.9rem;
+  animation: scaleIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Range Slider */

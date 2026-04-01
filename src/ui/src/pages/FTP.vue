@@ -3,8 +3,13 @@ import CreateFolderModal from '@ui/components/modals/CreateFolderModal.vue'
 import { useFTP } from '@ui/services/ftp-service'
 import { format } from 'date-fns'
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import useUserStore from '@ui/stores/user-store'
+import { UserRole } from '@ui/types/app'
 const { t } = useI18n()
+const router = useRouter()
+const userStore = useUserStore()
 
 const {
   searchQuery,
@@ -40,6 +45,11 @@ const {
   handleZipFolder
 } = useFTP()
 
+// Satisfy vue-tsc: these are used in template
+void createFolderModal
+void inputFile
+void inputFolder
+
 const dragCounter = ref<number>(0)
 
 const onDragEnter = (): void => {
@@ -61,6 +71,13 @@ const onDrop = (ev: DragEvent): void => {
 }
 
 onMounted(async () => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  const isFullAdmin = [UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+
+  if (!isFullAdmin) {
+    router.push('/app/home')
+    return
+  }
   await getFolderContent()
 })
 </script>
