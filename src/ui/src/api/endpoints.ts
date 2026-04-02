@@ -353,3 +353,13 @@ export const getProfileByUUIDorNickname = async (uuidOrNickname: string): Promis
 
   return res.data
 }
+
+export const getFlappyLeaderboard = async (): Promise<any[]> => {
+  const res = await api.get('/games/flappy-pidgey/leaderboard')
+  return res.data
+}
+
+export const submitFlappyScore = async (score: number): Promise<any> => {
+  const res = await api.post('/games/flappy-pidgey/score', { score })
+  return res.data
+}

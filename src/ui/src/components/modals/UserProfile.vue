@@ -1,3 +1,4 @@
+<!-- eslint-disable @typescript-eslint/no-unused-vars -->
 // PlayerProfileModal.vue
 
 <script lang="ts" setup>
@@ -9,6 +10,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkinViewer from '@ui/components/SkinViewer.vue'
 import ChangeSkinModal from '@ui/components/modals/ChangeSkinModal.vue'
 import ChangeNicknameModal from '@ui/components/modals/ChangeNicknameModal.vue'
+import DeleteAccountConfirm from '@ui/components/modals/DeleteAccountConfirm.vue'
 import { useChatsStore } from '@ui/stores/chats-store'
 import { usePlayersStore } from '@ui/stores/players-store'
 import {
@@ -29,6 +31,7 @@ const emit = defineEmits<{
   (e: 'ban-player', player: IUser): Promise<void>
   (e: 'unban-player', player: IUser): Promise<void>
   (e: 'reset-password', player: IUser): Promise<void>
+  (e: 'delete-account', player: IUser): Promise<void>
 }>()
 
 const apiURL = import.meta.env.RENDERER_VITE_API_URL
@@ -44,6 +47,8 @@ const friends = ref<IUser[]>([])
 const friendRequests = ref<IUser[]>([])
 const isFriendsLoading = ref<boolean>(false)
 const isFriendRequestsLoading = ref<boolean>(false)
+
+const deleteAccountConfirmRef = ref()
 
 const userCache = useUserCacheStore()
 
@@ -194,6 +199,11 @@ const isAdmin = computed(() => {
   )
 })
 
+const isTechnik = computed(() => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return role === UserRole.DEV
+})
+
 const onlyForAdmin = (player: IUser): boolean => {
   const staffRoles = [
     UserRole.ADMIN,
@@ -342,6 +352,11 @@ const getIsMcOpened = (friend: IUser): boolean => {
   const storePlayer = playersStore.allPlayers.find((p) => p.nickname === friend.nickname)
   return storePlayer ? storePlayer.isMcOpened : friend.isMcOpened
 }
+
+const handleDeleteAccount = (): void => {
+  if (!player.value) return
+  deleteAccountConfirmRef.value?.openModal(player.value)
+}
 </script>
 
 <template>
@@ -444,6 +459,14 @@ const getIsMcOpened = (friend: IUser): boolean => {
 
             <button class="action-btn info" @click="openChangeNicknameModal">
               <i class="fas fa-user-edit"></i> {{ t('modals.changeNickname.title') }}
+            </button>
+
+            <button
+              v-if="isTechnik && player?.accountType !== AccountType.MICROSOFT"
+              class="action-btn danger highlight"
+              @click="handleDeleteAccount"
+            >
+              <i class="fas fa-trash-alt"></i> {{ t('modals.userProfile.deleteAccount') }}
             </button>
           </div>
         </div>
@@ -603,6 +626,7 @@ const getIsMcOpened = (friend: IUser): boolean => {
 
     <ChangeSkinModal ref="changeSkinModalRef" />
     <ChangeNicknameModal ref="changeNicknameModalRef" @refresh-data="$emit('refresh-data')" />
+    <DeleteAccountConfirm ref="deleteAccountConfirmRef" @refresh-data="$emit('refresh-data')" />
   </div>
 </template>
 

@@ -2,6 +2,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
 import LaunchButton from '@ui/components/buttons/LaunchButton.vue'
+import FlappyPidgeyModal from '@ui/components/modals/FlappyPidgeyModal.vue'
 import useGeneralStore from '@ui/stores/general-store'
 import { getServerStatus } from '@ui/api/endpoints'
 import { LOGGER } from '@ui/services/logger-service'
@@ -15,6 +16,7 @@ const { t } = useI18n()
 const time = ref<number>(0)
 const serverStatus = ref<any>(null)
 const serverStatusInterval = ref<any>(null)
+const flappyPidgeyRef = ref()
 
 const props = defineProps<{
   events: any[]
@@ -132,6 +134,12 @@ onMounted(async () => {
           <LaunchButton class="dock-launch-btn" />
         </div>
 
+        <div class="dock-game-trigger">
+          <button class="dock-game-btn" @click="flappyPidgeyRef?.openModal()" :title="t('common.playGame')">
+            <i class="fas fa-gamepad"></i>
+          </button>
+        </div>
+
         <div class="dock-stats">
           <div class="dock-stat-item" :title="t('home.ram')">
             <i class="fas fa-microchip"></i>
@@ -144,6 +152,8 @@ onMounted(async () => {
         </div>
       </div>
     </Teleport>
+
+    <FlappyPidgeyModal ref="flappyPidgeyRef" />
   </div>
 </template>
 
@@ -371,6 +381,35 @@ onMounted(async () => {
 .dock-launch-btn {
   width: 220px;
   height: 48px;
+}
+
+.dock-game-trigger {
+  display: flex;
+  align-items: center;
+  margin-left: -0.5rem;
+}
+
+.dock-game-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.dock-game-btn:hover {
+  background: var(--primary);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.4);
+  border-color: transparent;
 }
 
 /* Custom Scrollbar for news items */

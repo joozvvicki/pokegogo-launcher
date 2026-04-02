@@ -1000,8 +1000,8 @@ onUnmounted(() => {
 
 .no-hwid-badge-avatar {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  bottom: -4px;
+  left: -4px;
   width: 24px;
   height: 24px;
   background: #eab308;
