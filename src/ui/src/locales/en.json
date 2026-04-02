@@ -1,4 +1,18 @@
 {
+  "common": {
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "pressSpace": "Press Space to Start",
+    "score": "Score",
+    "highScore": "High Score",
+    "clickToJump": "Click or press Space to jump",
+    "leaderboard": "Top 10 Leaderboard",
+    "rank": "Rank",
+    "nick": "Player",
+    "monthlyBest": "Monthly Best",
+    "loading": "Loading rankings..."
+  },
   "settings": {
     "title": "Game Settings",
     "gameMode": "Game Mode",
@@ -430,6 +444,10 @@
       "ban": "Ban",
       "unban": "Unban",
       "resetPass": "Reset Pass",
+      "deleteAccount": "Delete Account",
+      "confirmDeleteAccount": "Are you sure you want to delete profile of player {name}?",
+      "accountDeleted": "Account successfully deleted.",
+      "accountDeleteFailed": "Failed to delete account.",
       "friends": "Friends",
       "friendRequestsTitle": "Friend Requests",
       "noFriendsUser": "Currently you have no friends.",
