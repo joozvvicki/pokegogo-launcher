@@ -155,27 +155,15 @@ onUnmounted(() => {
               <i class="fas fa-gamepad"></i>
               <span>{{ t('router.gameControl') }}</span>
             </button>
-            <button
-              v-if="isFullAdmin"
-              class="dropdown-item"
-              @click="router.push('/app/ftp')"
-            >
+            <button v-if="isFullAdmin" class="dropdown-item" @click="router.push('/app/ftp')">
               <i class="fas fa-folder-tree"></i>
               <span>{{ t('router.ftp') }}</span>
             </button>
-            <button
-              v-if="isFullAdmin"
-              class="dropdown-item"
-              @click="router.push('/app/items')"
-            >
+            <button v-if="isFullAdmin" class="dropdown-item" @click="router.push('/app/items')">
               <i class="fas fa-boxes-stacked"></i>
               <span>{{ t('router.items') }}</span>
             </button>
-            <button
-              v-if="isAdmin"
-              class="dropdown-item"
-              @click="router.push('/app/events')"
-            >
+            <button v-if="isAdmin" class="dropdown-item" @click="router.push('/app/events')">
               <i class="fas fa-calendar-alt"></i>
               <span>{{ t('router.events') }}</span>
             </button>

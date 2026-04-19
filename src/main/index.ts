@@ -1,22 +1,31 @@
 import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
-import { app, BrowserWindow, ipcMain, Menu, Notification, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, Notification, shell, protocol, net } from 'electron'
 import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
 import { createTray } from './services/tray-service'
 import { ensureDir, getPersistentMachineId } from './utils'
 import { useFTPService } from './services/ftp-service'
+import { useImageCacheService } from './services/image-cache-service'
 import { join } from 'path'
-import discordRpc, { type RP } from 'discord-rich-presence'
+import DiscordRPC from 'discord-rpc'
 import Logger from 'electron-log'
 import { machineId } from 'node-machine-id'
 import { address } from 'address/promises'
 import { platform } from 'os'
+import { writeFileSync, readFileSync, existsSync } from 'fs'
 
 import { discordLogger } from './services/discord-logger'
 
 const CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID
-let rpc: RP | null = null
+const appStartTime = Date.now()
+let rpc: DiscordRPC.Client | null = null
+let lastActivity: any = {
+  details: 'W launcherze',
+  state: 'Menu główne'
+}
+let isConnecting = false
+let isReady = false
 
 process.on('uncaughtException', (error) => {
   Logger.error('Uncaught Exception:', error)
@@ -26,21 +35,57 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   Logger.error('Unhandled Rejection:', reason)
   discordLogger.sendError('Main Process Unhandled Rejection', reason)
+
+  // CRITICAL: Detect Discord connection death that escapes library events
+  const message = String(reason)
+  if (message.includes('connection closed') || message.includes('broken pipe')) {
+    Logger.warn('Discord RPC: Detected closed connection via global handler. Resetting.')
+    rpc = null
+    isConnecting = false
+  }
 })
 
 function initDiscord(): void {
-  try {
-    rpc = discordRpc(CLIENT_ID)
+  if (isConnecting || isReady) return
+  isConnecting = true
 
-    rpc.on('error', (err: string) => {
-      Logger.warn('Discord RPC Error (Discord is running?):', err)
+  try {
+    Logger.log('Discord RPC: Initializing official Client...')
+    rpc = new DiscordRPC.Client({ transport: 'ipc' })
+
+    rpc.on('ready', () => {
+      Logger.log('Discord RPC: Connected and Ready')
+      isReady = true
+      isConnecting = false
+
+      if (lastActivity && rpc) {
+        rpc.setActivity({
+          ...lastActivity,
+          largeImageKey: 'logo',
+          startTimestamp: appStartTime,
+          instance: true
+        }).catch(err => Logger.warn('Discord RPC: Failed to set initial activity:', err))
+      }
     })
 
-    rpc.on('connected', () => {
-      Logger.log('Connected to Discord')
+    rpc.on('disconnected', () => {
+      Logger.log('Discord RPC: Disconnected')
+      isReady = false
+      isConnecting = false
+      rpc = null
+    })
+
+    rpc.login({ clientId: CLIENT_ID }).catch((err) => {
+      Logger.warn('Discord RPC: Login failed:', err.message)
+      isReady = false
+      isConnecting = false
+      rpc = null
     })
   } catch (err) {
-    Logger.warn('Discord IPC not connected: ', err)
+    Logger.warn('Discord RPC: Setup exception:', err)
+    isReady = false
+    isConnecting = false
+    rpc = null
   }
 }
 
@@ -55,10 +100,37 @@ if (!gotTheLock) {
 
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId('pl.pokemongogo.launcher')
+    
+    // Register local-image protocol
+    protocol.handle('local-image', (request) => {
+      const uuidWithExt = request.url.replace('local-image://', '').split('?')[0]
+      return net.fetch('file://' + join(app.getPath('userData'), 'cache', 'events', uuidWithExt))
+    })
+
     const { createHandlers } = useFTPService()
     await installExtension(VUEJS_DEVTOOLS)
 
     initDiscord()
+    // Heartbeat for Discord reconnection
+    setInterval(() => {
+      if (!isReady && !isConnecting) {
+        Logger.log('Discord RPC Heartbeat: Not connected. Retrying...')
+        initDiscord()
+      } else if (isReady && rpc) {
+        // Just verify activity is up to date
+        rpc.setActivity({
+          ...lastActivity,
+          largeImageKey: 'logo',
+          startTimestamp: appStartTime,
+          instance: true
+        }).catch(() => {
+          Logger.warn('Discord RPC Heartbeat: Update failed. Resetting...')
+          isReady = false
+          rpc = null
+        })
+      }
+    }, 15000)
+
     ensureDir(process.cwd() + '/tmp')
 
     const { createMainWindow, createLoadingWindow } = useWindowService()
@@ -68,7 +140,10 @@ if (!gotTheLock) {
 
     createTray(mainWindow)
     createHandlers(mainWindow)
+    useImageCacheService(mainWindow)
     await startApp(mainWindow)
+
+
 
     if (!ipcMain.listenerCount('notification:show'))
       ipcMain.handle(
@@ -111,6 +186,32 @@ if (!gotTheLock) {
         }
       })
 
+    if (!ipcMain.listenerCount('cart:save'))
+      ipcMain.handle('cart:save', async (_, cartData: any) => {
+        const cartPath = join(app.getPath('userData'), 'cart.json')
+        try {
+          writeFileSync(cartPath, JSON.stringify(cartData, null, 2), 'utf8')
+          return true
+        } catch (err) {
+          Logger.error('Failed to save cart:', err)
+          return false
+        }
+      })
+
+    if (!ipcMain.listenerCount('cart:load'))
+      ipcMain.handle('cart:load', async () => {
+        const cartPath = join(app.getPath('userData'), 'cart.json')
+        try {
+          if (existsSync(cartPath)) {
+            const data = readFileSync(cartPath, 'utf8')
+            return JSON.parse(data)
+          }
+        } catch (err) {
+          Logger.error('Failed to load cart:', err)
+        }
+        return []
+      })
+
     if (!ipcMain.listenerCount('window:minimize'))
       ipcMain.on('window:minimize', () => {
         const win = BrowserWindow.getFocusedWindow()
@@ -144,14 +245,24 @@ if (!gotTheLock) {
     })
 
     ipcMain.on('discord:update-activity', (_, activity) => {
-      if (rpc) {
-        rpc.updatePresence({
-          state: activity.state,
-          details: activity.details,
+      lastActivity = {
+        state: activity.state,
+        details: activity.details
+      }
+
+      if (isReady && rpc) {
+        rpc.setActivity({
+          ...lastActivity,
           largeImageKey: 'logo',
-          startTimestamp: Date.now(),
+          startTimestamp: appStartTime,
           instance: true
+        }).catch(() => {
+          isReady = false
+          rpc = null
+          initDiscord()
         })
+      } else if (!isConnecting) {
+        initDiscord()
       }
     })
 

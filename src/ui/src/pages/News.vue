@@ -2,6 +2,7 @@
 <script lang="ts" setup>
 import { getEvents } from '@ui/api/endpoints'
 import { format } from 'date-fns'
+import CachedImage from '@ui/components/CachedImage.vue'
 import { ref, onMounted } from 'vue'
 
 const apiURL = import.meta.env.RENDERER_VITE_API_URL
@@ -36,14 +37,14 @@ onMounted(async () => {
         class="news-entry-card"
       >
         <div class="news-entry-thumbnail">
-          <img
+          <CachedImage
+            :uuid="event.uuid"
             :src="
               event.src.includes('https://') || event.src.includes('blob')
                 ? event.src
                 : `${apiURL}/events/image/${event.uuid}`
             "
             alt="News"
-            @dragstart.prevent="null"
           />
           <div class="news-entry-overlay"></div>
         </div>

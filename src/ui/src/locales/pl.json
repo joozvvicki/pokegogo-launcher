@@ -10,7 +10,8 @@
     "leaderboard": "Ranking Top 10",
     "rank": "Poz.",
     "nick": "Gracz",
-    "loading": "Ładowanie danych..."
+    "loading": "Ładowanie danych...",
+    "playGame": "Graj"
   },
   "settings": {
     "title": "Ustawienia gry",
@@ -79,6 +80,7 @@
       "repeatPassword": "Powtórz hasło.."
     },
     "registerButton": "Zarejestruj się",
+    "registering": "Rejestracja...",
     "hasAccount": "Masz już konto?",
     "login": "Zaloguj się"
   },
@@ -180,6 +182,8 @@
     "cancel": "Anuluj"
   },
   "users": {
+    "online": "Online",
+    "offline": "Offline",
     "toasts": {
       "inviteSent": "Wysłano zaproszenie do",
       "inviteFailed": "Nie udało się wysłać zaproszenia do",
@@ -214,7 +218,10 @@
     "killGame": "Wyłącz grę",
     "loading": "Ładowanie graczy...",
     "endOfResults": "Koniec wyników",
-    "none": "(Brak)"
+    "none": "(Brak)",
+    "showMax": "Pokazuj maksymalnie",
+    "limitAll": "Bez limitu",
+    "cancelRequest": "Anuluj zaproszenie"
   },
   "ftp": {
     "searchPlaceholder": "Szukaj...",

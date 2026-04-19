@@ -114,7 +114,7 @@ const { t } = useI18n()
               </div>
             </div>
 
-            <button class="action-btn primary mt-2" @click="handleLogin(null)">
+            <button class="action-btn primary mt-2" :disabled="appState.loading" @click="handleLogin(null)">
               {{ t('login.loginButton') }}
             </button>
           </div>
@@ -127,6 +127,7 @@ const { t } = useI18n()
 
           <button
             class="action-btn secondary"
+            :disabled="appState.loading"
             @click="handleLogin({ accountType: AccountType.MICROSOFT })"
           >
             <i class="fab fa-microsoft text-sm"></i>
@@ -247,7 +248,7 @@ const { t } = useI18n()
               </div>
             </div>
 
-            <button class="action-btn primary mt-3" @click="handleRegister">
+            <button class="action-btn primary mt-3" :disabled="appState.loading" @click="handleRegister">
               {{ t('register.registerButton') }}
             </button>
 
@@ -412,6 +413,12 @@ const { t } = useI18n()
   justify-content: center;
   gap: 0.5rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .action-btn.primary {

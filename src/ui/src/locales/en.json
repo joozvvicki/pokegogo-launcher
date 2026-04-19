@@ -11,7 +11,8 @@
     "rank": "Rank",
     "nick": "Player",
     "monthlyBest": "Monthly Best",
-    "loading": "Loading rankings..."
+    "loading": "Loading rankings...",
+    "playGame": "Play"
   },
   "settings": {
     "title": "Game Settings",
@@ -80,6 +81,7 @@
       "repeatPassword": "Repeat password.."
     },
     "registerButton": "Register",
+    "registering": "Registering...",
     "hasAccount": "Already have an account?",
     "login": "Log in"
   },
@@ -181,6 +183,8 @@
     "cancel": "Cancel"
   },
   "users": {
+    "online": "Online",
+    "offline": "Offline",
     "toasts": {
       "inviteSent": "Invitation sent to",
       "inviteFailed": "Failed to send invitation to",
@@ -191,7 +195,8 @@
       "inviteAccepted": "Accepted invitation from",
       "inviteAcceptFailed": "Failed to accept invitation from",
       "inviteRejected": "Rejected invitation from",
-      "inviteRejectFailed": "Failed to reject invitation from"
+      "inviteRejectFailed": "Failed to reject invitation from",
+      "killGameSent": "Sent kill game command to"
     },
     "searchPlaceholder": "Search player...",
     "keywords": {
@@ -210,9 +215,14 @@
     "requestFriend": "Add Friend",
     "removeFriend": "Remove Friend",
     "banned": "BANNED",
+    "gameRunning": "Game running",
+    "killGame": "Kill game",
     "loading": "Loading players...",
     "endOfResults": "End of results",
-    "none": "(None)"
+    "none": "(None)",
+    "showMax": "Show maximum",
+    "limitAll": "No limit",
+    "cancelRequest": "Cancel request"
   },
   "ftp": {
     "searchPlaceholder": "Search...",

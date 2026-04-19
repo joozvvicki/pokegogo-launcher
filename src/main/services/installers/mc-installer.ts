@@ -489,7 +489,10 @@ export async function copyMCFiles(
       }
     }
 
-    if (signal.aborted) return 'stop'
+    if (signal.aborted) {
+      logToUI('', true)
+      return 'stop'
+    }
 
     Logger.log(`Plan: ${plan.downloads.length} plików do pobrania.`)
 

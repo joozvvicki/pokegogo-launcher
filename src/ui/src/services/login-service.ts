@@ -9,6 +9,7 @@ import { email, helpers, maxLength, minLength, required } from '@vuelidate/valid
 import useVuelidate from '@vuelidate/core'
 import useUserStore from '@ui/stores/user-store'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 export const useLoginService = (): {
   useVariables: () => {
@@ -40,6 +41,7 @@ export const useLoginService = (): {
 
   const userStore = useUserStore()
   const router = useRouter()
+  const { t } = useI18n()
 
   const appState = reactive({
     loading: false,
@@ -176,7 +178,12 @@ export const useLoginService = (): {
   }
 
   const handleRegister = async (): Promise<void> => {
+    if (appState.loading) return
+
     try {
+      appState.loading = true
+      appState.loadingMessage = t('register.registering')
+
       const isValid = await login$.value.$validate()
       if (!isValid) return
 
@@ -195,7 +202,7 @@ export const useLoginService = (): {
         if (
           !savedAccounts.find(
             (savedAccount: any) =>
-              savedAccount.nickname === formState.email &&
+              savedAccount.nickname === formState.nick &&
               savedAccount.accountType === AccountType.BACKEND
           )
         )
@@ -216,11 +223,14 @@ export const useLoginService = (): {
         })
       }
     } catch (error: any) {
-      LOGGER.err('Błąd podczas ręcznego logowania', error)
+      LOGGER.err('Błąd podczas rejestracji', error)
       showToast(
-        error.response?.data?.message ?? error.message ?? 'Wystąpił błąd podczas logowania.',
+        error.response?.data?.message ?? error.message ?? t('login.toasts.registerError'),
         'error'
       )
+    } finally {
+      appState.loading = false
+      appState.loadingMessage = ''
     }
   }
 
@@ -301,6 +311,8 @@ export const useLoginService = (): {
   const handleLogin = async (
     savedAccount: Partial<IUser & { url: string; password: string }> | null = {} // Dajemy domyślną wartość
   ): Promise<void> => {
+    if (appState.loading) return
+
     try {
       if (savedAccount?.nickname) {
         formState.nick = savedAccount.nickname
@@ -328,15 +340,14 @@ export const useLoginService = (): {
         return
       }
 
+      appState.loading = true
+      appState.loadingMessage = 'Logowanie..'
+
       const isValid = await login$.value.$validate()
 
       if (!isValid) {
-        console.warn('Walidacja nieudana. Błędy:', login$.value.$errors)
         return
       }
-
-      appState.loading = true
-      appState.loadingMessage = `Logowanie..`
 
       await handleBackendLogin()
     } catch (error: any) {

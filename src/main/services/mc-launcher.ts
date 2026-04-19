@@ -6,6 +6,7 @@ import os from 'os'
 import Logger from 'electron-log'
 import { ChildProcessWithoutNullStreams } from 'child_process'
 import { discordLogger } from './discord-logger'
+import { findMinecraftProcess } from '../utils/game-scanner'
 
 const toMCLC = (token: string): unknown => {
   const data = JSON.parse(token)
@@ -148,6 +149,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
   let mcOpened = false
   let childProcess: ChildProcessWithoutNullStreams | null = null
+  let monitoringInterval: NodeJS.Timeout | null = null
 
   const start = async (): Promise<void> => {
     const { width, height, fullscreen } = computeResolution(
@@ -266,6 +268,29 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         childProcess?.pid
       )
       mcOpened = true
+
+      // Start periodic robustness check
+      if (monitoringInterval) clearInterval(monitoringInterval)
+      monitoringInterval = setInterval(async () => {
+        const pid = await findMinecraftProcess(minecraftDir)
+        const currentlyRunning = !!pid
+
+        if (mcOpened && !currentlyRunning) {
+          // Game closed externally or crashed silently
+          Logger.log('PokeGoGo Launcher > Game no longer detected in processes. Cleaning up.')
+          mcOpened = false
+          window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+          if (monitoringInterval) {
+            clearInterval(monitoringInterval)
+            monitoringInterval = null
+          }
+        } else if (!mcOpened && currentlyRunning) {
+          // Game was found running but launcher didn't know (e.g. after restart)
+          Logger.log('PokeGoGo Launcher > Game detected running in background. Syncing state.')
+          mcOpened = true
+          window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), pid)
+        }
+      }, 30000)
     } catch (e) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
@@ -296,11 +321,39 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       Logger.error('PokeGoGo Launcher > Error killing minecraft process', e)
     } finally {
       mcOpened = false
+      if (monitoringInterval) {
+        clearInterval(monitoringInterval)
+        monitoringInterval = null
+      }
       window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
       window.show()
       childProcess = null
     }
   }
+
+  // Pre-sync on instance creation (detect existing game)
+  setTimeout(async () => {
+    const existingPid = await findMinecraftProcess(minecraftDir)
+    if (existingPid) {
+      Logger.log('PokeGoGo Launcher > Active game detected on startup for:', settings.gameMode)
+      mcOpened = true
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), existingPid)
+      
+      // Start monitoring for this re-detected instance
+      if (monitoringInterval) clearInterval(monitoringInterval)
+      monitoringInterval = setInterval(async () => {
+        const pid = await findMinecraftProcess(minecraftDir)
+        if (!pid && mcOpened) {
+          mcOpened = false
+          window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+          if (monitoringInterval) {
+            clearInterval(monitoringInterval)
+            monitoringInterval = null
+          }
+        }
+      }, 30000)
+    }
+  }, 5000)
 
   return {
     get mcOpened() {

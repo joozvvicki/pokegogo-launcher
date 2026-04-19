@@ -2,6 +2,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
 import LaunchButton from '@ui/components/buttons/LaunchButton.vue'
+import CachedImage from '@ui/components/CachedImage.vue'
 import FlappyPidgeyModal from '@ui/components/modals/FlappyPidgeyModal.vue'
 import useGeneralStore from '@ui/stores/general-store'
 import { getServerStatus } from '@ui/api/endpoints'
@@ -54,8 +55,9 @@ onMounted(async () => {
       <!-- Hero Section (Mega Event or Featured) -->
       <div v-if="megaEvent || normalEvents.length > 0" class="hero-section">
         <div class="hero-bg">
-          <img
+          <CachedImage
             v-if="megaEvent"
+            :uuid="megaEvent.uuid"
             :src="
               megaEvent.src.includes('https://') || megaEvent.src.includes('blob')
                 ? megaEvent.src
@@ -91,13 +93,13 @@ onMounted(async () => {
             class="news-card"
           >
             <div class="news-img">
-              <img
+              <CachedImage
+                :uuid="event.uuid"
                 :src="
                   event.src.includes('https://') || event.src.includes('blob')
                     ? event.src
                     : `${url}/events/image/${event.uuid}`
                 "
-                loading="lazy"
               />
             </div>
             <div class="news-content">
@@ -135,7 +137,11 @@ onMounted(async () => {
         </div>
 
         <div class="dock-game-trigger">
-          <button class="dock-game-btn" @click="flappyPidgeyRef?.openModal()" :title="t('common.playGame')">
+          <button
+            class="dock-game-btn"
+            @click="flappyPidgeyRef?.openModal()"
+            :title="t('common.playGame')"
+          >
             <i class="fas fa-gamepad"></i>
           </button>
         </div>

@@ -21,10 +21,22 @@ const transitionName = ref('slide-up')
 
 const { useMethods, useFetches, useVariables } = useLauncherService()
 
-const { startMicrosoftTokenRefreshInterval, handleRefreshDataAndProfile, setItemsPerPage, disconnect } = useMethods()
+const {
+  startMicrosoftTokenRefreshInterval,
+  handleRefreshDataAndProfile,
+  setItemsPerPage,
+  disconnect
+} = useMethods()
 const { fetchUpdateData, fetchEvents, fetchPlayers } = useFetches()
-const { refreshInterval, events, allPlayers, filteredPlayers, hasMorePlayers, isLoadingPlayers, itemsPerPage } =
-  useVariables()
+const {
+  refreshInterval,
+  events,
+  allPlayers,
+  filteredPlayers,
+  hasMorePlayers,
+  isLoadingPlayers,
+  itemsPerPage
+} = useVariables()
 
 const routeOrder = [
   '/app/events',

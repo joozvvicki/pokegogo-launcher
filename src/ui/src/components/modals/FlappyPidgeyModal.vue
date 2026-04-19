@@ -25,15 +25,14 @@ const leaderboardData = ref<LeaderboardEntry[]>([])
 const isLoadingLeaderboard = ref(false)
 
 // Game Constants
-const GRAVITY = 0.10
+const GRAVITY = 0.1
 const JUMP_STRENGTH = -3.8
-const PIPE_GAP = 145 
+const PIPE_GAP = 160
 const PIPE_WIDTH = 62
-const PIPE_SPAWN_RATE = 110
 
 // Dynamic Game State
-const BASE_PIPE_SPEED = 2.0
-const BASE_PIPE_SPAWN_RATE = 100
+const BASE_PIPE_SPEED = 2.8
+const BASE_PIPE_SPAWN_RATE = 80
 let currentPipeSpeed = BASE_PIPE_SPEED
 let currentPipeSpawnRate = BASE_PIPE_SPAWN_RATE
 const BIRD_X = 50
@@ -84,12 +83,12 @@ const openModal = (): void => {
   resetGame()
   gameState.value = 'START'
   fetchLeaderboard()
-  
+
   // Restart loop if not running
   if (!animationId) {
     loop()
   }
-  
+
   // Add listener when modal opens
   window.addEventListener('keydown', handleKeyDown)
 }
@@ -144,7 +143,7 @@ const update = (): void => {
   birdY += birdVelocity
 
   // Handle Pipes
-  if (frameCount % PIPE_SPAWN_RATE === 0) {
+  if (frameCount % currentPipeSpawnRate === 0) {
     const minPipeHeight = 50
     const maxPipeHeight = 350 - PIPE_GAP - minPipeHeight
     const topHeight = Math.floor(Math.random() * maxPipeHeight) + minPipeHeight
@@ -154,32 +153,28 @@ const update = (): void => {
   pipes.forEach((pipe) => {
     pipe.x -= currentPipeSpeed
 
-    // Collision Detection
-    const margin = 8
-    const birdBox = {
-      x: BIRD_X + margin,
-      y: birdY + margin,
-      w: BIRD_SIZE - margin * 2,
-      h: BIRD_SIZE - margin * 2
-    }
-    const topPipeBox = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.top }
-    const bottomPipeBox = { x: pipe.x, y: pipe.top + PIPE_GAP, w: PIPE_WIDTH, h: 400 - (pipe.top + PIPE_GAP) }
+    // NEW Circular Collision Detection for Bird (much more forgiving)
+    const birdRadius = 14
+    const cx = BIRD_X + BIRD_SIZE / 2
+    const cy = birdY + BIRD_SIZE / 2
 
-    if (
-      birdBox.x < topPipeBox.x + topPipeBox.w &&
-      birdBox.x + birdBox.w > topPipeBox.x &&
-      birdBox.y < topPipeBox.y + topPipeBox.h &&
-      birdBox.y + birdBox.h > topPipeBox.y
-    ) {
+    // Shrink pipe hitboxes by 2/3 in width (keeping 1/3)
+    const pipeHitboxWidth = PIPE_WIDTH / 3
+    const pipeHitboxX = pipe.x + (PIPE_WIDTH - pipeHitboxWidth) / 2
+
+    const checkCircleRect = (cx: number, cy: number, r: number, rx: number, ry: number, rw: number, rh: number) => {
+      const closestX = Math.max(rx, Math.min(cx, rx + rw))
+      const closestY = Math.max(ry, Math.min(cy, ry + rh))
+      const dx = cx - closestX
+      const dy = cy - closestY
+      return dx * dx + dy * dy < r * r
+    }
+
+    if (checkCircleRect(cx, cy, birdRadius, pipeHitboxX, 0, pipeHitboxWidth, pipe.top)) {
       gameOver()
     }
 
-    if (
-      birdBox.x < bottomPipeBox.x + bottomPipeBox.w &&
-      birdBox.x + birdBox.w > bottomPipeBox.x &&
-      birdBox.y < bottomPipeBox.y + bottomPipeBox.h &&
-      birdBox.y + birdBox.h > bottomPipeBox.y
-    ) {
+    if (checkCircleRect(cx, cy, birdRadius, pipeHitboxX, pipe.top + PIPE_GAP, pipeHitboxWidth, 400 - (pipe.top + PIPE_GAP))) {
       gameOver()
     }
 
@@ -188,13 +183,15 @@ const update = (): void => {
       pipe.passed = true
       currentScore.value++
 
-      // Difficulty scaling every 15 points
-      if (currentScore.value > 0 && currentScore.value % 15 === 0) {
-        currentPipeSpeed += 0.2
+      // Difficulty scaling every 5 points
+      if (currentScore.value > 0 && currentScore.value % 5 === 0) {
+        currentPipeSpeed += 0.15
         // Maintain consistent distance between pipes regardless of speed
-        // Base distance = 2.0 * 100 = 200 units
-        currentPipeSpawnRate = Math.max(20, Math.floor(200 / currentPipeSpeed))
-        console.log(`Speed increased! New speed: ${currentPipeSpeed.toFixed(1)}, Spawn rate: ${currentPipeSpawnRate}`)
+        // Base distance = 2.8 * 80 = 224 units
+        currentPipeSpawnRate = Math.max(25, Math.floor(224 / currentPipeSpeed))
+        console.log(
+          `Speed increased! New speed: ${currentPipeSpeed.toFixed(1)}, Spawn rate: ${currentPipeSpawnRate}`
+        )
       }
     }
   })
@@ -204,8 +201,9 @@ const update = (): void => {
     pipes.shift()
   }
 
-  // Boundary Checks
-  if (birdY > 370 || birdY < 0) {
+  // Boundary Checks: Bottom of screen is 400px, bird size is 42px. 
+  // We die if bird's bottom (birdY + BIRD_SIZE) goes past the floor (~390px)
+  if (birdY + BIRD_SIZE > 390 || birdY < -20) {
     gameOver()
   }
 }
@@ -216,7 +214,7 @@ const gameOver = (): void => {
     highScore.value = currentScore.value
     localStorage.setItem('pokegogo_flappy_highscore', highScore.value.toString())
   }
-  
+
   // Submit score to backend if logged in and score > 0
   if (userStore.user && currentScore.value > 0) {
     submitFlappyScore(currentScore.value)
@@ -259,24 +257,36 @@ const draw = (): void => {
     ctx.save()
     ctx.translate(pipe.x + PIPE_WIDTH / 2, pipe.top)
     ctx.scale(1, -1)
-    
+
     // We treat the whole image as the "head" part, drawn at its natural aspect ratio based on width
     const HEAD_H = (SRC_H / SRC_W) * PIPE_WIDTH // If world size is 52x52
-    
+
     // 1. Draw the head at the mouth
     const drawH = Math.min(HEAD_H, pipe.top)
     ctx.drawImage(
       pipeImg,
-      0, 0, SRC_W, (drawH / HEAD_H) * SRC_H,
-      -PIPE_WIDTH / 2, 0, PIPE_WIDTH, drawH
+      0,
+      0,
+      SRC_W,
+      (drawH / HEAD_H) * SRC_H,
+      -PIPE_WIDTH / 2,
+      0,
+      PIPE_WIDTH,
+      drawH
     )
-    
+
     // 2. Clear out the rest with a 1px shaft slice from the "end" of the pipe image
     if (pipe.top > HEAD_H) {
       ctx.drawImage(
         pipeImg,
-        0, SRC_H - 1, SRC_W, 1,
-        -PIPE_WIDTH / 2, HEAD_H, PIPE_WIDTH, pipe.top - HEAD_H
+        0,
+        SRC_H - 1,
+        SRC_W,
+        1,
+        -PIPE_WIDTH / 2,
+        HEAD_H,
+        PIPE_WIDTH,
+        pipe.top - HEAD_H
       )
     }
     ctx.restore()
@@ -284,38 +294,48 @@ const draw = (): void => {
     // --- Bottom Pipe ---
     const bottomPipeY = pipe.top + PIPE_GAP
     const bottomTotalH = 400 - bottomPipeY
-    
+
     // 1. Draw head at the mouth (top of the bottom pipe)
     const bottomDrawH = Math.min(HEAD_H, bottomTotalH)
     ctx.drawImage(
       pipeImg,
-      0, 0, SRC_W, (bottomDrawH / HEAD_H) * SRC_H,
-      pipe.x, bottomPipeY, PIPE_WIDTH, bottomDrawH
+      0,
+      0,
+      SRC_W,
+      (bottomDrawH / HEAD_H) * SRC_H,
+      pipe.x,
+      bottomPipeY,
+      PIPE_WIDTH,
+      bottomDrawH
     )
-    
+
     // 2. Draw shaft below the head
     if (bottomTotalH > HEAD_H) {
       ctx.drawImage(
         pipeImg,
-        0, SRC_H - 1, SRC_W, 1,
-        pipe.x, bottomPipeY + HEAD_H, PIPE_WIDTH, bottomTotalH - HEAD_H
+        0,
+        SRC_H - 1,
+        SRC_W,
+        1,
+        pipe.x,
+        bottomPipeY + HEAD_H,
+        PIPE_WIDTH,
+        bottomTotalH - HEAD_H
       )
     }
   })
 
   // Draw Bird with Tilt or Hover
   ctx.save()
-  const displayY =
-    gameState.value === 'START'
-      ? birdY + Math.sin(frameCount * 0.05) * 10
-      : birdY
+  const displayY = gameState.value === 'START' ? birdY + Math.sin(frameCount * 0.05) * 10 : birdY
 
   ctx.translate(BIRD_X + BIRD_SIZE / 2, displayY + BIRD_SIZE / 2)
-  
-  const rotation = gameState.value === 'START'
-    ? 0
-    : Math.min(Math.PI / 4, Math.max(-Math.PI / 4, birdVelocity * 0.1))
-  
+
+  const rotation =
+    gameState.value === 'START'
+      ? 0
+      : Math.min(Math.PI / 4, Math.max(-Math.PI / 4, birdVelocity * 0.1))
+
   ctx.rotate(rotation)
   ctx.drawImage(birdImg, -BIRD_SIZE / 2, -BIRD_SIZE / 2, BIRD_SIZE, BIRD_SIZE)
   ctx.restore()
@@ -400,8 +420,8 @@ defineExpose({
               Flappy Pidgey
             </div>
             <div class="header-actions">
-              <button 
-                class="leaderboard-toggle" 
+              <button
+                class="leaderboard-toggle"
                 :class="{ active: showLeaderboard }"
                 @click="showLeaderboard = !showLeaderboard"
                 title="Top 10"
@@ -434,12 +454,12 @@ defineExpose({
                   }}
                 </span>
               </div>
-              
+
               <div v-if="isLoadingLeaderboard" class="loader">
                 <i class="fas fa-circle-notch fa-spin"></i>
                 <p>{{ t('common.loading') }}</p>
               </div>
-              
+
               <table v-else>
                 <thead>
                   <tr>
@@ -514,16 +534,25 @@ defineExpose({
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  color: #666;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888;
   cursor: pointer;
   font-size: 1.2rem;
-  transition: color 0.2s;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: all 0.2s ease;
 }
 
 .close-btn:hover {
-  color: #fff;
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ff4d4d;
+  transform: scale(1.05);
 }
 
 .header-actions {
@@ -583,8 +612,12 @@ defineExpose({
 }
 
 @keyframes slideLeft {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 .panel-header {
@@ -640,9 +673,18 @@ defineExpose({
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-.rank-col { width: 40px; font-weight: bold; color: #666; }
-.score-col { font-weight: 800; color: var(--primary); }
-.text-right { text-align: right; }
+.rank-col {
+  width: 40px;
+  font-weight: bold;
+  color: #666;
+}
+.score-col {
+  font-weight: 800;
+  color: var(--primary);
+}
+.text-right {
+  text-align: right;
+}
 
 .is-me {
   background: rgba(var(--primary-rgb), 0.05);

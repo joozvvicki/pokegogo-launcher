@@ -12,6 +12,7 @@ import type { IMessage } from '@ui/types/app'
 import { useUserCacheStore } from '@ui/stores/user-cache-store'
 import { usePlayersStore } from '@ui/stores/players-store'
 import useGeneralStore from '@ui/stores/general-store'
+import { useEventsStore } from '@ui/stores/events-store'
 
 // Global shared instances (Singleton)
 let socket: Socket | null = null
@@ -26,6 +27,7 @@ export const useSocketService = (): {
   const userCache = useUserCacheStore()
   const playersStore = usePlayersStore()
   const generalStore = useGeneralStore()
+  const eventsStore = useEventsStore()
   const router = useRouter()
 
   const refreshToken = async (): Promise<void> => {
@@ -145,6 +147,11 @@ export const useSocketService = (): {
       generalStore.mcInstance = null
 
       showToast('Twoja gra została zdalnie wyłączona przez administratora', 'warning')
+    })
+
+    socket.on('events:refresh', async () => {
+      LOGGER.with('Socket Service').log('Global events:refresh received')
+      await eventsStore.fetchEvents()
     })
 
     // CHAT FLOW

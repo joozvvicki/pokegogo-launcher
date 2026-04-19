@@ -82,8 +82,10 @@ window.electron?.ipcRenderer?.on(
   }
 )
 
-window.electron?.ipcRenderer?.on('launch:show-log', (_event, data: string, ended?: string) => {
-  if (!ended) {
+window.electron?.ipcRenderer?.on('launch:show-log', (_event, data: string, ended?: boolean) => {
+  if (ended) {
+    generalStore.setCurrentLog('')
+  } else {
     generalStore.setCurrentLog(data)
   }
 })

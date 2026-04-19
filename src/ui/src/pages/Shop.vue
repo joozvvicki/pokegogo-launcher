@@ -1,13 +1,19 @@
 <script lang="ts" setup>
 import { getItems } from '@ui/api/endpoints'
 import ShopItem from '@ui/components/ShopItem.vue'
+import CartSidebar from '@ui/components/CartSidebar.vue'
+import useCartStore from '@ui/stores/cart-store'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const cartStore = useCartStore()
 const data = ref<any[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
+
+const categories = ['Wszystko', 'Itemy', 'Klucze', 'Rangi']
+const selectedCategory = ref('Wszystko')
 
 const fetchItems = async (): Promise<void> => {
   isLoading.value = true
@@ -15,15 +21,40 @@ const fetchItems = async (): Promise<void> => {
 
   if (res) {
     data.value = res
+      .map((item) => ({
+        ...item,
+        index: item.index ?? 0
+      }))
+      .sort((a, b) => a.index - b.index)
   }
   isLoading.value = false
 }
 
 const filteredItems = computed(() => {
-  if (!searchQuery.value) return data.value
-  return data.value.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  )
+  let result = data.value
+
+  if (selectedCategory.value !== 'Wszystko') {
+    result = result.filter((item) => item.category === selectedCategory.value)
+  }
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter((item) => item.name.toLowerCase().includes(query))
+  }
+
+  return result
+})
+
+const featuredOccasions = computed(() => {
+  if (!data.value.length) return []
+
+  // Logic similar to website to pick 3 featured items
+  const promoted = data.value.filter((i) => i.promotion && i.promotion > 0)
+  if (promoted.length >= 3) return promoted.slice(0, 3)
+
+  // If not enough promoted, fill with random/first items
+  const combined = [...promoted, ...data.value.filter((i) => !promoted.includes(i))]
+  return combined.slice(0, 3)
 })
 
 onMounted(async () => {
@@ -32,40 +63,88 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="shop-layout">
+  <div class="shop-layout shadow-inner">
     <div class="shop-header">
-      <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="t('shop.searchPlaceholder', 'Szukaj w sklepie...')"
-        />
+      <div class="header-left">
+        <div class="categories-nav">
+          <button
+            v-for="cat in categories"
+            :key="cat"
+            class="cat-btn"
+            :class="{ active: selectedCategory === cat }"
+            @click="selectedCategory = cat"
+          >
+            {{ cat }}
+          </button>
+        </div>
       </div>
 
-      <div class="actions-dock">
-        <button class="action-btn" :title="t('shop.refresh', 'Odśwież')" @click="fetchItems">
-          <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i>
-        </button>
+      <div class="header-right">
+        <div class="search-container">
+          <i class="fas fa-search"></i>
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('shop.searchPlaceholder', 'Szukaj w sklepie...')"
+          />
+        </div>
+
+        <div class="actions-dock">
+          <button class="cart-toggle-btn" @click="cartStore.isCartDrawerOpen = true">
+            <i class="fas fa-shopping-cart"></i>
+            <span v-if="cartStore.cart.length > 0" class="cart-count">{{
+              cartStore.cart.length
+            }}</span>
+          </button>
+          <button class="action-btn" :title="t('shop.refresh', 'Odśwież')" @click="fetchItems">
+            <i class="fas fa-sync-alt" :class="{ 'fa-spin': isLoading }"></i>
+          </button>
+        </div>
       </div>
     </div>
 
-    <div class="shop-glass-panel">
-      <div v-if="isLoading" class="loading-overlay">
-        <i class="fas fa-spinner fa-spin"></i>
-        <span>{{ t('shop.loading', 'Ładowanie sklepu...') }}</span>
+    <div class="shop-content custom-scrollbar">
+      <!-- Gorące Okazje -->
+      <div
+        v-if="selectedCategory === 'Wszystko' && !searchQuery.trim() && featuredOccasions.length"
+        class="occasions-section"
+      >
+        <h2 class="section-title"><i class="fas fa-fire"></i> Gorące Okazje</h2>
+        <div class="occasions-grid">
+          <ShopItem v-for="item in featuredOccasions" :key="'featured-' + item.uuid" :item="item" />
+        </div>
+        <div class="section-divider"></div>
       </div>
 
-      <div v-else-if="filteredItems.length === 0" class="empty-state">
-        <div class="empty-icon"><i class="fas fa-shopping-basket"></i></div>
-        <h3>{{ t('shop.noResultsTitle', 'Brak produktów') }}</h3>
-        <p>{{ t('shop.noResultsDesc', 'Nie znaleziono produktów spełniających kryteria.') }}</p>
-      </div>
+      <!-- Main Grid -->
+      <div class="main-shop-section">
+        <h2 v-if="selectedCategory === 'Wszystko' && !searchQuery.trim()" class="section-title">
+          Wszystkie Produkty
+        </h2>
 
-      <div v-else class="shop-grid custom-scrollbar">
-        <ShopItem v-for="item in filteredItems" :key="item.uuid" :item="item" data-aos="fade-up" />
+        <div v-if="isLoading" class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>{{ t('shop.loading', 'Ładowanie sklepu...') }}</span>
+        </div>
+
+        <div v-else-if="filteredItems.length === 0" class="empty-state">
+          <div class="empty-icon"><i class="fas fa-shopping-basket"></i></div>
+          <h3>{{ t('shop.noResultsTitle', 'Brak produktów') }}</h3>
+          <p>{{ t('shop.noResultsDesc', 'Nie znaleziono produktów spełniających kryteria.') }}</p>
+        </div>
+
+        <div v-else class="shop-grid">
+          <ShopItem
+            v-for="item in filteredItems"
+            :key="item.uuid"
+            :item="item"
+            data-aos="fade-up"
+          />
+        </div>
       </div>
     </div>
+
+    <CartSidebar />
   </div>
 </template>
 
@@ -73,126 +152,214 @@ onMounted(async () => {
 .shop-layout {
   width: 100%;
   height: calc(100vh - 60px);
-  padding: 1rem 2rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  overflow: hidden;
 }
 
-/* Header & Search */
+/* Header */
 .shop-header {
+  padding: 1.5rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  background: rgba(10, 10, 15, 0.4);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 10;
 }
+
+.header-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.categories-nav {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.4rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cat-btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.cat-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cat-btn.active {
+  background: #ff007c;
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 0, 124, 0.3);
+}
+
 .search-container {
   display: flex;
   align-items: center;
-  background: rgba(20, 20, 25, 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.03);
   padding: 0.6rem 1rem;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  width: 320px;
-  transition: all 0.3s ease;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: 280px;
+  transition: all 0.3s;
 }
+
 .search-container:focus-within {
-  background: rgba(20, 20, 25, 0.9);
-  border-color: rgba(var(--primary-rgb), 0.5);
-  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 0, 124, 0.5);
 }
+
 .search-container i {
-  color: var(--text-secondary);
+  color: #606060;
   margin-right: 0.8rem;
 }
+
 .search-container input {
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-primary);
+  color: white;
   width: 100%;
 }
 
-/* Actions Dock */
 .actions-dock {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: rgba(20, 20, 25, 0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0.8rem;
 }
-.action-btn {
-  width: 36px;
-  height: 36px;
+
+.cart-toggle-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 0, 124, 0.1);
+  border: 1px solid rgba(255, 0, 124, 0.2);
+  color: #ff007c;
+  cursor: pointer;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  font-size: 1.1rem;
 }
+
+.cart-toggle-btn:hover {
+  background: #ff007c;
+  color: white;
+  transform: scale(1.05);
+}
+
+.cart-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: white;
+  color: #ff007c;
+  font-size: 0.7rem;
+  font-weight: 900;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border: 2px solid #0d0d12;
+}
+
+.action-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
 .action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-/* Main Panel */
-.shop-glass-panel {
-  flex: 1;
-  background: rgba(20, 20, 25, 0.4);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Loading & Empty */
-.loading-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
   color: white;
-  gap: 1rem;
-}
-.empty-state {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-}
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: rgba(255, 255, 255, 0.1);
 }
 
-/* Grid */
-.shop-grid {
+/* Content Area */
+.shop-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 2rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.section-title i {
+  color: #ff007c;
+}
+
+.occasions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+}
+
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  margin: 3rem 0;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+/* States */
+.loading-state,
+.empty-state {
+  padding: 5rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #606060;
+  gap: 1rem;
+}
+
+.loading-state i {
+  font-size: 2rem;
+  color: #ff007c;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  opacity: 0.2;
 }
 
 /* Scrollbar */
@@ -203,10 +370,10 @@ onMounted(async () => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 </style>

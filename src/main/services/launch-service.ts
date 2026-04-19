@@ -67,6 +67,9 @@ export const useLaunchService = (win: BrowserWindow): void => {
       Logger.log('Cancel process triggered via launch:exit')
     }
 
+    // Abort any ongoing FTP sync/download operations
+    ipcMain.emit('ftp:abort-all')
+
     // 2. Kill specific process if running or ALL if pid is null
     if (pid) {
       let instance = minecraftInstances.find((instance) => instance.process === pid)

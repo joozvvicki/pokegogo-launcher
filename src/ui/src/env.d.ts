@@ -54,6 +54,9 @@ declare global {
         invoke: (channel: string, ...args: any[]) => Promise<any>
         removeAllListeners: (channel: string) => void
       }
+      shell: {
+        openExternal: (url: string) => void
+      }
     }
     discord: {
       setActivity: (details: string, state: string) => void

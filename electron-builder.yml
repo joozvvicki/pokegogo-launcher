@@ -41,6 +41,6 @@ appImage:
 npmRebuild: false
 publish:
   - provider: github
-    owner: joozzekk
+    owner: joozvvicki
     repo: pokegogo-launcher
     protocol: https

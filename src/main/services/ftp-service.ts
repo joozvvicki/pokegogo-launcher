@@ -2,6 +2,7 @@
 import Client from 'ssh2-sftp-client'
 import { createHash } from 'crypto'
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import Logger from 'electron-log'
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'fs/promises'
 import { basename, dirname, join, posix } from 'path'
 import { createWriteStream } from 'fs'
@@ -27,15 +28,16 @@ const normalizePath = (p: string): string => p.replace(/\\/g, '/')
 
 const isSftpDir = (type: string | undefined): boolean => type === 'd'
 
+let clientInstance: Client | null = null
+let isConnecting = false
+let activeOperationAborted = false
+let isBusy = false
+
 export const useFTPService = (): {
   client: Client | null
   connect: () => Promise<Client>
   createHandlers: (mainWindow: BrowserWindow) => void
 } => {
-  let clientInstance: Client | null = null
-  let isConnecting = false
-  let activeOperationAborted = false
-
   const MANIFEST_FILE = '.hashes'
 
   const connect = async (): Promise<Client> => {
@@ -149,8 +151,17 @@ export const useFTPService = (): {
   }
 
   const createHandlers = (mainWindow: BrowserWindow): void => {
-    ipcMain.on('ftp:abort-all', () => {
+    ipcMain.on('ftp:abort-all', async () => {
       activeOperationAborted = true
+      if (clientInstance) {
+        Logger.log('SFTP: Force closing connection due to abort signal.')
+        try {
+          await clientInstance.end()
+        } catch {
+          /* ignore */
+        }
+        clientInstance = null
+      }
     })
 
     ipcMain.handle('ftp:create-folder', async (_, folder, newFolder) => {
@@ -895,8 +906,16 @@ export const useFTPService = (): {
     ipcMain.handle(
       'ftp:download-folder',
       async (_, localDir: string, remoteFolder: string, folder: string) => {
+        if (isBusy) {
+          Logger.warn('SFTP: Download folder requested while another operation is busy. Aborting previous...')
+          ipcMain.emit('ftp:abort-all')
+          // Give it a moment to cleanup
+          await new Promise(r => setTimeout(r, 500))
+        }
+        
+        isBusy = true
         let client: Client | null = null
-        activeOperationAborted = false
+        activeOperationAborted = false // Reset abort flag for new operation
         try {
           client = await connect()
 
@@ -926,11 +945,20 @@ export const useFTPService = (): {
           }
 
           return true
-        } catch (error) {
-          console.error('SFTP Error:', error)
+        } catch (error: any) {
+          if (error.message === 'ABORTED') {
+            Logger.log('SFTP: Download folder operation was successfully aborted.')
+          } else {
+            console.error('SFTP Error:', error)
+          }
           throw error
         } finally {
-          if (client) await client.end()
+          isBusy = false
+          if (client) {
+            try {
+              await client.end()
+            } catch { /* ignore */ }
+          }
         }
       }
     )

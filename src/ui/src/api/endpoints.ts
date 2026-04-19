@@ -363,3 +363,13 @@ export const submitFlappyScore = async (score: number): Promise<any> => {
   const res = await api.post('/games/flappy-pidgey/score', { score })
   return res.data
 }
+
+export const initiatePayment = async (data: {
+  nick: string
+  items: any[]
+  totalAmount: number
+  hostname: string
+}): Promise<any> => {
+  const res = await api.post('/payments/pay', data)
+  return res.data
+}

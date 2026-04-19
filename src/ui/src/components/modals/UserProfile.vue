@@ -194,9 +194,7 @@ const getPlayerID = (player: IUser): string => {
 
 const isAdmin = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
-    role as UserRole
-  )
+  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
 })
 
 const isTechnik = computed(() => {
@@ -565,7 +563,7 @@ const handleDeleteAccount = (): void => {
                   </div>
                   <div
                     class="status-indicator"
-                    :class="{ online: getIsOnline(friend) }"
+                    :class="{ online: getIsOnline(friend), offline: !getIsOnline(friend) }"
                     :title="getIsOnline(friend) ? t('users.online') : t('users.offline')"
                   ></div>
 
@@ -1114,6 +1112,11 @@ const handleDeleteAccount = (): void => {
 .status-indicator.online {
   background: #22c55e;
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.status-indicator.offline {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
 }
 
 .mc-status-dot {

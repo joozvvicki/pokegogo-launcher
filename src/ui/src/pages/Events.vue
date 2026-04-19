@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { getEvents, removeEvent } from '@ui/api/endpoints'
 import AddEvent from '@ui/components/modals/AddEvent.vue'
+import CachedImage from '@ui/components/CachedImage.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
 import { ref, onMounted, watch, computed } from 'vue'
@@ -117,14 +118,14 @@ onMounted(async () => {
           :class="{ 'mega-event': event.type === 'mega' }"
         >
           <div class="img-wrapper">
-            <img
+            <CachedImage
+              :uuid="event.uuid"
               :src="
                 event.src.includes('https://') || event.src.includes('blob')
                   ? event.src
                   : `${url}/events/image/${event.uuid}`
               "
               alt="Event Image"
-              @dragstart.prevent
             />
             <div v-if="event.type === 'mega'" class="mega-badge">MEGA</div>
           </div>

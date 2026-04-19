@@ -13,6 +13,7 @@ import { useSocketService } from './socket-service'
 import { AccountType } from '@ui/types/app'
 import { IUser } from '@ui/env'
 import { usePlayersStore } from '@ui/stores/players-store'
+import { useEventsStore } from '@ui/stores/events-store'
 
 export const useLauncherService = (): {
   useVariables: () => {
@@ -47,8 +48,9 @@ export const useLauncherService = (): {
   const generalStore = useGeneralStore()
   const userStore = useUserStore()
   const { connect, disconnect } = useSocketService()
+  const eventsStore = useEventsStore()
 
-  const events = ref<any[]>([])
+  // Remove local events ref
 
   watch(
     () => userStore.user,
@@ -126,7 +128,7 @@ export const useLauncherService = (): {
   }
 
   const fetchEvents = async (): Promise<void> => {
-    events.value = await getEvents()
+    await eventsStore.fetchEvents()
   }
 
   async function fetchPlayers(query?: string, reset: boolean = false): Promise<void> {
@@ -209,7 +211,7 @@ export const useLauncherService = (): {
   return {
     useVariables: () => ({
       refreshInterval,
-      events,
+      events: computed(() => eventsStore.events),
       allPlayers: computed(() => playersStore.allPlayers),
       filteredPlayers: computed(() => playersStore.filteredPlayers),
       isLoadingPlayers: computed(() => playersStore.isLoading),
