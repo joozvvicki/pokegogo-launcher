@@ -162,7 +162,15 @@ const update = (): void => {
     const pipeHitboxWidth = PIPE_WIDTH / 3
     const pipeHitboxX = pipe.x + (PIPE_WIDTH - pipeHitboxWidth) / 2
 
-    const checkCircleRect = (cx: number, cy: number, r: number, rx: number, ry: number, rw: number, rh: number) => {
+    const checkCircleRect = (
+      cx: number,
+      cy: number,
+      r: number,
+      rx: number,
+      ry: number,
+      rw: number,
+      rh: number
+    ) => {
       const closestX = Math.max(rx, Math.min(cx, rx + rw))
       const closestY = Math.max(ry, Math.min(cy, ry + rh))
       const dx = cx - closestX
@@ -174,7 +182,17 @@ const update = (): void => {
       gameOver()
     }
 
-    if (checkCircleRect(cx, cy, birdRadius, pipeHitboxX, pipe.top + PIPE_GAP, pipeHitboxWidth, 400 - (pipe.top + PIPE_GAP))) {
+    if (
+      checkCircleRect(
+        cx,
+        cy,
+        birdRadius,
+        pipeHitboxX,
+        pipe.top + PIPE_GAP,
+        pipeHitboxWidth,
+        400 - (pipe.top + PIPE_GAP)
+      )
+    ) {
       gameOver()
     }
 
@@ -201,7 +219,7 @@ const update = (): void => {
     pipes.shift()
   }
 
-  // Boundary Checks: Bottom of screen is 400px, bird size is 42px. 
+  // Boundary Checks: Bottom of screen is 400px, bird size is 42px.
   // We die if bird's bottom (birdY + BIRD_SIZE) goes past the floor (~390px)
   if (birdY + BIRD_SIZE > 390 || birdY < -20) {
     gameOver()

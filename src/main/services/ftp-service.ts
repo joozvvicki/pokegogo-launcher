@@ -907,12 +907,14 @@ export const useFTPService = (): {
       'ftp:download-folder',
       async (_, localDir: string, remoteFolder: string, folder: string) => {
         if (isBusy) {
-          Logger.warn('SFTP: Download folder requested while another operation is busy. Aborting previous...')
+          Logger.warn(
+            'SFTP: Download folder requested while another operation is busy. Aborting previous...'
+          )
           ipcMain.emit('ftp:abort-all')
           // Give it a moment to cleanup
-          await new Promise(r => setTimeout(r, 500))
+          await new Promise((r) => setTimeout(r, 500))
         }
-        
+
         isBusy = true
         let client: Client | null = null
         activeOperationAborted = false // Reset abort flag for new operation
@@ -957,7 +959,9 @@ export const useFTPService = (): {
           if (client) {
             try {
               await client.end()
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
           }
         }
       }

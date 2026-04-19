@@ -223,7 +223,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         if (versionJson.arguments && versionJson.arguments.jvm) {
           const separator = process.platform === 'win32' ? ';' : ':'
           const jvmArgs = versionJson.arguments.jvm
-            .filter((arg: any) => typeof arg === 'string')
+            .filter((arg: unknown) => typeof arg === 'string')
             .map((arg: string) => {
               return arg
                 .replace(/\${library_directory}/g, join(minecraftDir, 'libraries'))
@@ -337,8 +337,12 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     if (existingPid) {
       Logger.log('PokeGoGo Launcher > Active game detected on startup for:', settings.gameMode)
       mcOpened = true
-      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), existingPid)
-      
+      window.webContents.send(
+        'launch:change-state',
+        JSON.stringify('minecraft-started'),
+        existingPid
+      )
+
       // Start monitoring for this re-detected instance
       if (monitoringInterval) clearInterval(monitoringInterval)
       monitoringInterval = setInterval(async () => {

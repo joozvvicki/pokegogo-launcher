@@ -52,7 +52,10 @@ watch(() => props.src, updateDisplaySrc)
     v-show="displaySrc"
     :src="displaySrc"
     :alt="alt"
-    :class="[className, { 'opacity-0': !isLoaded, 'opacity-100 transition-opacity duration-300': isLoaded }]"
+    :class="[
+      className,
+      { 'opacity-0': !isLoaded, 'opacity-100 transition-opacity duration-300': isLoaded }
+    ]"
     @load="isLoaded = true"
     @dragstart.prevent
   />

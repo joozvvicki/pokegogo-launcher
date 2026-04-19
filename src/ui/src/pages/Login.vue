@@ -114,7 +114,11 @@ const { t } = useI18n()
               </div>
             </div>
 
-            <button class="action-btn primary mt-2" :disabled="appState.loading" @click="handleLogin(null)">
+            <button
+              class="action-btn primary mt-2"
+              :disabled="appState.loading"
+              @click="handleLogin(null)"
+            >
               {{ t('login.loginButton') }}
             </button>
           </div>
@@ -248,7 +252,11 @@ const { t } = useI18n()
               </div>
             </div>
 
-            <button class="action-btn primary mt-3" :disabled="appState.loading" @click="handleRegister">
+            <button
+              class="action-btn primary mt-3"
+              :disabled="appState.loading"
+              @click="handleRegister"
+            >
               {{ t('register.registerButton') }}
             </button>
 

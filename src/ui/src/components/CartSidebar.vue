@@ -45,7 +45,9 @@ const checkout = async () => {
       nick: cartStore.cartNick,
       items: itemsData,
       totalAmount: Number(cartStore.cartTotal),
-      hostname: isDev ? 'http://localhost:5173' : (import.meta.env.RENDERER_VITE_WEBPAGE || 'https://pokemongogo.pl')
+      hostname: isDev
+        ? 'http://localhost:5173'
+        : import.meta.env.RENDERER_VITE_WEBPAGE || 'https://pokemongogo.pl'
     })
 
     if (response && response.redirectUrl) {

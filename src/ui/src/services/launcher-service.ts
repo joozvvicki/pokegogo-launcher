@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { getEvents, getPlayers, updateMachineData, updateProfileData } from '@ui/api/endpoints'
+import { getPlayers, updateMachineData, updateProfileData } from '@ui/api/endpoints'
 import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import {

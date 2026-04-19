@@ -65,33 +65,71 @@ export const getMaxRAMInGB = (): number => {
   return Math.floor(totalMemoryGB)
 }
 
-export const getPersistentMachineId = (): string => {
-  const filePath = join(os.homedir(), '.pokegogo_sys_id')
-  try {
-    if (existsSync(filePath)) {
-      const id = readFileSync(filePath, 'utf8').trim()
-      if (id && id.length > 0) {
-        return id
+export const getPersistentMachineId = (fallbackId?: string): string => {
+  const paths = [
+    join(os.homedir(), '.pokegogo_sys_id'),
+    join(
+      process.env.APPDATA ||
+        (process.platform === 'darwin' ? join(os.homedir(), 'Library/Preferences') : os.homedir()),
+      '.pg_sys_id'
+    ),
+    join(process.env.LOCALAPPDATA || os.tmpdir(), '.sys_id_cache')
+  ]
+
+  let id: string | null = null
+
+  // 1. Try to find the ID in any of the paths (Priority: Persistent Files)
+  for (const p of paths) {
+    try {
+      if (existsSync(p)) {
+        const content = readFileSync(p, 'utf8').trim()
+        if (content && content.length > 32) {
+          // UUID or MachineID length check
+          id = content
+          break
+        }
       }
+    } catch (err) {
+      // Silently fail for individual paths
     }
-  } catch (err) {
-    console.error('Failed to read persistent machine ID:', err)
   }
 
-  const newId = randomUUID()
-  try {
-    writeFileSync(filePath, newId, 'utf8')
-    if (process.platform === 'darwin') {
-      exec(`chflags hidden "${filePath}"`, (err) => {
-        if (err) console.error('Failed to set hidden flag on macOS:', err)
-      })
-    } else if (process.platform === 'win32') {
-      exec(`attrib +h "${filePath}"`, (err) => {
-        if (err) console.error('Failed to set hidden flag on Windows:', err)
-      })
-    }
-  } catch (err) {
-    console.error('Failed to write persistent machine ID:', err)
+  // 2. If not found in files, use the provided systemId or generate a new one
+  if (!id) {
+    id = fallbackId || randomUUID()
   }
-  return newId
+
+  // 3. Sync ID to all paths (healing/creation)
+  for (const p of paths) {
+    try {
+      let needsWrite = false
+      if (!existsSync(p)) {
+        needsWrite = true
+      } else {
+        const current = readFileSync(p, 'utf8').trim()
+        if (current !== id) {
+          needsWrite = true
+        }
+      }
+
+      if (needsWrite) {
+        const parent = join(p, '..')
+        if (!existsSync(parent)) {
+          mkdirSync(parent, { recursive: true })
+        }
+        writeFileSync(p, id, 'utf8')
+
+        // Hide file
+        if (process.platform === 'darwin') {
+          exec(`chflags hidden "${p}"`)
+        } else if (process.platform === 'win32') {
+          exec(`attrib +h "${p}"`)
+        }
+      }
+    } catch (err) {
+      // Silently fail for individual paths
+    }
+  }
+
+  return id
 }

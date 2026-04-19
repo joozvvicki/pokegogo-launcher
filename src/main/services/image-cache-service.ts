@@ -43,7 +43,7 @@ export const useImageCacheService = (mainWindow: BrowserWindow | null): void => 
 
 async function downloadAndSave(url: string, filePath: string, metaPath: string): Promise<void> {
   await downloadFile(url, filePath)
-  
+
   // Get and save metadata
   try {
     const head = await axios.head(url)
@@ -82,11 +82,14 @@ async function revalidateImage(
     if (needsUpdate) {
       Logger.log(`[ImageCache] Image ${uuid} changed on server. Updating...`)
       await downloadAndSave(url, filePath, metaPath)
-      
+
       // Notify fallback/refresh if needed
       if (mainWindow) {
         const extension = extname(new URL(url).pathname) || '.webp'
-        mainWindow.webContents.send(`image:updated:${uuid}`, `local-image://${uuid}${extension}?t=${Date.now()}`)
+        mainWindow.webContents.send(
+          `image:updated:${uuid}`,
+          `local-image://${uuid}${extension}?t=${Date.now()}`
+        )
       }
     }
   } catch (err) {

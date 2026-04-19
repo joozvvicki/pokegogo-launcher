@@ -57,6 +57,9 @@ declare global {
       shell: {
         openExternal: (url: string) => void
       }
+      images: {
+        getEvent: (uuid: string, url: string) => Promise<string>
+      }
     }
     discord: {
       setActivity: (details: string, state: string) => void

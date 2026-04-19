@@ -16,7 +16,8 @@ export async function findMinecraftProcess(instancePath: string): Promise<number
 
     if (platform === 'win32') {
       // WMIC is reliable on Windows for getting full command line
-      command = 'wmic process where "name=\'java.exe\' or name=\'javaw.exe\'" get CommandLine,ProcessId'
+      command =
+        "wmic process where \"name='java.exe' or name='javaw.exe'\" get CommandLine,ProcessId"
     } else {
       // Standard ps on Unix-like systems
       command = 'ps ax -o pid,command'

@@ -59,12 +59,14 @@ function initDiscord(): void {
       isConnecting = false
 
       if (lastActivity && rpc) {
-        rpc.setActivity({
-          ...lastActivity,
-          largeImageKey: 'logo',
-          startTimestamp: appStartTime,
-          instance: true
-        }).catch(err => Logger.warn('Discord RPC: Failed to set initial activity:', err))
+        rpc
+          .setActivity({
+            ...lastActivity,
+            largeImageKey: 'logo',
+            startTimestamp: appStartTime,
+            instance: true
+          })
+          .catch((err) => Logger.warn('Discord RPC: Failed to set initial activity:', err))
       }
     })
 
@@ -100,7 +102,7 @@ if (!gotTheLock) {
 
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId('pl.pokemongogo.launcher')
-    
+
     // Register local-image protocol
     protocol.handle('local-image', (request) => {
       const uuidWithExt = request.url.replace('local-image://', '').split('?')[0]
@@ -118,16 +120,18 @@ if (!gotTheLock) {
         initDiscord()
       } else if (isReady && rpc) {
         // Just verify activity is up to date
-        rpc.setActivity({
-          ...lastActivity,
-          largeImageKey: 'logo',
-          startTimestamp: appStartTime,
-          instance: true
-        }).catch(() => {
-          Logger.warn('Discord RPC Heartbeat: Update failed. Resetting...')
-          isReady = false
-          rpc = null
-        })
+        rpc
+          .setActivity({
+            ...lastActivity,
+            largeImageKey: 'logo',
+            startTimestamp: appStartTime,
+            instance: true
+          })
+          .catch(() => {
+            Logger.warn('Discord RPC Heartbeat: Update failed. Resetting...')
+            isReady = false
+            rpc = null
+          })
       }
     }, 15000)
 
@@ -142,8 +146,6 @@ if (!gotTheLock) {
     createHandlers(mainWindow)
     useImageCacheService(mainWindow)
     await startApp(mainWindow)
-
-
 
     if (!ipcMain.listenerCount('notification:show'))
       ipcMain.handle(
@@ -167,17 +169,16 @@ if (!gotTheLock) {
 
     if (!ipcMain.listenerCount('data:machine'))
       ipcMain.handle('data:machine', async () => {
-        let hwid = ''
+        let systemId = ''
         try {
-          hwid = await machineId()
+          systemId = await machineId()
         } catch (err) {
           Logger.warn('Failed to get machineId:', err)
         }
 
-        if (!hwid) {
-          Logger.log('HWID not found, using persistent fallback')
-          hwid = getPersistentMachineId()
-        }
+        // Priority: Persistent Files > System ID
+        const hwid = getPersistentMachineId(systemId)
+
         const addr = await address()
         return {
           machineId: hwid,
@@ -251,16 +252,18 @@ if (!gotTheLock) {
       }
 
       if (isReady && rpc) {
-        rpc.setActivity({
-          ...lastActivity,
-          largeImageKey: 'logo',
-          startTimestamp: appStartTime,
-          instance: true
-        }).catch(() => {
-          isReady = false
-          rpc = null
-          initDiscord()
-        })
+        rpc
+          .setActivity({
+            ...lastActivity,
+            largeImageKey: 'logo',
+            startTimestamp: appStartTime,
+            instance: true
+          })
+          .catch(() => {
+            isReady = false
+            rpc = null
+            initDiscord()
+          })
       } else if (!isConnecting) {
         initDiscord()
       }
