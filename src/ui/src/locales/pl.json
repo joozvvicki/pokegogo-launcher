@@ -470,7 +470,9 @@
       "finish": "Zakończ",
       "verifying": "Weryfikacja w toku...",
       "stop": "Przerwij weryfikowanie",
-      "start": "Rozpocznij weryfikacje"
+      "start": "Rozpocznij weryfikacje",
+      "ready": "Gotowy do sprawdzenia",
+      "starting": "Rozpoczynanie..."
     }
   },
   "theme": {

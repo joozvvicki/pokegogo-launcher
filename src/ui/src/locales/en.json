@@ -471,7 +471,9 @@
       "finish": "Finish",
       "verifying": "Verifying...",
       "stop": "Stop verifying",
-      "start": "Start verification"
+      "start": "Start verification",
+      "ready": "Ready to check",
+      "starting": "Starting..."
     }
   },
   "theme": {

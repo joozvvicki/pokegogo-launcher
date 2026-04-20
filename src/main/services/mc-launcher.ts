@@ -37,19 +37,19 @@ const nonPremiumToMCLC = async (json: string): Promise<unknown> => {
 }
 
 const getBaseVersionByMode = (mode: string): string => {
-  if (mode === 'fantasy') return '1.20.1' // vanilla baza pod Forge
+  if (mode === 'create') return '1.20.1' // vanilla baza pod Fabric
   if (mode === 'pokemons') return '1.21.1' // vanilla baza pod Fabric
   return '1.21.1' // fallback
 }
 
 const getCustomVersionByMode = (mode: string): string | undefined => {
-  if (mode === 'fantasy') return '1.20.1-forge-47.4.10' // pełne ID Forge (lokalny profil)
+  if (mode === 'create') return '1.20.1-fabric' // pełne ID Fabric (lokalny profil)
   if (mode === 'pokemons') return '1.21.1-fabric' // pełne ID Fabric (lokalny profil)
   return undefined
 }
 
 const getJavaVersionByMode = (mode: string): string => {
-  if (mode === 'fantasy') return '17'
+  if (mode === 'create') return '21'
   return '21'
 }
 
@@ -216,7 +216,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       '-Dversioncheck.enable=false'
     ]
 
-    if (settings.gameMode === 'fantasy' && customVersion) {
+    if (settings.gameMode === 'create' && customVersion) {
       const versionJsonPath = join(minecraftDir, 'versions', customVersion, `${customVersion}.json`)
       try {
         const versionJson = JSON.parse(readFileSync(versionJsonPath, 'utf-8'))

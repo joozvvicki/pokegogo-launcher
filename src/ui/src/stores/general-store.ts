@@ -33,7 +33,7 @@ const useGeneralStore = defineStore('general', () => {
 
   const availableGameModes = [
     { label: 'Pokemony', value: 'Pokemons', icon: 'fas fa-ghost' },
-    { label: 'Fantasy', value: 'fantasy', icon: 'fas fa-hat-wizard' }
+    { label: 'Create', value: 'create', icon: 'fas fa-cogs' }
   ]
 
   const savedSettings = localStorage.getItem('launcherSettings')

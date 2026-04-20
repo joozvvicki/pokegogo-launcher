@@ -115,7 +115,7 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
   const res = await window.electron?.ipcRenderer?.invoke('launch:game', {
     token: userStore.user?.accountType === 'microsoft' ? mcToken : JSON.stringify(userStore.user),
     accessToken: localStorage.getItem('token'),
-    javaVersion: generalStore.settings.gameMode === 'fantasy' ? '17' : '21',
+    javaVersion: generalStore.settings.gameMode === 'create' ? '17' : '21',
     isDev: generalStore.settings.updateChannel === 'dev',
     settings: {
       resolution: generalStore.settings.resolution,
