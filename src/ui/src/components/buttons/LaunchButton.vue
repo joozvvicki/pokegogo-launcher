@@ -21,6 +21,7 @@ const states = computed<Record<string, string>>(() => ({
   'minecraft-closed': t('launcher.launchButton.states.minecraftClosed')
 }))
 
+const isLaunching = ref(false)
 const userStore = useUserStore()
 
 const isBanned = computed(() => {
@@ -58,6 +59,7 @@ const handleToggleGame = async (e: Event): Promise<void> => {
         generalStore.setCurrentState('start')
         break
       case 'start':
+        if (isLaunching.value) return
         await handleLaunchGame(e)
         break
       default:
@@ -72,6 +74,8 @@ const handleToggleGame = async (e: Event): Promise<void> => {
 }
 
 const handleLaunchGame = async (e: Event): Promise<void> => {
+  if (isLaunching.value) return
+  isLaunching.value = true
   createParticles(e.target as HTMLElement)
 
   // Natychmiastowa reakcja UI
@@ -80,55 +84,64 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
 
   let mcToken = localStorage.getItem('mcToken')
 
-  if (userStore.user?.accountType === 'microsoft' && mcToken?.includes('exp')) {
-    LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenVerify'))
-    const exp = parseInt(JSON.parse(mcToken as string).exp)
-    const now = new Date().getTime()
+  try {
+    if (userStore.user?.accountType === 'microsoft' && mcToken?.includes('exp')) {
+      LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenVerify'))
+      const exp = parseInt(JSON.parse(mcToken as string).exp)
+      const now = new Date().getTime()
 
-    LOGGER.with('Launch State').log(`${now} ${exp}`)
+      LOGGER.with('Launch State').log(`${now} ${exp}`)
 
-    if (now >= exp) {
-      LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenRefreshing'))
-      try {
-        const res = await refreshMicrosoftToken(
-          localStorage.getItem(`msToken:${userStore.user?.nickname}`)
-        )
+      if (now >= exp) {
+        LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenRefreshing'))
+        try {
+          const res = await refreshMicrosoftToken(
+            localStorage.getItem(`msToken:${userStore.user?.nickname}`)
+          )
 
-        if (res) {
-          localStorage.setItem(`msToken:${userStore.user?.nickname}`, res.msToken)
-          localStorage.setItem('mcToken', res.mcToken)
+          if (res) {
+            localStorage.setItem(`msToken:${userStore.user?.nickname}`, res.msToken)
+            localStorage.setItem('mcToken', res.mcToken)
 
-          mcToken = res.mcToken
+            mcToken = res.mcToken
+          }
+
+          LOGGER.with('Launch State').success(t('launcher.launchButton.errors.tokenRefreshed'))
+        } catch (err: unknown) {
+          LOGGER.with('Launch State').err('Błąd odświażania tokenu.', `${err}`)
+          showToast(t('launcher.launchButton.errors.tokenRefreshError'))
+
+          generalStore.setCurrentState('start')
+          generalStore.setIsOpeningGame(false)
+          return
         }
-
-        LOGGER.with('Launch State').success(t('launcher.launchButton.errors.tokenRefreshed'))
-      } catch (err: unknown) {
-        LOGGER.with('Launch State').err('Błąd odświażania tokenu.', `${err}`)
-        showToast(t('launcher.launchButton.errors.tokenRefreshError'))
-
-        generalStore.setCurrentState('start')
-        return
       }
     }
-  }
 
-  const res = await window.electron?.ipcRenderer?.invoke('launch:game', {
-    token: userStore.user?.accountType === 'microsoft' ? mcToken : JSON.stringify(userStore.user),
-    accessToken: localStorage.getItem('token'),
-    javaVersion: generalStore.settings.gameMode === 'create' ? '17' : '21',
-    isDev: generalStore.settings.updateChannel === 'dev',
-    settings: {
-      resolution: generalStore.settings.resolution,
-      ram: generalStore.settings.ram,
-      displayMode: generalStore.settings.displayMode,
-      gameMode: generalStore.settings.gameMode
-    },
-    accountType: userStore.user?.accountType
-  })
+    const res = await window.electron?.ipcRenderer?.invoke('launch:game', {
+      token: userStore.user?.accountType === 'microsoft' ? mcToken : JSON.stringify(userStore.user),
+      accessToken: localStorage.getItem('token'),
+      javaVersion: generalStore.settings.gameMode === 'create' ? '17' : '21',
+      isDev: generalStore.settings.updateChannel === 'dev',
+      settings: {
+        resolution: generalStore.settings.resolution,
+        ram: generalStore.settings.ram,
+        displayMode: generalStore.settings.displayMode,
+        gameMode: generalStore.settings.gameMode
+      },
+      accountType: userStore.user?.accountType
+    })
 
-  if (res) {
-    generalStore.mcInstance = res as number
-    emitSocket('player:mc-started', { nickname: userStore.user?.nickname })
+    if (res) {
+      generalStore.mcInstance = res as number
+      emitSocket('player:mc-started', { nickname: userStore.user?.nickname })
+    }
+  } catch (err) {
+    LOGGER.with('Launch State').err('Global launch error:', `${err}`)
+    generalStore.setCurrentState('start')
+    generalStore.setIsOpeningGame(false)
+  } finally {
+    isLaunching.value = false
   }
 }
 
@@ -263,7 +276,7 @@ onBeforeUnmount(() => {
       }"
     >
       <!-- Main Action -->
-      <button class="main-action" :disabled="isBanned" @click="(e) => handleToggleGame(e)">
+      <button class="main-action" :disabled="isBanned || isLaunching" @click="(e) => handleToggleGame(e)">
         <div class="launch-button-bg"></div>
 
         <template v-if="currentState === 'start' || isBanned">

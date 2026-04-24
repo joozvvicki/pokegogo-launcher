@@ -1,5 +1,9 @@
 import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import { app, BrowserWindow, ipcMain, Menu, Notification, shell, protocol, net } from 'electron'
+
+// Silence deprecation warnings from 3rd party libs
+process.noDeprecation = true
+
 import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
@@ -102,6 +106,10 @@ if (!gotTheLock) {
 
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId('pl.pokemongogo.launcher')
+
+    // Suppress Autofill and other browser-internal console noise
+    app.commandLine.appendSwitch('log-level', '3')
+    app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillServerCommunication')
 
     // Register local-image protocol
     protocol.handle('local-image', (request) => {
@@ -231,7 +239,8 @@ if (!gotTheLock) {
 
           win.close()
           mainWindow = null
-          if (ipcMain.listenerCount('launch:exit')) ipcMain.emit('launch:exit')
+          // Use invoke if we want to trigger the handler, but better to call service directly.
+          // For now, we skip emitting to avoid listenerCount issues with handlers.
         }
       })
 
@@ -342,8 +351,16 @@ if (!gotTheLock) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-      if (ipcMain.listenerCount('launch:exit')) mainWindow?.webContents.emit('launch:exit')
       app.quit()
+    }
+  })
+
+  // Final emergency cleanup to ensure no game processes stay alive
+  app.on('before-quit', () => {
+    Logger.log('Launcher is quitting, triggering final cleanup...')
+    if (ipcMain.listenerCount('launch:exit')) {
+      // Trigger global exit without a specific PID to kill ALL instances
+      ipcMain.emit('launch:exit', null, null)
     }
   })
 }

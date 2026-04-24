@@ -603,7 +603,7 @@
         "javaInstall": "Installing Java..",
         "filesVerify": "Verifying files..",
         "minecraftStart": "Starting game..",
-        "minecraftStarted": "Minecraft is running...",
+        "minecraftStarted": "Game running",
         "minecraftClosed": "Minecraft has been closed."
       },
       "ban": {

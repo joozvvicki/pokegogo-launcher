@@ -32,22 +32,26 @@ export async function findMinecraftProcess(instancePath: string): Promise<number
         return resolve(null)
       }
 
+      const p1 = normalizedPath.toLowerCase()
+      const p2 = instancePath.toLowerCase().replace(/\//g, '\\')
+      const p3 = instancePath.toLowerCase().replace(/\\/g, '/')
+
       const lines = stdout.split('\n')
       for (const line of lines) {
-        if (!line.trim()) continue
+        const trimmedLine = line.trim()
+        if (!trimmedLine) continue
 
-        // Check if the command line contains our specific instance path
-        // We look for the path inside quotes or as a standalone argument
-        const lowerLine = line.toLowerCase()
-        const lowerSearch = normalizedPath.toLowerCase()
+        const lowerLine = trimmedLine.toLowerCase()
 
-        if (lowerLine.includes(lowerSearch) || lowerLine.includes(instancePath.toLowerCase())) {
-          // Extract PID. On Windows it's usually at the end, on Unix at the start.
+        if (lowerLine.includes(p1) || lowerLine.includes(p2) || lowerLine.includes(p3)) {
+          // Extract PID. wmic output for 'CommandLine,ProcessId' usually has PID at the very end
+          // after some whitespace. We must be careful as the CommandLine itself might contain numbers.
           let pidMatch: RegExpMatchArray | null = null
           if (platform === 'win32') {
-            pidMatch = line.match(/(\d+)\s*$/)
+            // Match the last sequence of digits on the line
+            pidMatch = trimmedLine.match(/(\d+)\s*$/)
           } else {
-            pidMatch = line.trim().match(/^(\d+)/)
+            pidMatch = trimmedLine.match(/^(\d+)/)
           }
 
           if (pidMatch) {

@@ -14,6 +14,7 @@ import { AccountType } from '@ui/types/app'
 import { IUser } from '@ui/env'
 import { usePlayersStore } from '@ui/stores/players-store'
 import { useEventsStore } from '@ui/stores/events-store'
+import { LOGGER } from './logger-service'
 
 export const useLauncherService = (): {
   useVariables: () => {
@@ -105,25 +106,45 @@ export const useLauncherService = (): {
   }
 
   const fetchUpdateData = async (): Promise<void> => {
-    await userStore.updateProfile()
-    await setMachineData()
+    try {
+      await userStore.updateProfile()
+      await setMachineData()
 
-    if (userStore.user) {
-      await updateProfileData({
-        accountType: userStore.user?.accountType
-          ? userStore.user?.mcid
-            ? AccountType.MICROSOFT
+      if (userStore.user) {
+        // Prepare machine data
+        const mData = {
+          machineId: generalStore.settings.machineId || 'unknown-device',
+          macAddress: generalStore.settings.macAddress || '',
+          ipAddress: generalStore.settings.ipAddress || ''
+        }
+
+        // 1. Update Profile Metadata
+        await updateProfileData({
+          accountType: userStore.user?.accountType
+            ? userStore.user?.mcid
+              ? AccountType.MICROSOFT
+              : AccountType.BACKEND
             : AccountType.BACKEND
-          : AccountType.BACKEND
-      })
+        })
 
-      await updateMachineData({
-        machineId: generalStore.settings.machineId,
-        macAddress: generalStore.settings.macAddress,
-        ipAddress: generalStore.settings.ipAddress
-      })
+        // 2. Sync HWID / Machine Data (with small delay to ensure store update)
+        setTimeout(async () => {
+          try {
+            await updateMachineData(mData)
+            LOGGER.with('Launcher Service').success('Dane HWID zsynchronizowane pomyślnie.')
+          } catch (err) {
+            LOGGER.with('Launcher Service').warn(
+              'Błąd synchronizacji HWID, zostanie ponowiony przy następnej okazji.',
+              `${err}`
+            )
+          }
+        }, 2000)
 
-      await isMachineIDBanned()
+        // 3. Global ban check
+        await isMachineIDBanned()
+      }
+    } catch (err) {
+      LOGGER.with('Launcher Service').err('Błąd podczas aktualizacji danych launchera:', `${err}`)
     }
   }
 

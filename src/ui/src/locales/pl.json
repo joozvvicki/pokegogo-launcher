@@ -602,7 +602,7 @@
         "javaInstall": "Instalowanie Javy..",
         "filesVerify": "Weryfikowanie plików..",
         "minecraftStart": "Uruchamianie gry..",
-        "minecraftStarted": "Minecraft jest uruchomiony...",
+        "minecraftStarted": "Gra uruchomiona",
         "minecraftClosed": "Minecraft został zamknięty."
       },
       "ban": {

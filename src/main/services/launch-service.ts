@@ -13,6 +13,19 @@ export const useLaunchService = (win: BrowserWindow): void => {
   let pendingInstance: MinecraftInstance | null = null
 
   ipcMain.handle('launch:game', async (_, data) => {
+    // 1. Check if an instance for this mode is already running or being started
+    const existingInstance = minecraftInstances.find(i => 
+      // @ts-ignore - access to internal config might be needed or we use settings
+      i.mcOpened
+    )
+
+    if (existingInstance) {
+      Logger.log('LaunchService: Game already running. Bringing window to front or ignoring.')
+      // Optionally stop it if the user wants "kill old if new started"
+      // await existingInstance.stop()
+      // return existingInstance.process
+    }
+
     let currentInstance: MinecraftInstance | null = null
 
     if (currentAbortController) {
@@ -103,6 +116,16 @@ export const useLaunchService = (win: BrowserWindow): void => {
         if (index > -1) minecraftInstances.splice(index, 1)
         pendingInstance = null
       }
+    }
+  })
+
+  // Listen for internal app events (like from before-quit)
+  ipcMain.on('launch:exit', async () => {
+    Logger.log('Launcher Service: Internal exit signal received. Cleaning up all instances.')
+    for (const instance of [...minecraftInstances]) {
+      await instance.stop()
+      const index = minecraftInstances.indexOf(instance)
+      if (index > -1) minecraftInstances.splice(index, 1)
     }
   })
 

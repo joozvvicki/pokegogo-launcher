@@ -152,6 +152,31 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   let monitoringInterval: NodeJS.Timeout | null = null
 
   const start = async (): Promise<void> => {
+    // Prevent multiple concurrent launch attempts
+    if (mcOpened) {
+      Logger.log('PokeGoGo Launcher > Game already marked as opened. Skipping start.')
+      window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), childProcess?.pid)
+      return
+    }
+
+    // Safety check: Kill any existing Minecraft process for this instance before starting
+    const existingPid = await findMinecraftProcess(minecraftDir)
+    if (existingPid) {
+      Logger.log(`PokeGoGo Launcher > Found existing game process (PID: ${existingPid}). Terminating before new launch.`)
+      try {
+        if (os.platform() === 'win32') {
+          const { execSync } = await import('child_process')
+          execSync(`taskkill /pid ${existingPid} /T /F`, { stdio: 'ignore' })
+        } else {
+          process.kill(existingPid, 'SIGTERM')
+        }
+        // Give it a moment to release files
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } catch (err) {
+        Logger.warn('PokeGoGo Launcher > Failed to kill existing process:', err)
+      }
+    }
+
     const { width, height, fullscreen } = computeResolution(
       settings.displayMode,
       settings.resolution
@@ -181,7 +206,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
     client.on('data', (data) => {
       Logger.log('MC STDOUT:', String(data))
-      window.webContents.send('launch:show-log', data)
+      if (!window.isDestroyed()) window.webContents.send('launch:show-log', data)
 
       if (typeof data === 'string') {
         if (data.includes('[Error]') || data.includes('Exception') || data.includes('FATAL')) {
@@ -194,9 +219,19 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       Logger.error('MC ERROR event:', err)
     })
 
-    client.on('close', (code) => {
-      Logger.log('PokeGoGo Launcher > MC Closed with code', code)
-      window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+    client.on('close', async (code) => {
+      Logger.log(`PokeGoGo Launcher > MC Process (PID ${childProcess?.pid}) closed with code`, code)
+      
+      // Double check if the process is TRULY gone (sometimes wrapper exits but game remains)
+      const stillRunningPid = await findMinecraftProcess(minecraftDir)
+      if (stillRunningPid) {
+        Logger.log(`PokeGoGo Launcher > MC Process reported closed, but found another instance (PID ${stillRunningPid}). Keeping state as started.`)
+        mcOpened = true
+        if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), stillRunningPid)
+        return
+      }
+
+      if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
 
       if (code !== 0 && code !== 130 && code !== 143 && mcOpened) {
         discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
@@ -262,38 +297,52 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
       Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
 
-      window.webContents.send(
-        'launch:change-state',
-        JSON.stringify('minecraft-started'),
-        childProcess?.pid
-      )
+      if (!window.isDestroyed()) {
+        window.webContents.send(
+          'launch:change-state',
+          JSON.stringify('minecraft-started'),
+          childProcess?.pid
+        )
+      }
       mcOpened = true
 
-      // Start periodic robustness check
+      // Start periodic robustness check (increased frequency: 5s)
       if (monitoringInterval) clearInterval(monitoringInterval)
       monitoringInterval = setInterval(async () => {
-        const pid = await findMinecraftProcess(minecraftDir)
-        const currentlyRunning = !!pid
+        const pidFromScan = await findMinecraftProcess(minecraftDir)
+        let currentlyRunning = !!pidFromScan
+        let activePid = pidFromScan
+
+        // Secondary check: if scanner failed, but we have a childProcess PID, check it directly
+        if (!currentlyRunning && childProcess?.pid) {
+          try {
+            process.kill(childProcess.pid, 0)
+            currentlyRunning = true
+            activePid = childProcess.pid
+          } catch (e) {
+            // Process truly dead
+          }
+        }
 
         if (mcOpened && !currentlyRunning) {
           // Game closed externally or crashed silently
-          Logger.log('PokeGoGo Launcher > Game no longer detected in processes. Cleaning up.')
+          Logger.log(`PokeGoGo Launcher > Game for ${settings.gameMode} no longer detected in processes. Sending closed state.`)
           mcOpened = false
-          window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+          if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
           if (monitoringInterval) {
             clearInterval(monitoringInterval)
             monitoringInterval = null
           }
         } else if (!mcOpened && currentlyRunning) {
-          // Game was found running but launcher didn't know (e.g. after restart)
-          Logger.log('PokeGoGo Launcher > Game detected running in background. Syncing state.')
+          // Game was found running but launcher didn't know
+          Logger.log(`PokeGoGo Launcher > Game for ${settings.gameMode} detected running (PID ${activePid}). Sending started state.`)
           mcOpened = true
-          window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), pid)
+          if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-started'), activePid)
         }
-      }, 30000)
+      }, 5000)
     } catch (e) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
-      window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+      if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
       mcOpened = false
     }
   }
@@ -325,7 +374,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         clearInterval(monitoringInterval)
         monitoringInterval = null
       }
-      window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+      if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
       window.show()
       childProcess = null
     }
@@ -337,27 +386,30 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     if (existingPid) {
       Logger.log('PokeGoGo Launcher > Active game detected on startup for:', settings.gameMode)
       mcOpened = true
-      window.webContents.send(
-        'launch:change-state',
-        JSON.stringify('minecraft-started'),
-        existingPid
-      )
+      if (!window.isDestroyed()) {
+        window.webContents.send(
+          'launch:change-state',
+          JSON.stringify('minecraft-started'),
+          existingPid
+        )
+      }
 
       // Start monitoring for this re-detected instance
       if (monitoringInterval) clearInterval(monitoringInterval)
       monitoringInterval = setInterval(async () => {
         const pid = await findMinecraftProcess(minecraftDir)
         if (!pid && mcOpened) {
+          Logger.log('PokeGoGo Launcher > Background game for', settings.gameMode, 'closed.')
           mcOpened = false
-          window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+          if (!window.isDestroyed()) window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
           if (monitoringInterval) {
             clearInterval(monitoringInterval)
             monitoringInterval = null
           }
         }
-      }, 30000)
+      }, 5000)
     }
-  }, 5000)
+  }, 2000)
 
   return {
     get mcOpened() {
