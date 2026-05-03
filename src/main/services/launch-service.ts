@@ -14,9 +14,10 @@ export const useLaunchService = (win: BrowserWindow): void => {
 
   ipcMain.handle('launch:game', async (_, data) => {
     // 1. Check if an instance for this mode is already running or being started
-    const existingInstance = minecraftInstances.find(i => 
-      // @ts-ignore - access to internal config might be needed or we use settings
-      i.mcOpened
+    const existingInstance = minecraftInstances.find(
+      (i) =>
+        // @ts-ignore - access to internal config might be needed or we use settings
+        i.mcOpened
     )
 
     if (existingInstance) {

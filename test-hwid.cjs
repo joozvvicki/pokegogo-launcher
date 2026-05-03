@@ -12,7 +12,9 @@ async function testHwid() {
     path.join(os.homedir(), '.pokegogo_sys_id'),
     path.join(
       process.env.APPDATA ||
-        (process.platform === 'darwin' ? path.join(os.homedir(), 'Library/Preferences') : os.homedir()),
+        (process.platform === 'darwin'
+          ? path.join(os.homedir(), 'Library/Preferences')
+          : os.homedir()),
       '.pg_sys_id'
     ),
     path.join(process.env.LOCALAPPDATA || os.tmpdir(), '.sys_id_cache')

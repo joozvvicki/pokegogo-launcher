@@ -777,6 +777,7 @@ body {
   align-items: center;
   justify-content: center;
   z-index: 1100;
+  -webkit-app-region: no-drag;
 }
 
 /* Premium Card Style (Global) */

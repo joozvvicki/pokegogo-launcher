@@ -263,6 +263,7 @@ defineExpose({
                   }"
                   show-time
                   hour-format="24"
+                  append-to="body"
                 />
               </div>
 

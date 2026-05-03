@@ -12,6 +12,10 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!**/node_modules/**/build/node_gyp_bins'
+  - '!**/node_modules/**/build/Release/*.obj'
+  - '!**/node_modules/**/build/Release/*.lib'
+  - '!**/node_modules/**/build/Release/*.exp'
 asarUnpack:
   - resources/**
 win:

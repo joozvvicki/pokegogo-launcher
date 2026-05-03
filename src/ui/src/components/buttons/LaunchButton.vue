@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
       }"
     >
       <!-- Main Action -->
-      <button class="main-action" :disabled="isBanned || isLaunching" @click="(e) => handleToggleGame(e)">
+      <button class="main-action" :disabled="isBanned" @click="(e) => handleToggleGame(e)">
         <div class="launch-button-bg"></div>
 
         <template v-if="currentState === 'start' || isBanned">
