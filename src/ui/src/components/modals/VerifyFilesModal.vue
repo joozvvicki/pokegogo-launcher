@@ -36,14 +36,22 @@ const verifyFiles = async (): Promise<void> => {
   isVerifying.value = true
   currentLog.value = t('modals.verifyFiles.starting', 'Inicjalizacja...')
 
-  await window.electron?.ipcRenderer?.invoke(
+  const removeMarkRes = await window.electron?.ipcRenderer?.invoke(
     'launch:remove-markfile',
     generalStore.settings.gameMode
   )
-  await window.electron?.ipcRenderer?.invoke(
+  const removeFilesRes = await window.electron?.ipcRenderer?.invoke(
     'launch:remove-mcfiles',
     generalStore.settings.gameMode
   )
+
+  if (removeFilesRes === false) {
+    currentLog.value = t('modals.verifyFiles.deleteError', 'Błąd: Nie można usunąć plików. Wyłącz grę.')
+    isVerifying.value = false
+    isEnd.value = true
+    return
+  }
+
   await window.electron?.ipcRenderer?.invoke('launch:check-files', {
     isDev: generalStore.settings.updateChannel === 'dev',
     gameMode: generalStore.settings.gameMode,

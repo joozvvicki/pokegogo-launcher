@@ -150,6 +150,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   let mcOpened = false
   let childProcess: ChildProcessWithoutNullStreams | null = null
   let monitoringInterval: NodeJS.Timeout | null = null
+  let isAborted = false
 
   const start = async (): Promise<void> => {
     // Prevent multiple concurrent launch attempts
@@ -309,6 +310,23 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         customArgs
       })
 
+      if (isAborted) {
+        Logger.log('PokeGoGo Launcher > Launch aborted during client.launch(). Killing immediately.')
+        if (childProcess) {
+          if (os.platform() === 'win32') {
+            import('child_process').then(cp => {
+              cp.exec(`taskkill /pid ${childProcess!.pid} /T /F`, () => {})
+            }).catch(() => {
+              childProcess!.kill('SIGTERM')
+            })
+          } else {
+            childProcess.kill('SIGTERM')
+          }
+        }
+        childProcess = null
+        return
+      }
+
       Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
 
       if (!window.isDestroyed()) {
@@ -374,6 +392,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   }
 
   const stop = async (): Promise<void> => {
+    isAborted = true
     const processToKill = childProcess
     try {
       client.emit('close', 1)

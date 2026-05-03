@@ -7,6 +7,8 @@ import Logger from 'electron-log'
 import { join } from 'path'
 import { rm, unlink } from 'fs/promises'
 
+import { findMinecraftProcess } from '../utils/game-scanner'
+
 export const useLaunchService = (win: BrowserWindow): void => {
   const minecraftInstances: MinecraftInstance[] = []
   let currentAbortController: AbortController | null = null
@@ -38,6 +40,12 @@ export const useLaunchService = (win: BrowserWindow): void => {
 
     win.webContents.send('launch:change-state', JSON.stringify('java-install'))
     await installJava(data.javaVersion)
+
+    if (signal.aborted) {
+      Logger.log('Game launch aborted during java-install.')
+      return null
+    }
+
     win.webContents.send('launch:change-state', JSON.stringify('files-verify'))
 
     // We don't register launch:exit here anymore. It's global.
@@ -159,28 +167,50 @@ export const useLaunchService = (win: BrowserWindow): void => {
       await unlink(
         join(app.getPath('userData'), 'instances', `.${gameMode.toLowerCase()}_installed`)
       )
+      return true
     } catch (err) {
       Logger.log(err)
 
       return false
     }
-
-    return false
   })
 
   ipcMain.handle('launch:remove-mcfiles', async (_, gameMode: string): Promise<boolean> => {
     try {
-      await rm(join(app.getPath('userData'), 'instances', gameMode.toLowerCase()), {
+      const targetDir = join(app.getPath('userData'), 'instances', gameMode.toLowerCase())
+
+      // 1. Kill via tracked instance
+      const instance = minecraftInstances.find(
+        // @ts-ignore
+        (i) => i.mcOpened || (i as any).settings?.gameMode?.toLowerCase() === gameMode.toLowerCase()
+      )
+      if (instance) {
+        await instance.stop()
+        const index = minecraftInstances.indexOf(instance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+      }
+
+      // 2. Kill via process scanner (in case it's orphaned)
+      const pid = await findMinecraftProcess(targetDir)
+      if (pid) {
+        Logger.log(`Found orphaned game process ${pid} during verify. Killing it.`)
+        if (process.platform === 'win32') {
+          require('child_process').execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
+        } else {
+          process.kill(pid, 'SIGTERM')
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      await rm(targetDir, {
         recursive: true,
         force: true
       })
+      return true
     } catch (err) {
-      Logger.log(err)
-
+      Logger.log('Error removing mcfiles:', err)
       return false
     }
-
-    return false
   })
 
   ipcMain.handle('launch:exit-verify', (_, event = 'launch:show-log') => {
