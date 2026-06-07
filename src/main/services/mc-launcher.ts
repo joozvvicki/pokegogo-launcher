@@ -263,7 +263,8 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       '-DCDAGaming.update_check=false',
       '-DCDAGaming.updateCheck=false',
       '-Dunilib.check_updates=false',
-      '-Dversioncheck.enable=false'
+      '-Dversioncheck.enable=false',
+      '-XX:+UseZGC'
     ]
 
     if (settings.gameMode === 'create' && customVersion) {

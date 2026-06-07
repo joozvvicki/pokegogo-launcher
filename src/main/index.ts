@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { installExtension, VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import { app, BrowserWindow, ipcMain, Menu, Notification, shell, protocol, net } from 'electron'
 
@@ -24,7 +25,7 @@ import { discordLogger } from './services/discord-logger'
 const CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID
 const appStartTime = Date.now()
 let rpc: DiscordRPC.Client | null = null
-let lastActivity: any = {
+let lastActivity: { details?: string; state?: string } = {
   details: 'W launcherze',
   state: 'Menu główne'
 }
@@ -187,7 +188,12 @@ if (!gotTheLock) {
         // Priority: Persistent Files > System ID
         const hwid = getPersistentMachineId(systemId)
 
-        const addr = await address()
+        let addr: any = null
+        try {
+          addr = await address()
+        } catch (err) {
+          Logger.warn('Failed to get address:', err)
+        }
         return {
           machineId: hwid,
           macAddress: addr?.mac,
@@ -196,7 +202,7 @@ if (!gotTheLock) {
       })
 
     if (!ipcMain.listenerCount('cart:save'))
-      ipcMain.handle('cart:save', async (_, cartData: any) => {
+      ipcMain.handle('cart:save', async (_, cartData: unknown) => {
         const cartPath = join(app.getPath('userData'), 'cart.json')
         try {
           writeFileSync(cartPath, JSON.stringify(cartData, null, 2), 'utf8')

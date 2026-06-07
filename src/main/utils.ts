@@ -91,6 +91,7 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
       }
     } catch (err) {
       // Silently fail for individual paths
+      console.log(err)
     }
   }
 
@@ -117,6 +118,9 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
         if (!existsSync(parent)) {
           mkdirSync(parent, { recursive: true })
         }
+        if (existsSync(p)) {
+          unlinkSync(p)
+        }
         writeFileSync(p, id, 'utf8')
 
         // Hide file
@@ -127,7 +131,7 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
         }
       }
     } catch (err) {
-      // Silently fail for individual paths
+      console.log(err)
     }
   }
 

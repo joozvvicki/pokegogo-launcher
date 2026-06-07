@@ -36,7 +36,7 @@ const verifyFiles = async (): Promise<void> => {
   isVerifying.value = true
   currentLog.value = t('modals.verifyFiles.starting', 'Inicjalizacja...')
 
-  const removeMarkRes = await window.electron?.ipcRenderer?.invoke(
+  await window.electron?.ipcRenderer?.invoke(
     'launch:remove-markfile',
     generalStore.settings.gameMode
   )
