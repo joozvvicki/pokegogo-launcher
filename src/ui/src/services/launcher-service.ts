@@ -65,11 +65,11 @@ export const useLauncherService = (): {
       refreshInterval.value = setInterval(
         async () => {
           const res = await refreshMicrosoftToken(
-            localStorage.getItem(`msToken:${userStore.user?.nickname}`)
+            localStorage.getItem(`msToken:${userStore.user?.nickname?.toLowerCase()}`)
           )
 
           if (res) {
-            localStorage.setItem(`msToken:${userStore.user?.nickname}`, res.msToken)
+            localStorage.setItem(`msToken:${userStore.user?.nickname?.toLowerCase()}`, res.msToken)
             localStorage.setItem('mcToken', res.mcToken)
           }
         },

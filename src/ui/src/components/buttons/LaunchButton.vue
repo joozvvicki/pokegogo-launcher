@@ -96,11 +96,11 @@ const handleLaunchGame = async (e: Event): Promise<void> => {
         LOGGER.with('Launch State').log(t('launcher.launchButton.errors.tokenRefreshing'))
         try {
           const res = await refreshMicrosoftToken(
-            localStorage.getItem(`msToken:${userStore.user?.nickname}`)
+            localStorage.getItem(`msToken:${userStore.user?.nickname?.toLowerCase()}`)
           )
 
           if (res) {
-            localStorage.setItem(`msToken:${userStore.user?.nickname}`, res.msToken)
+            localStorage.setItem(`msToken:${userStore.user?.nickname?.toLowerCase()}`, res.msToken)
             localStorage.setItem('mcToken', res.mcToken)
 
             mcToken = res.mcToken

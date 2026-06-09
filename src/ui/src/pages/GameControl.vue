@@ -38,6 +38,27 @@ const handleKillAllGames = (): void => {
     isProcessing.value = false
   }
 }
+
+const showReinstallModal = ref(false)
+const isProcessingReinstall = ref(false)
+
+const handleForceReinstallAll = (): void => {
+  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV && userStore.user?.role?.toLowerCase() !== 'technik') {
+    showToast(t('general.error'), 'error')
+    return
+  }
+
+  isProcessingReinstall.value = true
+  try {
+    emitSocket('admin:force-reinstall-all', {})
+    showToast('Wymuszono reinstalację u wszystkich graczy', 'success')
+    showReinstallModal.value = false
+  } catch {
+    showToast(t('gameControl.errorToast'), 'error')
+  } finally {
+    isProcessingReinstall.value = false
+  }
+}
 </script>
 
 <template>
@@ -66,6 +87,15 @@ const handleKillAllGames = (): void => {
           >
             <i class="fas fa-power-off mr-2"></i>
             {{ t('gameControl.actionButton') }}
+          </button>
+          
+          <button
+            class="reinstall-btn btn-glow mt-4"
+            :disabled="isProcessingReinstall"
+            @click="showReinstallModal = true"
+          >
+            <i class="fas fa-download mr-2"></i>
+            Wymuś Reinstalację (Wszystkim)
           </button>
         </div>
       </div>
@@ -107,6 +137,47 @@ const handleKillAllGames = (): void => {
             >
               <span v-if="isProcessing" class="spinner mr-2"></span>
               {{ t('gameControl.actionButton') }}
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Reinstall Modal -->
+      <div v-if="showReinstallModal" class="modal-overlay" @click.self="showReinstallModal = false">
+        <div class="modal-container animate-fade-in">
+          <div class="modal-header">
+            <h3>Potwierdź Wymuszenie Reinstalacji</h3>
+            <button class="close-btn" @click="showReinstallModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <div class="modal-alert" style="background: rgba(255, 165, 2, 0.1); border-color: rgba(255, 165, 2, 0.3); color: #ffa502;">
+              <i class="fas fa-exclamation-circle mr-3" style="color: #ffa502;"></i>
+              <span>Uwaga: Ta akcja wymusi pobranie wszystkich plików u wszystkich graczy!</span>
+            </div>
+            <p class="modal-info-text text-muted text-sm mt-4">
+              To spowoduje usunięcie folderu "instances" u wszystkich połączonych obecnie klientów, 
+              oraz wymusi to przy ich kolejnym uruchomieniu gry, jeśli są obecnie offline.
+            </p>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              class="btn-secondary"
+              :disabled="isProcessingReinstall"
+              @click="showReinstallModal = false"
+            >
+              {{ t('general.abort') }}
+            </button>
+            <button
+              class="btn-warning btn-glow"
+              :disabled="isProcessingReinstall"
+              @click="handleForceReinstallAll"
+            >
+              <span v-if="isProcessingReinstall" class="spinner mr-2"></span>
+              Wymuś Reinstalację
             </button>
           </div>
         </div>
@@ -231,6 +302,39 @@ const handleKillAllGames = (): void => {
   cursor: not-allowed;
 }
 
+.reinstall-btn {
+  padding: 1.25rem 3rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff9f43 0%, #ff7b00 100%);
+  border: none;
+  border-radius: var(--border-radius-small);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  width: 100%;
+}
+
+.reinstall-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  filter: brightness(1.1);
+  box-shadow: 0 10px 25px rgba(255, 159, 67, 0.5);
+}
+
+.reinstall-btn:active:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.reinstall-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Modal Styles */
 .modal-overlay {
   position: fixed;
@@ -327,6 +431,21 @@ const handleKillAllGames = (): void => {
 }
 
 .btn-danger:hover {
+  filter: brightness(1.1);
+}
+
+.btn-warning {
+  background: #ffa502;
+  color: white;
+  border: none;
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.btn-warning:hover {
   filter: brightness(1.1);
 }
 

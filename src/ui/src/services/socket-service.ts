@@ -149,6 +149,12 @@ export const useSocketService = (): {
       showToast('Twoja gra została zdalnie wyłączona przez administratora', 'warning')
     })
 
+    socket.on('player:force-reinstall', async () => {
+      LOGGER.with('Socket Service').log('Force reinstall command received from server')
+      await window.electron?.ipcRenderer?.invoke('launch:force-reinstall')
+      showToast('Zlecono wymuszoną reinstalację plików gry na tobie przez technika', 'warning')
+    })
+
     socket.on('events:refresh', async () => {
       LOGGER.with('Socket Service').log('Global events:refresh received')
       await eventsStore.fetchEvents()

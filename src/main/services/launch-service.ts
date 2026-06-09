@@ -35,6 +35,19 @@ export const useLaunchService = (win: BrowserWindow): void => {
       currentAbortController.abort()
     }
 
+    const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
+    if (require('fs').existsSync(flagPath)) {
+      Logger.log('Pending force reinstall flag found. Trying to reinstall before launch.')
+      try {
+        const targetDir = join(app.getPath('userData'), 'instances')
+        await rm(targetDir, { recursive: true, force: true })
+        require('fs').unlinkSync(flagPath)
+        Logger.log('Successfully completed pending force reinstall.')
+      } catch (err) {
+        Logger.log('Still failed to force reinstall:', err)
+      }
+    }
+
     currentAbortController = new AbortController()
     const signal = currentAbortController.signal
 
@@ -209,6 +222,54 @@ export const useLaunchService = (win: BrowserWindow): void => {
       return true
     } catch (err) {
       Logger.log('Error removing mcfiles:', err)
+      return false
+    }
+  })
+  ipcMain.handle('launch:force-reinstall', async (): Promise<boolean> => {
+    try {
+      Logger.log(`Force reinstall: Killing all active Minecraft instances first (${minecraftInstances.length})`)
+      for (const instance of [...minecraftInstances]) {
+        await instance.stop()
+        const index = minecraftInstances.indexOf(instance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+      }
+
+      if (pendingInstance) {
+        await pendingInstance.stop()
+        const index = minecraftInstances.indexOf(pendingInstance)
+        if (index > -1) minecraftInstances.splice(index, 1)
+        pendingInstance = null
+      }
+
+      // 2. Kill via process scanner (in case it's orphaned) to be 100% sure
+      const targetDir = join(app.getPath('userData'), 'instances')
+      const pid = await findMinecraftProcess(targetDir)
+      if (pid) {
+        Logger.log(`Found orphaned game process ${pid} during force-reinstall. Killing it.`)
+        if (process.platform === 'win32') {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          require('child_process').execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
+        } else {
+          process.kill(pid, 'SIGTERM')
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      Logger.log('Force reinstall: Proceeding to delete instances folder')
+      await rm(targetDir, {
+        recursive: true,
+        force: true
+      })
+
+      const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
+      if (require('fs').existsSync(flagPath)) {
+        require('fs').unlinkSync(flagPath)
+      }
+      return true
+    } catch (err) {
+      Logger.log('Error removing instances for force reinstall:', err)
+      const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
+      require('fs').writeFileSync(flagPath, '1')
       return false
     }
   })
