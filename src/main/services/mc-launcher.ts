@@ -130,6 +130,44 @@ function fixCorruptedConfigs(minecraftDir: string): void {
   }
 }
 
+function startDetachedWatcher(parentPid: number, childPid: number): void {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { spawn } = require('child_process')
+    const script = `
+      setInterval(() => {
+        try {
+          process.kill(${parentPid}, 0);
+        } catch (e) {
+          try {
+            if (process.platform === 'win32') {
+              require('child_process').execSync('taskkill /pid ${childPid} /T /F', { stdio: 'ignore' });
+            } else {
+              process.kill(${childPid}, 'SIGKILL');
+            }
+          } catch (err) {}
+          process.exit(0);
+        }
+        try {
+          process.kill(${childPid}, 0);
+        } catch (e) {
+          process.exit(0);
+        }
+      }, 2000);
+    `
+    const watcher = spawn(process.execPath, ['-e', script], {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      windowsHide: true
+    })
+    watcher.unref()
+    Logger.log('PokeGoGo Launcher > Started detached watcher for game PID:', childPid)
+  } catch (err) {
+    Logger.warn('PokeGoGo Launcher > Failed to start detached watcher:', err)
+  }
+}
+
 export function createMinecraftInstance(config: MinecraftInstanceConfig): MinecraftInstance {
   const { token, accessToken, accountType, settings, window } = config
 
@@ -330,6 +368,10 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
       Logger.log('PokeGoGo Launcher > PID', childProcess?.pid, 'started')
 
+      if (childProcess && childProcess.pid) {
+        startDetachedWatcher(process.pid, childProcess.pid)
+      }
+
       if (!window.isDestroyed()) {
         window.webContents.send(
           'launch:change-state',
@@ -433,6 +475,8 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
     if (existingPid) {
       Logger.log('PokeGoGo Launcher > Active game detected on startup for:', settings.gameMode)
       mcOpened = true
+      startDetachedWatcher(process.pid, existingPid)
+      
       if (!window.isDestroyed()) {
         window.webContents.send(
           'launch:change-state',

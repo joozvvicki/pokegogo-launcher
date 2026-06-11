@@ -72,8 +72,8 @@ const openModal = async (event: any, type: 'add' | 'edit' = 'add'): Promise<void
     state.type = event.type
     state.name = event.name
     state.desc = event.desc
-    state.startDate = parseISO(event.startDate)
-    state.endDate = parseISO(event.endDate)
+    state.startDate = event.startDate ? parseISO(event.startDate) : null
+    state.endDate = event.endDate ? parseISO(event.endDate) : null
     state.photo = event.src
     photoFile.value = event.src
   }
@@ -233,14 +233,12 @@ defineExpose({
                   }}</label>
                   <div class="flex bg-black/20 p-1 rounded-xl">
                     <button
-                      v-if="actionType === 'edit'"
                       class="flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all"
                       :class="
                         state.type === 'mega'
                           ? 'bg-[var(--bg-card)] text-white shadow-sm'
                           : 'text-gray-400 hover:text-white'
                       "
-                      :disabled="actionType === 'edit'"
                       @click="state.type = 'mega'"
                     >
                       {{ t('events.types.mega') }}
@@ -252,7 +250,6 @@ defineExpose({
                           ? 'bg-[var(--bg-card)] text-white shadow-sm'
                           : 'text-gray-400 hover:text-white'
                       "
-                      :disabled="actionType === 'edit'"
                       @click="state.type = 'normal'"
                     >
                       {{ t('events.types.normal') }}

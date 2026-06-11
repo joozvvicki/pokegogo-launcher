@@ -3,7 +3,7 @@ import { LOGGER } from '@ui/services/logger-service'
 import useGeneralStore from '@ui/stores/general-store'
 import useUserStore from '@ui/stores/user-store'
 import { useSocketService } from '@ui/services/socket-service'
-import { createParticles, refreshMicrosoftToken, showToast } from '@ui/utils'
+import { createParticles, refreshMicrosoftToken, showToast, isMachineIDBanned } from '@ui/utils'
 import { differenceInMilliseconds, intervalToDuration, parseISO } from 'date-fns'
 import { computed, onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -76,6 +76,20 @@ const handleToggleGame = async (e: Event): Promise<void> => {
 const handleLaunchGame = async (e: Event): Promise<void> => {
   if (isLaunching.value) return
   isLaunching.value = true
+
+  // Extra strict ban check before launching
+  try {
+    await isMachineIDBanned()
+  } catch (err) {
+    LOGGER.with('Launch State').err('Failed to check HWID ban status:', `${err}`)
+  }
+
+  if (isBanned.value) {
+    isLaunching.value = false
+    showToast(t('launcher.launchButton.ban.bannedTitle'), 'error')
+    return
+  }
+
   createParticles(e.target as HTMLElement)
 
   // Natychmiastowa reakcja UI

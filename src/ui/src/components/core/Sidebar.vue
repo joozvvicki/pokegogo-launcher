@@ -118,6 +118,20 @@ const handleChangeRoute = (newRoute: string): void => {
       <button
         class="nav-item"
         :class="{
+          active: $route.path === '/app/news'
+        }"
+        @click="handleChangeRoute('/app/news')"
+      >
+        <div class="nav-icon">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <span>{{ t('router.events') }}</span>
+        <div class="nav-indicator"></div>
+      </button>
+
+      <button
+        class="nav-item"
+        :class="{
           active: $route.path === '/app/changelog'
         }"
         @click="handleChangeRoute('/app/changelog')"
@@ -179,7 +193,7 @@ const handleChangeRoute = (newRoute: string): void => {
 
 /* Redesigned Sidebar Styles */
 .sidebar {
-  width: 7.5rem; /* Slightly narrower */
+  width: 5.5rem; /* Much narrower for tooltip-only layout */
   margin: 1rem 0 1rem 1.5rem; /* Floating effect */
   height: calc(100% - 2rem); /* Fit within parent container */
   background: var(--bg-card); /* Ensure using the card background */
@@ -212,6 +226,9 @@ const handleChangeRoute = (newRoute: string): void => {
   border: 2px solid var(--primary);
   box-shadow: 0 0 15px var(--primary-glow, rgba(var(--primary-rgb), 0.4));
   transition: transform 0.3s ease;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
 }
 
 .player-avatar:hover .player-skin {
@@ -220,16 +237,16 @@ const handleChangeRoute = (newRoute: string): void => {
 
 .nav-item {
   position: relative;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
   padding: 0.6rem; /* Reduced padding */
   background: transparent;
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: visible; /* Allow glow to spill */
-  flex: 1;
+  overflow: visible; /* Allow glow to spill and tooltip to show */
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 /* Active State Design */
@@ -246,7 +263,7 @@ const handleChangeRoute = (newRoute: string): void => {
 .nav-item.active::before {
   content: '';
   position: absolute;
-  left: -8px;
+  left: -4px;
   top: 50%;
   transform: translateY(-50%);
   width: 4px;
@@ -257,9 +274,9 @@ const handleChangeRoute = (newRoute: string): void => {
 }
 
 .nav-icon {
-  width: 2.2rem; /* Slightly smaller icons */
+  width: 2.2rem;
   height: 2.2rem;
-  background: transparent; /* Remove default background */
+  background: transparent;
   border-radius: 12px;
   font-size: 1.1rem;
   transition: all 0.3s ease;
@@ -279,17 +296,50 @@ const handleChangeRoute = (newRoute: string): void => {
   color: var(--primary);
 }
 
-.nav-item span {
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  margin-top: 0.2rem;
-  opacity: 0.8;
-  font-size: 0.55rem; /* Smaller text */
+/* Tooltip Styles */
+.nav-item span,
+#logout label {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: rgba(15, 15, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
-.nav-item.active span {
+.nav-item:hover span,
+#logout:hover label {
   opacity: 1;
-  font-weight: 700;
+  visibility: visible;
+  transform: translateY(-50%) translateX(15px);
+}
+
+/* Tooltip Arrow */
+.nav-item span::before,
+#logout label::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: rgba(15, 15, 20, 0.9);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Hide the old indicator */
@@ -299,8 +349,10 @@ const handleChangeRoute = (newRoute: string): void => {
 
 #logout {
   margin-top: auto;
+  margin-bottom: 1rem;
   opacity: 0.6;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
 #logout:hover {

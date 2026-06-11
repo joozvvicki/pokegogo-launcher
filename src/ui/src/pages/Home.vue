@@ -4,20 +4,25 @@ import { computed, onMounted, ref } from 'vue'
 import LaunchButton from '@ui/components/buttons/LaunchButton.vue'
 import CachedImage from '@ui/components/CachedImage.vue'
 import FlappyPidgeyModal from '@ui/components/modals/FlappyPidgeyModal.vue'
+import EventDetailsModal from '@ui/components/modals/EventDetailsModal.vue'
 import useGeneralStore from '@ui/stores/general-store'
 import { getServerStatus } from '@ui/api/endpoints'
 import { LOGGER } from '@ui/services/logger-service'
 import { format, parseISO } from 'date-fns'
+import { pl, enUS } from 'date-fns/locale'
 import { useI18n } from 'vue-i18n'
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const generalStore = useGeneralStore()
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+const dateLocale = computed(() => (locale.value === 'pl' ? pl : enUS))
 
 const time = ref<number>(0)
 const serverStatus = ref<any>(null)
 const serverStatusInterval = ref<any>(null)
 const flappyPidgeyRef = ref()
+const eventDetailsRef = ref()
 
 const props = defineProps<{
   events: any[]
@@ -53,7 +58,7 @@ onMounted(async () => {
   <div class="home-container">
     <div class="dashboard-grid">
       <!-- Hero Section (Mega Event or Featured) -->
-      <div v-if="megaEvent || normalEvents.length > 0" class="hero-section">
+      <div v-if="megaEvent || normalEvents.length > 0" class="hero-section" :class="{ 'cursor-pointer': megaEvent }" @click="megaEvent && eventDetailsRef?.openModal(megaEvent, dateLocale)">
         <div class="hero-bg">
           <CachedImage
             v-if="megaEvent"
@@ -68,16 +73,16 @@ onMounted(async () => {
           <div class="hero-overlay"></div>
         </div>
         <div class="hero-content">
-          <div v-if="megaEvent" class="hero-tag">Active Event</div>
+          <div v-if="megaEvent" class="hero-tag">{{ t('home.activeEvent') }}</div>
           <h1 class="hero-title">{{ megaEvent?.name || 'Welcome to PokeGoGo' }}</h1>
           <p class="hero-desc">
             {{ megaEvent?.desc || 'Join the adventure on the best Cobblemon server!' }}
           </p>
           <div v-if="megaEvent?.startDate" class="hero-meta">
             <i class="far fa-calendar-alt"></i>
-            <span>{{ format(parseISO(megaEvent.startDate), 'dd MMM yyyy') }}</span>
+            <span>{{ format(parseISO(megaEvent.startDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span>
             <span v-if="megaEvent?.endDate">
-              - {{ format(parseISO(megaEvent.endDate), 'dd MMM yyyy') }}</span
+              - {{ format(parseISO(megaEvent.endDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span
             >
           </div>
         </div>
@@ -85,12 +90,13 @@ onMounted(async () => {
 
       <!-- News Feed -->
       <div class="news-section">
-        <h2 class="section-title">Latest Updates</h2>
+        <h2 class="section-title">{{ t('home.latestUpdates') }}</h2>
         <div class="news-grid custom-scrollbar">
           <article
             v-for="event in normalEvents.filter((_, i) => i < 3)"
             :key="event.uuid"
             class="news-card"
+            @click="eventDetailsRef?.openModal(event, dateLocale)"
           >
             <div class="news-img">
               <CachedImage
@@ -104,7 +110,7 @@ onMounted(async () => {
             </div>
             <div class="news-content">
               <span class="news-date">
-                {{ event?.startDate ? format(parseISO(event.startDate), 'dd MMM') : '' }}
+                {{ event?.startDate ? format(parseISO(event.startDate), 'dd MMM', { locale: dateLocale }) : '' }}
               </span>
               <h3>{{ event.name }}</h3>
               <p>
@@ -160,6 +166,7 @@ onMounted(async () => {
     </Teleport>
 
     <FlappyPidgeyModal ref="flappyPidgeyRef" />
+    <EventDetailsModal ref="eventDetailsRef" />
   </div>
 </template>
 

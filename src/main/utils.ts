@@ -10,7 +10,7 @@ import {
 } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
-import { exec } from 'child_process'
+import { execSync } from 'child_process'
 import https from 'https'
 import http from 'http'
 
@@ -73,7 +73,10 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
         (process.platform === 'darwin' ? join(os.homedir(), 'Library/Preferences') : os.homedir()),
       '.pg_sys_id'
     ),
-    join(process.env.LOCALAPPDATA || os.tmpdir(), '.sys_id_cache')
+    join(process.env.LOCALAPPDATA || os.tmpdir(), '.sys_id_cache'),
+    // Nowe bardziej "ukryte" i bezpieczne przed usunięciem miejsca dla Windowsa
+    process.platform === 'win32' ? join(process.env.PUBLIC || 'C:\\Users\\Public', '.pg_global_sys') : join(os.homedir(), '.pg_global_sys'),
+    process.platform === 'win32' ? join(process.env.ALLUSERSPROFILE || 'C:\\ProgramData', '.sys_device_id') : join(os.tmpdir(), '.sys_device_id')
   ]
 
   let id: string | null = null
@@ -119,15 +122,18 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
           mkdirSync(parent, { recursive: true })
         }
         if (existsSync(p)) {
+          if (process.platform === 'win32') {
+            try { execSync(`attrib -h "${p}"`) } catch (e) { /* ignore */ }
+          }
           unlinkSync(p)
         }
         writeFileSync(p, id, 'utf8')
 
         // Hide file
         if (process.platform === 'darwin') {
-          exec(`chflags hidden "${p}"`)
+          execSync(`chflags hidden "${p}"`)
         } else if (process.platform === 'win32') {
-          exec(`attrib +h "${p}"`)
+          execSync(`attrib +h "${p}"`)
         }
       }
     } catch (err) {

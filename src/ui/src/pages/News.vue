@@ -3,12 +3,19 @@
 import { getEvents } from '@ui/api/endpoints'
 import { format } from 'date-fns'
 import CachedImage from '@ui/components/CachedImage.vue'
-import { ref, onMounted } from 'vue'
+import EventDetailsModal from '@ui/components/modals/EventDetailsModal.vue'
+import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { pl, enUS } from 'date-fns/locale'
 
 const apiURL = import.meta.env.RENDERER_VITE_API_URL
 
+const { locale } = useI18n()
+const dateLocale = computed(() => (locale.value === 'pl' ? pl : enUS))
+
 const allEvents = ref<any[]>([])
 const isLoadingEvents = ref<boolean>(true)
+const eventDetailsRef = ref()
 
 async function fetchEvents(): Promise<void> {
   isLoadingEvents.value = true
@@ -35,6 +42,7 @@ onMounted(async () => {
         )"
         :key="event.uuid"
         class="news-entry-card"
+        @click="eventDetailsRef?.openModal(event, dateLocale)"
       >
         <div class="news-entry-thumbnail">
           <CachedImage
@@ -66,6 +74,7 @@ onMounted(async () => {
         </div>
       </article>
     </div>
+    <EventDetailsModal ref="eventDetailsRef" />
   </div>
 </template>
 

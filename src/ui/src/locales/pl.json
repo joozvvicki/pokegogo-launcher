@@ -85,6 +85,8 @@
     "login": "Zaloguj się"
   },
   "home": {
+    "latestUpdates": "Ostatnie nowości",
+    "activeEvent": "Aktywne Wydarzenie",
     "ram": "RAM",
     "mode": "Tryb",
     "playersOnline": "Graczy Online",

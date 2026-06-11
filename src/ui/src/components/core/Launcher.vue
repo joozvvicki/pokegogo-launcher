@@ -45,6 +45,7 @@ const routeOrder = [
   '/app/home',
   '/app/users',
   '/app/shop',
+  '/app/news',
   '/app/changelog',
   '/app/settings'
 ]

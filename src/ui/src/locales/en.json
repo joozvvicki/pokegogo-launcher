@@ -86,6 +86,8 @@
     "login": "Log in"
   },
   "home": {
+    "latestUpdates": "Latest Updates",
+    "activeEvent": "Active Event",
     "ram": "RAM",
     "mode": "Mode",
     "playersOnline": "Players Online",
