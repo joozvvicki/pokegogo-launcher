@@ -7,17 +7,24 @@ import useCartStore from '@ui/stores/cart-store'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { Item } from '@ui/stores/cart-store'
+
+interface ShopItemData extends Item {
+  type?: string
+  index?: number
+}
+
 const { t } = useI18n()
 const cartStore = useCartStore()
-const data = ref<any[]>([])
+const data = ref<ShopItemData[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
-const itemModalRef = ref<any>(null)
+const itemModalRef = ref<InstanceType<typeof ItemDetailsModal> | null>(null)
 
 const categories = ['Wszystko', 'Itemy', 'Klucze', 'Rangi']
 const selectedCategory = ref('Wszystko')
 
-const openItemDetails = (item: any) => {
+const openItemDetails = (item: ShopItemData): void => {
   itemModalRef.value?.openModal(item)
 }
 
@@ -42,9 +49,17 @@ const filteredItems = computed(() => {
   if (selectedCategory.value !== 'Wszystko') {
     result = result.filter((item) => {
       const cat = selectedCategory.value
-      if (cat === 'Itemy') return item.type === 'item' || item.category === 'Itemy' || item.category === 'item'
-      if (cat === 'Klucze') return item.type === 'key_item' || item.type === 'key' || item.category === 'Klucze' || item.category === 'key_item'
-      if (cat === 'Rangi') return item.type === 'rank' || item.category === 'Rangi' || item.category === 'rank'
+      if (cat === 'Itemy')
+        return item.type === 'item' || item.category === 'Itemy' || item.category === 'item'
+      if (cat === 'Klucze')
+        return (
+          item.type === 'key_item' ||
+          item.type === 'key' ||
+          item.category === 'Klucze' ||
+          item.category === 'key_item'
+        )
+      if (cat === 'Rangi')
+        return item.type === 'rank' || item.category === 'Rangi' || item.category === 'rank'
       return item.category === cat || item.type === cat.toLowerCase()
     })
   }
@@ -123,7 +138,12 @@ onMounted(async () => {
       >
         <h2 class="section-title"><i class="fas fa-fire"></i> Gorące Okazje</h2>
         <div class="occasions-grid">
-          <ShopItem v-for="item in featuredOccasions" :key="'featured-' + item.uuid" :item="item" @showDetails="openItemDetails" />
+          <ShopItem
+            v-for="item in featuredOccasions"
+            :key="'featured-' + item.uuid"
+            :item="item"
+            @show-details="openItemDetails"
+          />
         </div>
         <div class="section-divider"></div>
       </div>
@@ -151,7 +171,7 @@ onMounted(async () => {
             :key="item.uuid"
             :item="item"
             data-aos="fade-up"
-            @showDetails="openItemDetails"
+            @show-details="openItemDetails"
           />
         </div>
       </div>

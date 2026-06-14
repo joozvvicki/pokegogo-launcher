@@ -1,8 +1,8 @@
 {
   "name": "pokemongogo-launcher",
   "appId": "pl.pokemongogo.launcher",
-  "version": "0.8.16-beta",
-  "description": "A minecraft launcher for PokemonGoGo server",
+  "version": "0.9.1-beta",
+  "description": "Launcher dla serwera Minecraft pokemongogo.pl",
   "main": "./out/main/index.js",
   "author": "Dominik Jozwicki <joozvvicki@gmail.com>",
   "homepage": "https://pokemongogo.pl",

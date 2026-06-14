@@ -58,7 +58,12 @@ onMounted(async () => {
   <div class="home-container">
     <div class="dashboard-grid">
       <!-- Hero Section (Mega Event or Featured) -->
-      <div v-if="megaEvent || normalEvents.length > 0" class="hero-section" :class="{ 'cursor-pointer': megaEvent }" @click="megaEvent && eventDetailsRef?.openModal(megaEvent, dateLocale)">
+      <div
+        v-if="megaEvent || normalEvents.length > 0"
+        class="hero-section"
+        :class="{ 'cursor-pointer': megaEvent }"
+        @click="megaEvent && eventDetailsRef?.openModal(megaEvent, dateLocale)"
+      >
         <div class="hero-bg">
           <CachedImage
             v-if="megaEvent"
@@ -80,9 +85,12 @@ onMounted(async () => {
           </p>
           <div v-if="megaEvent?.startDate" class="hero-meta">
             <i class="far fa-calendar-alt"></i>
-            <span>{{ format(parseISO(megaEvent.startDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span>
+            <span>{{
+              format(parseISO(megaEvent.startDate), 'dd MMM yyyy', { locale: dateLocale })
+            }}</span>
             <span v-if="megaEvent?.endDate">
-              - {{ format(parseISO(megaEvent.endDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span
+              -
+              {{ format(parseISO(megaEvent.endDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span
             >
           </div>
         </div>
@@ -110,7 +118,11 @@ onMounted(async () => {
             </div>
             <div class="news-content">
               <span class="news-date">
-                {{ event?.startDate ? format(parseISO(event.startDate), 'dd MMM', { locale: dateLocale }) : '' }}
+                {{
+                  event?.startDate
+                    ? format(parseISO(event.startDate), 'dd MMM', { locale: dateLocale })
+                    : ''
+                }}
               </span>
               <h3>{{ event.name }}</h3>
               <p>
@@ -145,8 +157,8 @@ onMounted(async () => {
         <div class="dock-game-trigger">
           <button
             class="dock-game-btn"
-            @click="flappyPidgeyRef?.openModal()"
             :title="t('common.playGame')"
+            @click="flappyPidgeyRef?.openModal()"
           >
             <i class="fas fa-gamepad"></i>
           </button>

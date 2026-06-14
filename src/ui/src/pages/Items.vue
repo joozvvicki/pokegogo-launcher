@@ -12,13 +12,25 @@ const { t } = useI18n()
 const url = import.meta.env.RENDERER_VITE_API_URL
 const userStore = useUserStore()
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const allItems = ref<any[]>([])
+interface AdminItem {
+  uuid: string | number
+  name: string
+  desc?: string
+  price?: number | string
+  src: string
+  index: number
+  [key: string]: unknown
+}
+
+const allItems = ref<AdminItem[]>([])
 const isLoadingItems = ref<boolean>(true)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const filteredItems = ref<any[]>([])
+const filteredItems = ref<AdminItem[]>([])
 const searchQuery = ref('')
 const addItemModalRef = ref()
+
+const isDeleteModalOpen = ref(false)
+const itemToDelete = ref<AdminItem | null>(null)
+const isDeleting = ref(false)
 
 async function fetchItems(): Promise<void> {
   isLoadingItems.value = true
@@ -33,20 +45,31 @@ async function fetchItems(): Promise<void> {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleChangeItemIndex = async (item: any, step: number = 1): Promise<void> => {
-  const res = await changeItemIndex(item.uuid, step)
+const handleChangeItemIndex = async (item: AdminItem, step: number = 1): Promise<void> => {
+  const res = await changeItemIndex(String(item.uuid), step)
   if (res) {
     await fetchItems()
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleRemoveItem = async (item: any): Promise<void> => {
-  const res = await removeItem(item.uuid)
-  if (res) {
-    showToast(`${t('items.toasts.deleted')} ${item.name}.`)
-    await fetchItems()
+const confirmRemoveItem = (item: AdminItem): void => {
+  itemToDelete.value = item
+  isDeleteModalOpen.value = true
+}
+
+const handleRemoveItem = async (): Promise<void> => {
+  if (!itemToDelete.value) return
+  isDeleting.value = true
+  try {
+    const res = await removeItem(Number(itemToDelete.value.uuid))
+    if (res) {
+      showToast(`${t('items.toasts.deleted')} ${itemToDelete.value.name}.`)
+      await fetchItems()
+    }
+  } finally {
+    isDeleting.value = false
+    isDeleteModalOpen.value = false
+    itemToDelete.value = null
   }
 }
 
@@ -59,7 +82,7 @@ watch(searchQuery, () => {
     .sort((a, b) => (a.index > b.index ? 1 : -1))
 
     .filter(
-      (item: any) =>
+      (item: AdminItem) =>
         item.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
         (item.desc && item.desc.toLowerCase().includes(searchQuery.value.toLowerCase()))
     )
@@ -174,7 +197,7 @@ onMounted(async () => {
             <button
               class="icon-btn delete-btn"
               :title="t('items.delete')"
-              @click.stop="handleRemoveItem(item)"
+              @click.stop="confirmRemoveItem(item)"
             >
               <i class="fas fa-trash"></i>
             </button>
@@ -184,6 +207,54 @@ onMounted(async () => {
     </div>
 
     <AddItem ref="addItemModalRef" @refresh-data="fetchItems" />
+
+    <!-- Delete Confirmation Modal -->
+    <Teleport to="#modalsContainer">
+      <Transition name="fade">
+        <div
+          v-if="isDeleteModalOpen"
+          class="g-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          @click.self="isDeleteModalOpen = false"
+        >
+          <div class="g-card g-modal-card" style="max-width: 400px">
+            <div class="g-card-header">
+              <div class="flex items-center gap-4">
+                <div class="g-icon-box !bg-red-500/20 !text-red-500">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="text-red-400">Usuń Przedmiot</h3>
+              </div>
+              <button class="g-close-btn" :disabled="isDeleting" @click="isDeleteModalOpen = false">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <div class="g-modal-content p-6 text-center">
+              <p class="text-gray-300 text-lg mb-2">Czy na pewno chcesz usunąć ten przedmiot?</p>
+              <p class="text-white font-bold text-xl">{{ itemToDelete?.name }}</p>
+              <p class="text-red-400 text-sm mt-4">Tej operacji nie można cofnąć.</p>
+            </div>
+
+            <div class="g-modal-footer">
+              <button class="g-btn" :disabled="isDeleting" @click="isDeleteModalOpen = false">
+                Anuluj
+              </button>
+              <button
+                class="g-btn !bg-red-500 hover:!bg-red-600 flex-1 text-white border-none"
+                :disabled="isDeleting"
+                @click="handleRemoveItem"
+              >
+                <i v-if="isDeleting" class="fas fa-spinner fa-spin"></i>
+                <i v-else class="fas fa-trash"></i>
+                {{ isDeleting ? 'Usuwanie...' : 'Tak, usuń' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 

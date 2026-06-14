@@ -6,6 +6,8 @@ import { createMinecraftInstance, MinecraftInstance } from './mc-launcher'
 import Logger from 'electron-log'
 import { join } from 'path'
 import { rm, unlink } from 'fs/promises'
+import { existsSync, unlinkSync, writeFileSync } from 'fs'
+import { execSync } from 'child_process'
 
 import { findMinecraftProcess } from '../utils/game-scanner'
 
@@ -36,12 +38,12 @@ export const useLaunchService = (win: BrowserWindow): void => {
     }
 
     const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
-    if (require('fs').existsSync(flagPath)) {
+    if (existsSync(flagPath)) {
       Logger.log('Pending force reinstall flag found. Trying to reinstall before launch.')
       try {
         const targetDir = join(app.getPath('userData'), 'instances')
         await rm(targetDir, { recursive: true, force: true })
-        require('fs').unlinkSync(flagPath)
+        unlinkSync(flagPath)
         Logger.log('Successfully completed pending force reinstall.')
       } catch (err) {
         Logger.log('Still failed to force reinstall:', err)
@@ -194,7 +196,7 @@ export const useLaunchService = (win: BrowserWindow): void => {
 
       // 1. Kill via tracked instance
       const instance = minecraftInstances.find(
-        // @ts-ignore
+        // @ts-ignore - Internal config access needed
         (i) => i.mcOpened || (i as any).settings?.gameMode?.toLowerCase() === gameMode.toLowerCase()
       )
       if (instance) {
@@ -208,11 +210,11 @@ export const useLaunchService = (win: BrowserWindow): void => {
       if (pid) {
         Logger.log(`Found orphaned game process ${pid} during verify. Killing it.`)
         if (process.platform === 'win32') {
-          require('child_process').execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
+          execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
         } else {
           process.kill(pid, 'SIGTERM')
         }
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 
       await rm(targetDir, {
@@ -227,7 +229,9 @@ export const useLaunchService = (win: BrowserWindow): void => {
   })
   ipcMain.handle('launch:force-reinstall', async (): Promise<boolean> => {
     try {
-      Logger.log(`Force reinstall: Killing all active Minecraft instances first (${minecraftInstances.length})`)
+      Logger.log(
+        `Force reinstall: Killing all active Minecraft instances first (${minecraftInstances.length})`
+      )
       for (const instance of [...minecraftInstances]) {
         await instance.stop()
         const index = minecraftInstances.indexOf(instance)
@@ -247,12 +251,11 @@ export const useLaunchService = (win: BrowserWindow): void => {
       if (pid) {
         Logger.log(`Found orphaned game process ${pid} during force-reinstall. Killing it.`)
         if (process.platform === 'win32') {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          require('child_process').execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
+          execSync(`taskkill /pid ${pid} /T /F`, { stdio: 'ignore' })
         } else {
           process.kill(pid, 'SIGTERM')
         }
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
       }
 
       Logger.log('Force reinstall: Proceeding to delete instances folder')
@@ -262,14 +265,14 @@ export const useLaunchService = (win: BrowserWindow): void => {
       })
 
       const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
-      if (require('fs').existsSync(flagPath)) {
-        require('fs').unlinkSync(flagPath)
+      if (existsSync(flagPath)) {
+        unlinkSync(flagPath)
       }
       return true
     } catch (err) {
       Logger.log('Error removing instances for force reinstall:', err)
       const flagPath = join(app.getPath('userData'), '.force_reinstall_pending')
-      require('fs').writeFileSync(flagPath, '1')
+      writeFileSync(flagPath, '1')
       return false
     }
   })
@@ -292,8 +295,6 @@ export const useLaunchService = (win: BrowserWindow): void => {
         try {
           Logger.log(`Launcher quitting: Terminating orphaned Minecraft PID ${instance.process}`)
           if (process.platform === 'win32') {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { execSync } = require('child_process')
             execSync(`taskkill /pid ${instance.process} /T /F`, { stdio: 'ignore' })
           } else {
             process.kill(instance.process, 'SIGTERM')

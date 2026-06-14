@@ -2,8 +2,10 @@
 import useCartStore from '@ui/stores/cart-store'
 import { ref, onMounted } from 'vue'
 
+import type { Item } from '@ui/stores/cart-store'
+
 const props = defineProps<{
-  item: any
+  item: Item
 }>()
 
 const emit = defineEmits(['showDetails'])
@@ -17,12 +19,12 @@ const maxRetries = 5
 const fmt = (n: number): string =>
   `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(n)} PLN`
 
-const calcPrice = (price: number, promotion?: number) => {
+const calcPrice = (price: number, promotion?: number): number => {
   if (!promotion || promotion <= 0 || promotion >= price) return price
   return price - promotion
 }
 
-const calcPromotion = (price: number, promotion?: number) => {
+const calcPromotion = (price: number, promotion?: number): number => {
   if (!promotion || promotion <= 0 || promotion >= price) return 0
   return Math.round((promotion / price) * 100)
 }
@@ -34,12 +36,12 @@ const handleDetailsClick = (e: MouseEvent): void => {
   }
 }
 
-const quickAdd = (e: MouseEvent) => {
+const quickAdd = (e: MouseEvent): void => {
   e.stopPropagation()
   cartStore.addToCart(props.item)
 }
 
-const handleImgError = () => {
+const handleImgError = (): void => {
   if (retryCount.value < maxRetries) {
     retryCount.value++
     setTimeout(() => {
@@ -73,9 +75,7 @@ onMounted(() => {
     </div>
 
     <!-- Count Tag -->
-    <div v-if="item.count && item.count > 1" class="count-tag">
-      x{{ item.count }}
-    </div>
+    <div v-if="item.count && item.count > 1" class="count-tag">x{{ item.count }}</div>
 
     <div class="card-image-wrapper">
       <div class="glow-bg"></div>

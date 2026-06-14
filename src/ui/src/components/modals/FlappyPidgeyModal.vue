@@ -170,7 +170,7 @@ const update = (): void => {
       ry: number,
       rw: number,
       rh: number
-    ) => {
+    ): boolean => {
       const closestX = Math.max(rx, Math.min(cx, rx + rw))
       const closestY = Math.max(ry, Math.min(cy, ry + rh))
       const dx = cx - closestX
@@ -441,8 +441,8 @@ defineExpose({
               <button
                 class="leaderboard-toggle"
                 :class="{ active: showLeaderboard }"
-                @click="showLeaderboard = !showLeaderboard"
                 title="Top 10"
+                @click="showLeaderboard = !showLeaderboard"
               >
                 <i class="fas fa-trophy"></i>
                 {{ t('common.leaderboard') }}

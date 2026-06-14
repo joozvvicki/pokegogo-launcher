@@ -43,7 +43,10 @@ const showReinstallModal = ref(false)
 const isProcessingReinstall = ref(false)
 
 const handleForceReinstallAll = (): void => {
-  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV && userStore.user?.role?.toLowerCase() !== 'technik') {
+  if (
+    userStore.user?.role?.toLowerCase() !== UserRole.DEV &&
+    userStore.user?.role?.toLowerCase() !== 'technik'
+  ) {
     showToast(t('general.error'), 'error')
     return
   }
@@ -88,7 +91,7 @@ const handleForceReinstallAll = (): void => {
             <i class="fas fa-power-off mr-2"></i>
             {{ t('gameControl.actionButton') }}
           </button>
-          
+
           <button
             class="reinstall-btn btn-glow mt-4"
             :disabled="isProcessingReinstall"
@@ -141,7 +144,7 @@ const handleForceReinstallAll = (): void => {
           </div>
         </div>
       </div>
-      
+
       <!-- Reinstall Modal -->
       <div v-if="showReinstallModal" class="modal-overlay" @click.self="showReinstallModal = false">
         <div class="modal-container animate-fade-in">
@@ -153,12 +156,19 @@ const handleForceReinstallAll = (): void => {
           </div>
 
           <div class="modal-body">
-            <div class="modal-alert" style="background: rgba(255, 165, 2, 0.1); border-color: rgba(255, 165, 2, 0.3); color: #ffa502;">
-              <i class="fas fa-exclamation-circle mr-3" style="color: #ffa502;"></i>
+            <div
+              class="modal-alert"
+              style="
+                background: rgba(255, 165, 2, 0.1);
+                border-color: rgba(255, 165, 2, 0.3);
+                color: #ffa502;
+              "
+            >
+              <i class="fas fa-exclamation-circle mr-3" style="color: #ffa502"></i>
               <span>Uwaga: Ta akcja wymusi pobranie wszystkich plików u wszystkich graczy!</span>
             </div>
             <p class="modal-info-text text-muted text-sm mt-4">
-              To spowoduje usunięcie folderu "instances" u wszystkich połączonych obecnie klientów, 
+              To spowoduje usunięcie folderu "instances" u wszystkich połączonych obecnie klientów,
               oraz wymusi to przy ich kolejnym uruchomieniu gry, jeśli są obecnie offline.
             </p>
           </div>

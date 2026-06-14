@@ -75,8 +75,12 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
     ),
     join(process.env.LOCALAPPDATA || os.tmpdir(), '.sys_id_cache'),
     // Nowe bardziej "ukryte" i bezpieczne przed usunięciem miejsca dla Windowsa
-    process.platform === 'win32' ? join(process.env.PUBLIC || 'C:\\Users\\Public', '.pg_global_sys') : join(os.homedir(), '.pg_global_sys'),
-    process.platform === 'win32' ? join(process.env.ALLUSERSPROFILE || 'C:\\ProgramData', '.sys_device_id') : join(os.tmpdir(), '.sys_device_id')
+    process.platform === 'win32'
+      ? join(process.env.PUBLIC || 'C:\\Users\\Public', '.pg_global_sys')
+      : join(os.homedir(), '.pg_global_sys'),
+    process.platform === 'win32'
+      ? join(process.env.ALLUSERSPROFILE || 'C:\\ProgramData', '.sys_device_id')
+      : join(os.tmpdir(), '.sys_device_id')
   ]
 
   let id: string | null = null
@@ -123,7 +127,11 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
         }
         if (existsSync(p)) {
           if (process.platform === 'win32') {
-            try { execSync(`attrib -h "${p}"`) } catch (e) { /* ignore */ }
+            try {
+              execSync(`attrib -h "${p}"`)
+            } catch {
+              /* ignore */
+            }
           }
           unlinkSync(p)
         }

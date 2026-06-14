@@ -7,6 +7,7 @@ import Logger from 'electron-log'
 export const useAppUpdater = (win: BrowserWindow): AppUpdater => {
   let notified = false
   const autoUpdater = getAutoUpdater()
+  autoUpdater.allowDowngrade = true
 
   ipcMain.handle(
     'update:check',

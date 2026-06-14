@@ -369,6 +369,7 @@ export const initiatePayment = async (data: {
   items: any[]
   totalAmount: number
   hostname: string
+  cashbillEnv?: string
 }): Promise<any> => {
   const res = await api.post('/payments/pay', data)
   return res.data

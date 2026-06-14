@@ -343,11 +343,7 @@ if (!gotTheLock) {
       },
       {
         label: 'View',
-        submenu: [
-          { role: 'reload' },
-          { role: 'forceReload' },
-          { role: 'toggleDevTools' }
-        ]
+        submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }]
       }
     ]
 

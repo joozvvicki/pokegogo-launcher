@@ -1,30 +1,34 @@
 <script setup lang="ts">
 import useCartStore from '@ui/stores/cart-store'
+import useUserStore from '@ui/stores/user-store'
 import { initiatePayment } from '@ui/api/endpoints'
 import { ref } from 'vue'
+import type { CartItem } from '@ui/stores/cart-store'
 
 const cartStore = useCartStore()
+const userStore = useUserStore()
 const url = import.meta.env.RENDERER_VITE_API_URL
 const isLoading = ref(false)
 const errorMsg = ref('')
 
-const fmt = (n: number) => `${new Intl.NumberFormat('pl-PL').format(n)} PLN`
+const fmt = (n: number): string => `${new Intl.NumberFormat('pl-PL').format(n)} PLN`
 
-const calcPrice = (price: any, promotion?: any) => {
+const calcPrice = (price: number | string, promotion?: number | string): number => {
   const p = Number(price)
   const prom = Number(promotion || 0)
   if (!prom || prom <= 0 || prom >= p) return p
   return p - prom
 }
 
-const changeQuantity = (uuid: number, currentQuantity: number) => {
+const changeQuantity = (uuid: number, currentQuantity: number): void => {
   const q = Number(currentQuantity)
   cartStore.updateQuantity(uuid, q)
 }
 
-const checkout = async () => {
-  if (!cartStore.cartNick || cartStore.cartNick.trim() === '') {
-    errorMsg.value = 'Podaj poprawny nick Minecraft!'
+const checkout = async (): Promise<void> => {
+  const currentNick = userStore.user?.nickname
+  if (!currentNick || currentNick.trim() === '') {
+    errorMsg.value = 'Błąd: Nie można pobrać nicku zalogowanego konta!'
     return
   }
 
@@ -32,7 +36,7 @@ const checkout = async () => {
   isLoading.value = true
 
   try {
-    const itemsData = cartStore.cart.map((c: any) => ({
+    const itemsData = cartStore.cart.map((c: CartItem) => ({
       item: c.item.name,
       price:
         calcPrice(c.item.price, c.item.promotion) * (c.item.isCountable ? Number(c.quantity) : 1),
@@ -42,12 +46,13 @@ const checkout = async () => {
 
     const isDev = import.meta.env.DEV
     const response = await initiatePayment({
-      nick: cartStore.cartNick,
+      nick: currentNick,
       items: itemsData,
       totalAmount: Number(cartStore.cartTotal),
       hostname: isDev
         ? 'http://localhost:5173'
-        : import.meta.env.RENDERER_VITE_WEBPAGE || 'https://pokemongogo.pl'
+        : import.meta.env.RENDERER_VITE_WEBPAGE || 'https://pokemongogo.pl',
+      cashbillEnv: import.meta.env.RENDERER_VITE_CASHBILL_ENV
     })
 
     if (response && response.redirectUrl) {
@@ -56,8 +61,13 @@ const checkout = async () => {
     } else {
       errorMsg.value = response.error || 'Błąd bramki płatności.'
     }
-  } catch (err: any) {
-    const backendError = err.response?.data?.message || err.response?.data?.error || err.message
+  } catch (err: unknown) {
+    const errorObj = err as {
+      response?: { data?: { message?: string; error?: string } }
+      message?: string
+    }
+    const backendError =
+      errorObj.response?.data?.message || errorObj.response?.data?.error || errorObj.message
     errorMsg.value = `Błąd: ${backendError}`
     console.error('Checkout error:', err)
   } finally {
@@ -116,10 +126,16 @@ const checkout = async () => {
                 <div class="item-info">
                   <h3 class="item-name">{{ cItem.item.name }}</h3>
                   <div class="item-price-unit">
-                    {{ fmt(calcPrice(cItem.item.price, cItem.item.promotion)) }} / {{ cItem.item.count && cItem.item.count > 1 ? 'pakiet' : 'szt.' }}
+                    {{ fmt(calcPrice(cItem.item.price, cItem.item.promotion)) }} /
+                    {{ cItem.item.count && cItem.item.count > 1 ? 'pakiet' : 'szt.' }}
                   </div>
-                  <div v-if="cItem.item.count && cItem.item.count > 1" class="text-[0.65rem] text-gray-400 mt-1 uppercase tracking-wide font-bold">
-                    Otrzymasz: <span class="text-[#ff007c]">{{ cItem.quantity * cItem.item.count }}</span> szt. ({{ cItem.quantity }} x {{ cItem.item.count }})
+                  <div
+                    v-if="cItem.item.count && cItem.item.count > 1"
+                    class="text-[0.65rem] text-gray-400 mt-1 uppercase tracking-wide font-bold"
+                  >
+                    Otrzymasz:
+                    <span class="text-[#ff007c]">{{ cItem.quantity * cItem.item.count }}</span> szt.
+                    ({{ cItem.quantity }} x {{ cItem.item.count }})
                   </div>
                 </div>
 
@@ -135,15 +151,15 @@ const checkout = async () => {
                     class="quantity-controls"
                   >
                     <button
-                      @click="changeQuantity(cItem.item.uuid, cItem.quantity - 1)"
                       class="q-btn"
+                      @click="changeQuantity(cItem.item.uuid, cItem.quantity - 1)"
                     >
                       -
                     </button>
                     <span class="q-val">{{ cItem.quantity }}</span>
                     <button
-                      @click="changeQuantity(cItem.item.uuid, cItem.quantity + 1)"
                       class="q-btn"
+                      @click="changeQuantity(cItem.item.uuid, cItem.quantity + 1)"
                     >
                       +
                     </button>
@@ -165,14 +181,7 @@ const checkout = async () => {
         </div>
 
         <div v-if="cartStore.cart.length > 0" class="cart-footer">
-          <div class="nick-input-group">
-            <label>NICK MINECRAFT</label>
-            <div class="input-wrapper">
-              <i class="fas fa-user"></i>
-              <input v-model="cartStore.cartNick" type="text" placeholder="Twój nick z gry..." />
-            </div>
-            <p v-if="errorMsg" class="error-text">{{ errorMsg }}</p>
-          </div>
+          <p v-if="errorMsg" class="error-text" style="margin-bottom: 1rem">{{ errorMsg }}</p>
 
           <div class="price-summary">
             <div v-if="cartStore.cartTotalBase > cartStore.cartTotal" class="base-total">
@@ -185,7 +194,7 @@ const checkout = async () => {
 
           <button
             class="checkout-btn"
-            :disabled="isLoading || !cartStore.cartNick || cartStore.cart.length === 0"
+            :disabled="isLoading || !userStore.user?.nickname || cartStore.cart.length === 0"
             @click="checkout"
           >
             <i v-if="isLoading" class="fas fa-spinner fa-spin"></i>

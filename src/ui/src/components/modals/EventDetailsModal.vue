@@ -30,7 +30,13 @@ defineExpose({
 <template>
   <Teleport to="#modalsContainer">
     <Transition name="fade">
-      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true" @click.self="handleExit">
+      <div
+        v-if="modalVisible"
+        class="g-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        @click.self="handleExit"
+      >
         <div class="g-card g-modal-card event-modal">
           <div class="g-card-header">
             <div class="flex items-center gap-4">
@@ -58,10 +64,12 @@ defineExpose({
                 class="event-image"
               />
             </div>
-            
-            <div class="event-meta" v-if="eventData?.startDate">
+
+            <div v-if="eventData?.startDate" class="event-meta">
               <i class="far fa-calendar-alt"></i>
-              <span>{{ format(parseISO(eventData.startDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span>
+              <span>{{
+                format(parseISO(eventData.startDate), 'dd MMM yyyy', { locale: dateLocale })
+              }}</span>
               <span v-if="eventData?.endDate">
                 - {{ format(parseISO(eventData.endDate), 'dd MMM yyyy', { locale: dateLocale }) }}
               </span>

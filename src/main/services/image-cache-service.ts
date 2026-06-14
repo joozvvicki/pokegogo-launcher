@@ -48,8 +48,12 @@ async function downloadAndSave(url: string, filePath: string, metaPath: string):
   try {
     const head = await axios.head(url)
     const meta: ImageMeta = {
-      lastModified: head.headers['last-modified'],
+      lastModified: head.headers['last-modified']
+        ? String(head.headers['last-modified'])
+        : undefined,
       contentLength: head.headers['content-length']
+        ? String(head.headers['content-length'])
+        : undefined
     }
     writeFileSync(metaPath, JSON.stringify(meta), 'utf8')
   } catch (err) {
@@ -67,7 +71,11 @@ async function revalidateImage(
   try {
     const head = await axios.head(url)
     const remoteLastModified = head.headers['last-modified']
+      ? String(head.headers['last-modified'])
+      : undefined
     const remoteContentLength = head.headers['content-length']
+      ? String(head.headers['content-length'])
+      : undefined
 
     let needsUpdate = false
     if (existsSync(metaPath)) {

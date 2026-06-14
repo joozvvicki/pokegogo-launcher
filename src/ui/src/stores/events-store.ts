@@ -4,7 +4,7 @@ import { getEvents } from '@ui/api/endpoints'
 import { LOGGER } from '@ui/services/logger-service'
 
 export const useEventsStore = defineStore('events', () => {
-  const events = ref<any[]>([])
+  const events = ref<Record<string, unknown>[]>([])
   const isLoading = ref(false)
 
   const fetchEvents = async (): Promise<void> => {
@@ -22,7 +22,7 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
-  const setEvents = (newEvents: any[]): void => {
+  const setEvents = (newEvents: Record<string, unknown>[]): void => {
     events.value = newEvents
   }
 

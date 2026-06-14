@@ -3,16 +3,16 @@ import { ref } from 'vue'
 import CachedImage from '@ui/components/CachedImage.vue'
 import useCartStore from '@ui/stores/cart-store'
 
+import type { Item } from '@ui/stores/cart-store'
+
 const url = import.meta.env.RENDERER_VITE_API_URL
 const cartStore = useCartStore()
 
 const modalVisible = ref(false)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const itemData = ref<any>(null)
+const itemData = ref<Item | null>(null)
 const selectedQuantity = ref(1)
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const openModal = (item: any): void => {
+const openModal = (item: Item): void => {
   itemData.value = item
   selectedQuantity.value = 1
   modalVisible.value = true
@@ -22,7 +22,7 @@ const handleExit = (): void => {
   modalVisible.value = false
 }
 
-const addToCart = () => {
+const addToCart = (): void => {
   if (itemData.value) {
     cartStore.addToCart(itemData.value, selectedQuantity.value)
     handleExit()
@@ -31,22 +31,23 @@ const addToCart = () => {
 
 const isItemCountable = (): boolean => {
   if (!itemData.value) return false
-  if (itemData.value.category === 'Rangi' || itemData.value.name.toLowerCase().includes('ranga')) return false
+  if (itemData.value.category === 'Rangi' || itemData.value.name.toLowerCase().includes('ranga'))
+    return false
   return itemData.value.isCountable !== false
 }
 
-const incQuantity = () => {
+const incQuantity = (): void => {
   if (selectedQuantity.value < 64) selectedQuantity.value++
 }
 
-const decQuantity = () => {
+const decQuantity = (): void => {
   if (selectedQuantity.value > 1) selectedQuantity.value--
 }
 
 const fmt = (n: number): string =>
   `${new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 0 }).format(n)} PLN`
 
-const calcPrice = (price: number, promotion?: number) => {
+const calcPrice = (price: number, promotion?: number): number => {
   if (!promotion || promotion <= 0 || promotion >= price) return price
   return price - promotion
 }
@@ -59,7 +60,13 @@ defineExpose({
 <template>
   <Teleport to="#modalsContainer">
     <Transition name="fade">
-      <div v-if="modalVisible" class="g-modal-overlay" role="dialog" aria-modal="true" @click.self="handleExit">
+      <div
+        v-if="modalVisible"
+        class="g-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        @click.self="handleExit"
+      >
         <div class="g-card g-modal-card item-modal">
           <div class="g-card-header">
             <div class="flex items-center gap-4">
@@ -79,7 +86,8 @@ defineExpose({
                 v-if="itemData"
                 :uuid="itemData.uuid"
                 :src="
-                  itemData.src && (itemData.src.includes('https://') || itemData.src.includes('blob'))
+                  itemData.src &&
+                  (itemData.src.includes('https://') || itemData.src.includes('blob'))
                     ? itemData.src
                     : `${url}/items/image/${itemData.uuid}`
                 "
@@ -90,8 +98,8 @@ defineExpose({
                 x{{ itemData.count }}
               </div>
             </div>
-            
-            <div class="item-meta" v-if="itemData">
+
+            <div v-if="itemData" class="item-meta">
               <div class="price-container">
                 <span class="price-badge">
                   {{ fmt(calcPrice(itemData.price, itemData.promotion)) }}
@@ -106,12 +114,12 @@ defineExpose({
               <p>{{ itemData?.desc || 'Brak opisu produktu.' }}</p>
             </div>
           </div>
-          
+
           <div class="item-footer">
             <div v-if="isItemCountable()" class="quantity-selector">
-              <button @click="decQuantity" class="q-btn"><i class="fas fa-minus"></i></button>
+              <button class="q-btn" @click="decQuantity"><i class="fas fa-minus"></i></button>
               <span class="q-val">{{ selectedQuantity }}</span>
-              <button @click="incQuantity" class="q-btn"><i class="fas fa-plus"></i></button>
+              <button class="q-btn" @click="incQuantity"><i class="fas fa-plus"></i></button>
             </div>
             <button class="add-to-cart-btn" @click="addToCart">
               <i class="fas fa-cart-plus"></i> Dodaj do koszyka

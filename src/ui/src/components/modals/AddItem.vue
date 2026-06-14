@@ -294,13 +294,30 @@ defineExpose({
                 <div
                   class="absolute right-0 top-full mt-2 w-64 p-3 bg-[#111111] border border-white/10 rounded-xl text-xs text-gray-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl"
                 >
-                  <h4 class="text-white font-semibold mb-2 text-sm">{{ t('addItem.tooltips.placeholders.title') }}</h4>
+                  <h4 class="text-white font-semibold mb-2 text-sm">
+                    {{ t('addItem.tooltips.placeholders.title') }}
+                  </h4>
                   <ul class="list-disc pl-4 space-y-1 text-left">
-                    <li><strong class="text-white">{player}</strong> - {{ t('addItem.tooltips.placeholders.player') }}</li>
-                    <li><strong class="text-white">{amount}</strong> - {{ t('addItem.tooltips.placeholders.amount') }}</li>
-                    <li><strong class="text-white">{item}</strong> - {{ t('addItem.tooltips.placeholders.item') }}</li>
-                    <li><strong class="text-white">{rank}</strong> - {{ t('addItem.tooltips.placeholders.rank') }}</li>
-                    <li><strong class="text-white">{days}</strong> - {{ t('addItem.tooltips.placeholders.days') }}</li>
+                    <li>
+                      <strong class="text-white">{player}</strong> -
+                      {{ t('addItem.tooltips.placeholders.player') }}
+                    </li>
+                    <li>
+                      <strong class="text-white">{amount}</strong> -
+                      {{ t('addItem.tooltips.placeholders.amount') }}
+                    </li>
+                    <li>
+                      <strong class="text-white">{item}</strong> -
+                      {{ t('addItem.tooltips.placeholders.item') }}
+                    </li>
+                    <li>
+                      <strong class="text-white">{rank}</strong> -
+                      {{ t('addItem.tooltips.placeholders.rank') }}
+                    </li>
+                    <li>
+                      <strong class="text-white">{days}</strong> -
+                      {{ t('addItem.tooltips.placeholders.days') }}
+                    </li>
                   </ul>
                 </div>
               </div>

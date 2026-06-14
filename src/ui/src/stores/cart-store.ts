@@ -10,6 +10,8 @@ export interface Item {
   category?: string
   src?: string
   serviceName?: string
+  count?: number
+  desc?: string
 }
 
 export interface CartItem {
@@ -23,7 +25,7 @@ const useCartStore = defineStore('cart', () => {
   const isCartDrawerOpen = ref<boolean>(false)
 
   // Initialize from Main Process File
-  const initCart = async () => {
+  const initCart = async (): Promise<void> => {
     try {
       const savedCart = await window.electron.ipcRenderer.invoke('cart:load')
       if (savedCart && Array.isArray(savedCart)) {
@@ -46,7 +48,7 @@ const useCartStore = defineStore('cart', () => {
   initCart()
 
   // Persistence triggers
-  const saveCart = async () => {
+  const saveCart = async (): Promise<void> => {
     try {
       await window.electron.ipcRenderer.invoke('cart:save', JSON.parse(JSON.stringify(cart.value)))
       // Also keep localStorage as a mirror for extra safety
@@ -69,7 +71,7 @@ const useCartStore = defineStore('cart', () => {
     localStorage.setItem('pokemongogo_nick', newVal)
   })
 
-  const addToCart = (item: Item, quantity: number = 1) => {
+  const addToCart = (item: Item, quantity: number = 1): void => {
     const isRanga = item.category === 'Rangi' || item.name.toLowerCase().includes('ranga')
     const finalQuantity = isRanga ? 1 : quantity
 
@@ -93,17 +95,17 @@ const useCartStore = defineStore('cart', () => {
     saveCart() // Immediate save
   }
 
-  const removeFromCart = (uuid: number) => {
+  const removeFromCart = (uuid: number): void => {
     cart.value = cart.value.filter((ci) => ci.item.uuid !== uuid)
     saveCart() // Immediate save
   }
 
-  const clearCart = () => {
+  const clearCart = (): void => {
     cart.value = []
     saveCart() // Immediate save
   }
 
-  const updateQuantity = (uuid: number, quantity: number) => {
+  const updateQuantity = (uuid: number, quantity: number): void => {
     const existing = cart.value.find((ci) => ci.item.uuid === uuid)
     if (existing) {
       const isRanga =

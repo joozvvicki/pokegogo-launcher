@@ -350,14 +350,18 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       })
 
       if (isAborted) {
-        Logger.log('PokeGoGo Launcher > Launch aborted during client.launch(). Killing immediately.')
+        Logger.log(
+          'PokeGoGo Launcher > Launch aborted during client.launch(). Killing immediately.'
+        )
         if (childProcess) {
           if (os.platform() === 'win32') {
-            import('child_process').then(cp => {
-              cp.exec(`taskkill /pid ${childProcess!.pid} /T /F`, () => {})
-            }).catch(() => {
-              childProcess!.kill('SIGTERM')
-            })
+            import('child_process')
+              .then((cp) => {
+                cp.exec(`taskkill /pid ${childProcess!.pid} /T /F`, () => {})
+              })
+              .catch(() => {
+                childProcess!.kill('SIGTERM')
+              })
           } else {
             childProcess.kill('SIGTERM')
           }
@@ -476,7 +480,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       Logger.log('PokeGoGo Launcher > Active game detected on startup for:', settings.gameMode)
       mcOpened = true
       startDetachedWatcher(process.pid, existingPid)
-      
+
       if (!window.isDestroyed()) {
         window.webContents.send(
           'launch:change-state',

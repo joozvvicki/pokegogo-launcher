@@ -46,7 +46,10 @@ const verifyFiles = async (): Promise<void> => {
   )
 
   if (removeFilesRes === false) {
-    currentLog.value = t('modals.verifyFiles.deleteError', 'Błąd: Nie można usunąć plików. Wyłącz grę.')
+    currentLog.value = t(
+      'modals.verifyFiles.deleteError',
+      'Błąd: Nie można usunąć plików. Wyłącz grę.'
+    )
     isVerifying.value = false
     isEnd.value = true
     return

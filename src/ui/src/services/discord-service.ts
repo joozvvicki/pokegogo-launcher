@@ -7,7 +7,7 @@ export class DiscordService {
     this.logWebhookUrl = import.meta.env.VITE_DISCORD_ERROR_URL
   }
 
-  async sendError(title: string, details: any, user?: string): Promise<void> {
+  async sendError(title: string, details: unknown, user?: string): Promise<void> {
     if (!this.webhookUrl) return
 
     const fields = [
@@ -83,7 +83,7 @@ export class DiscordService {
     }
   }
 
-  private formatDetails(details: any): string {
+  private formatDetails(details: unknown): string {
     if (typeof details === 'string') return details
     if (details instanceof Error) {
       return `**Message:** ${details.message}\n**Stack:**\n\`\`\`${

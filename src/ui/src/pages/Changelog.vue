@@ -10,10 +10,26 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 const userStore = useUserStore()
 
+interface ChangelogChange {
+  type: string
+  desc: string
+  [key: string]: unknown
+}
+
+interface ChangelogEntry {
+  uuid: string | number
+  name: string
+  type: string
+  version?: string
+  startDate: string
+  changes?: ChangelogChange[]
+  [key: string]: unknown
+}
+
 const selectedType = ref<string>('launcher')
-const allChangelog = ref<any[]>([])
+const allChangelog = ref<ChangelogEntry[]>([])
 const isLoading = ref<boolean>(true)
-const filteredChangelog = ref<any[]>([])
+const filteredChangelog = ref<ChangelogEntry[]>([])
 const searchQuery = ref('')
 const addChangelogModalRef = ref()
 
@@ -30,17 +46,17 @@ async function fetchChangelog(): Promise<void> {
   }
 }
 
-function updateFilteredChangelog() {
+function updateFilteredChangelog(): void {
   let items = [...allChangelog.value]
 
   // Filter by Type
-  items = items.filter((item: any) => item.type === selectedType.value)
+  items = items.filter((item: ChangelogEntry) => item.type === selectedType.value)
 
   // Filter by Search
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     items = items.filter(
-      (item: any) =>
+      (item: ChangelogEntry) =>
         item.name.toLowerCase().includes(query) || item.version?.toLowerCase().includes(query)
     )
   }
@@ -51,18 +67,18 @@ function updateFilteredChangelog() {
   filteredChangelog.value = items
 }
 
-const handleRemoveChangelog = async (changelog: any): Promise<void> => {
+const handleRemoveChangelog = async (changelog: ChangelogEntry): Promise<void> => {
   if (!confirm(t('changelog.confirmDelete', 'Czy na pewno chcesz usunąć ten wpis?'))) return
 
-  const res = await removeChangelog(changelog.uuid)
+  const res = await removeChangelog(Number(changelog.uuid))
   if (res) {
     showToast(`${t('changelog.deleteSuccess')} ${changelog.name}.`)
     await fetchChangelog()
   }
 }
 
-const getChangesByType = (changelog: any, type: string) =>
-  changelog.changes?.filter((change: any) => change.type === type) || []
+const getChangesByType = (changelog: ChangelogEntry, type: string): ChangelogChange[] =>
+  changelog.changes?.filter((change: ChangelogChange) => change.type === type) || []
 
 watch([selectedType, searchQuery], () => {
   updateFilteredChangelog()

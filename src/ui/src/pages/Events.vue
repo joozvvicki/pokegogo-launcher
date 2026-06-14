@@ -13,11 +13,20 @@ const { t } = useI18n()
 const url = import.meta.env.RENDERER_VITE_API_URL
 const userStore = useUserStore()
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const allEvents = ref<any[]>([])
+interface AdminEvent {
+  uuid: string | number
+  name: string
+  desc?: string
+  type?: string
+  startDate?: string | Date
+  endDate?: string | Date
+  src: string
+  [key: string]: unknown
+}
+
+const allEvents = ref<AdminEvent[]>([])
 const isLoadingEvents = ref<boolean>(true)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const filteredEvents = ref<any[]>([])
+const filteredEvents = ref<AdminEvent[]>([])
 const searchQuery = ref('')
 const addEventModalRef = ref()
 
@@ -34,9 +43,8 @@ async function fetchEvents(): Promise<void> {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handleRemoveEvent = async (event: any): Promise<void> => {
-  const res = await removeEvent(event.uuid)
+const handleRemoveEvent = async (event: AdminEvent): Promise<void> => {
+  const res = await removeEvent(Number(event.uuid))
 
   if (res) {
     showToast(`${t('events.deleteSuccess')} ${event.name}.`)
@@ -51,7 +59,7 @@ watch(searchQuery, () => {
   }
 
   filteredEvents.value = allEvents.value.filter(
-    (event: any) =>
+    (event: AdminEvent) =>
       event.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       (event.desc && event.desc.toLowerCase().includes(searchQuery.value.toLowerCase()))
   )

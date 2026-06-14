@@ -2,7 +2,7 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps<{
-  uuid?: string
+  uuid?: string | number
   src: string
   alt?: string
   className?: string
@@ -19,14 +19,14 @@ const updateDisplaySrc = async (): Promise<void> => {
 
   if (isCacheable && window.electron?.images) {
     // Check cache first
-    const cachedPath = await window.electron.images.getEvent(props.uuid!, props.src)
+    const cachedPath = await window.electron.images.getEvent(props.uuid!.toString(), props.src)
     displaySrc.value = cachedPath
   } else {
     displaySrc.value = props.src
   }
 }
 
-const onImageUpdate = (_event: any, newSrc: string): void => {
+const onImageUpdate = (_event: unknown, newSrc: string): void => {
   displaySrc.value = newSrc
 }
 

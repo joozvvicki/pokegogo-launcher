@@ -1,19 +1,21 @@
-import { contextBridge, ipcRenderer, shell } from 'electron'
+import { contextBridge, ipcRenderer, shell, type IpcRendererEvent } from 'electron'
 
 // Wyselekcjonowane i bezpieczne API dla renderera
 const electronAPI = {
   ipcRenderer: {
-    send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
-    on: (channel: string, func: (...args: any[]) => void) => {
-      const subscription = (_event: any, ...args: any[]) => func(_event, ...args)
+    send: (channel: string, ...args: unknown[]) => ipcRenderer.send(channel, ...args),
+    on: (channel: string, func: (event: IpcRendererEvent, ...args: unknown[]) => void) => {
+      const subscription = (_event: IpcRendererEvent, ...args: unknown[]): void =>
+        func(_event, ...args)
       ipcRenderer.on(channel, subscription)
       return () => ipcRenderer.removeListener(channel, subscription)
     },
-    once: (channel: string, func: (...args: any[]) => void) => {
-      const subscription = (_event: any, ...args: any[]) => func(_event, ...args)
+    once: (channel: string, func: (event: IpcRendererEvent, ...args: unknown[]) => void) => {
+      const subscription = (_event: IpcRendererEvent, ...args: unknown[]): void =>
+        func(_event, ...args)
       ipcRenderer.once(channel, subscription)
     },
-    invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
+    invoke: (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args),
     removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel)
   },
   shell: {
