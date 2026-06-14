@@ -34,7 +34,13 @@ const filteredItems = computed(() => {
   let result = data.value
 
   if (selectedCategory.value !== 'Wszystko') {
-    result = result.filter((item) => item.category === selectedCategory.value)
+    result = result.filter((item) => {
+      const cat = selectedCategory.value
+      if (cat === 'Itemy') return item.type === 'item' || item.category === 'Itemy' || item.category === 'item'
+      if (cat === 'Klucze') return item.type === 'key_item' || item.type === 'key' || item.category === 'Klucze' || item.category === 'key_item'
+      if (cat === 'Rangi') return item.type === 'rank' || item.category === 'Rangi' || item.category === 'rank'
+      return item.category === cat || item.type === cat.toLowerCase()
+    })
   }
 
   if (searchQuery.value.trim()) {

@@ -342,6 +342,16 @@
       "item": "Item",
       "custom": "Inny"
     },
+    "tooltips": {
+      "placeholders": {
+        "title": "Dostępne zmienne:",
+        "player": "Nick gracza",
+        "amount": "Ilość przedmiotu",
+        "item": "ID / Nazwa przedmiotu",
+        "rank": "Nazwa rangi",
+        "days": "Czas trwania rangi (dni)"
+      }
+    },
     "save": "Zapisz",
     "cancel": "Anuluj"
   },

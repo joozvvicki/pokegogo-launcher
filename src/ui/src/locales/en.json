@@ -343,6 +343,16 @@
       "item": "Item",
       "custom": "Custom"
     },
+    "tooltips": {
+      "placeholders": {
+        "title": "Available placeholders:",
+        "player": "Player's nickname",
+        "amount": "Item amount",
+        "item": "Item ID / Name",
+        "rank": "Rank name",
+        "days": "Rank duration (days)"
+      }
+    },
     "save": "Save",
     "cancel": "Cancel"
   },

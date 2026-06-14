@@ -122,6 +122,8 @@ const openModal = async (item: any, type: 'add' | 'edit' = 'add'): Promise<void>
     state.index = item.index || 0
     state.price = item.price
     state.promotion = item.promotion
+    state.count = item.count || 1
+    state.days = item.days || 30
     state.type = getTypeByServiceName(item.serviceName)
 
     if (state.type === 'rank')
@@ -271,9 +273,28 @@ defineExpose({
               </div>
               <h3>{{ actionType === 'add' ? t('addItem.title.add') : t('addItem.title.edit') }}</h3>
             </div>
-            <button class="g-close-btn" @click="handleCancel">
-              <i class="fas fa-times"></i>
-            </button>
+            <div class="flex items-center gap-2">
+              <div
+                class="text-gray-400 hover:text-white transition-colors cursor-help group relative flex items-center justify-center w-8 h-8 rounded-lg"
+              >
+                <i class="fas fa-info-circle text-lg"></i>
+                <div
+                  class="absolute right-0 top-full mt-2 w-64 p-3 bg-[#111111] border border-white/10 rounded-xl text-xs text-gray-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl"
+                >
+                  <h4 class="text-white font-semibold mb-2 text-sm">{{ t('addItem.tooltips.placeholders.title') }}</h4>
+                  <ul class="list-disc pl-4 space-y-1 text-left">
+                    <li><strong class="text-white">{player}</strong> - {{ t('addItem.tooltips.placeholders.player') }}</li>
+                    <li><strong class="text-white">{amount}</strong> - {{ t('addItem.tooltips.placeholders.amount') }}</li>
+                    <li><strong class="text-white">{item}</strong> - {{ t('addItem.tooltips.placeholders.item') }}</li>
+                    <li><strong class="text-white">{rank}</strong> - {{ t('addItem.tooltips.placeholders.rank') }}</li>
+                    <li><strong class="text-white">{days}</strong> - {{ t('addItem.tooltips.placeholders.days') }}</li>
+                  </ul>
+                </div>
+              </div>
+              <button class="g-close-btn" @click="handleCancel">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
           </div>
 
           <div class="g-modal-content custom-scrollbar">

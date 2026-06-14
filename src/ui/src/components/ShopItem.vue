@@ -72,6 +72,11 @@ onMounted(() => {
       -{{ calcPromotion(item.price, item.promotion) }}%
     </div>
 
+    <!-- Count Tag -->
+    <div v-if="item.count && item.count > 1" class="count-tag">
+      x{{ item.count }}
+    </div>
+
     <div class="card-image-wrapper">
       <div class="glow-bg"></div>
       <img
@@ -142,6 +147,23 @@ onMounted(() => {
   border-bottom-left-radius: 16px;
   z-index: 10;
   box-shadow: -5px 5px 15px rgba(255, 0, 124, 0.2);
+}
+
+/* Count Tag */
+.count-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 900;
+  border-bottom-right-radius: 16px;
+  z-index: 10;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Image */

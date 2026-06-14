@@ -340,6 +340,14 @@ if (!gotTheLock) {
           { role: 'delete' },
           { role: 'selectAll' }
         ]
+      },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' }
+        ]
       }
     ]
 

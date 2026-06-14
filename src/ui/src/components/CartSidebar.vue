@@ -116,7 +116,10 @@ const checkout = async () => {
                 <div class="item-info">
                   <h3 class="item-name">{{ cItem.item.name }}</h3>
                   <div class="item-price-unit">
-                    {{ fmt(calcPrice(cItem.item.price, cItem.item.promotion)) }} / szt.
+                    {{ fmt(calcPrice(cItem.item.price, cItem.item.promotion)) }} / {{ cItem.item.count && cItem.item.count > 1 ? 'pakiet' : 'szt.' }}
+                  </div>
+                  <div v-if="cItem.item.count && cItem.item.count > 1" class="text-[0.65rem] text-gray-400 mt-1 uppercase tracking-wide font-bold">
+                    Otrzymasz: <span class="text-[#ff007c]">{{ cItem.quantity * cItem.item.count }}</span> szt. ({{ cItem.quantity }} x {{ cItem.item.count }})
                   </div>
                 </div>
 
