@@ -6,6 +6,8 @@ const props = defineProps<{
   item: any
 }>()
 
+const emit = defineEmits(['showDetails'])
+
 const cartStore = useCartStore()
 const url = import.meta.env.RENDERER_VITE_API_URL
 const imgSrc = ref('')
@@ -28,9 +30,7 @@ const calcPromotion = (price: number, promotion?: number) => {
 const handleDetailsClick = (e: MouseEvent): void => {
   if (props.item.uuid) {
     e.preventDefault()
-    window.electron.shell.openExternal(
-      `${import.meta.env.RENDERER_VITE_WEBPAGE}/item?uuid=` + props.item.uuid
-    )
+    emit('showDetails', props.item)
   }
 }
 

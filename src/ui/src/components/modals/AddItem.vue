@@ -12,6 +12,7 @@ const { t } = useI18n()
 
 const url = import.meta.env.RENDERER_VITE_API_URL
 const modalVisible = ref(false)
+const isSaving = ref(false)
 const photoFile = ref<File | null>(null)
 const uuid = ref<string>('')
 const preview = ref<string>('')
@@ -167,62 +168,74 @@ const getCommandByType = (): string => {
 }
 
 const addItem = async (): Promise<void> => {
+  if (isSaving.value) return
   const isValid = await v$.value.$validate()
   if (!isValid || !preview.value || !photoFile.value) return
 
-  let uploadResult = true
+  isSaving.value = true
+  try {
+    let uploadResult = true
 
-  if (preview.value)
-    uploadResult = await window.electron.ipcRenderer?.invoke(
-      FTPChannel.UPLOAD_FILE,
-      'items',
-      await photoFile.value.arrayBuffer(),
-      photoFile.value.name
-    )
+    if (preview.value)
+      uploadResult = await window.electron.ipcRenderer?.invoke(
+        FTPChannel.UPLOAD_FILE,
+        'items',
+        await photoFile.value.arrayBuffer(),
+        photoFile.value.name
+      )
 
-  if (uploadResult) {
-    const res = await createItem({
-      ...state,
-      serviceName: getServiceNameByType(),
-      command: getCommandByType(),
-      src: photoFile.value.name
-    })
+    if (uploadResult) {
+      const res = await createItem({
+        ...state,
+        serviceName: getServiceNameByType(),
+        command: getCommandByType(),
+        src: photoFile.value.name
+      })
 
-    if (res) {
-      showToast(`${t('addItem.success.add')} ${state.name}.`)
-      handleCancel()
-      await emits('refreshData')
+      if (res) {
+        showToast(`${t('addItem.success.add')} ${state.name}.`)
+        handleCancel()
+        await emits('refreshData')
+      }
     }
+  } finally {
+    isSaving.value = false
   }
 }
 
 const editItem = async (): Promise<void> => {
+  if (isSaving.value) return
   const isValid = await v$.value.$validate()
   if (!isValid || !photoFile.value) return
 
-  let uploadResult = true
-  if (preview.value)
-    uploadResult = await window.electron.ipcRenderer?.invoke(
-      FTPChannel.UPLOAD_FILE,
-      'items',
-      await photoFile.value.arrayBuffer(),
-      photoFile.value.name
-    )
+  isSaving.value = true
+  try {
+    let uploadResult = true
+    if (preview.value)
+      uploadResult = await window.electron.ipcRenderer?.invoke(
+        FTPChannel.UPLOAD_FILE,
+        'items',
+        await photoFile.value.arrayBuffer(),
+        photoFile.value.name
+      )
 
-  if (uploadResult) {
-    const res = await updateItem({
-      ...state,
-      uuid: uuid.value,
-      serviceName: getServiceNameByType(),
-      command: getCommandByType(),
-      src: preview.value ? photoFile.value.name : state.photo
-    })
+    if (uploadResult) {
+      const res = await updateItem({
+        ...state,
+        uuid: uuid.value,
+        serviceName: getServiceNameByType(),
+        command: getCommandByType(),
+        src: preview.value ? photoFile.value.name : state.photo
+      })
 
-    if (res) {
-      showToast(`${t('addItem.success.edit')} ${state.name}.`)
-      await emits('refreshData')
-      handleCancel()
+      if (res) {
+        showToast(`${t('addItem.success.edit')} ${state.name}.`)
+        await emits('refreshData')
+        handleCancel()
+      }
     }
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -528,10 +541,12 @@ defineExpose({
             <button class="g-btn" @click="handleCancel">Anuluj</button>
             <button
               class="g-btn primary flex-1"
+              :disabled="isSaving"
               @click="actionType === 'add' ? addItem() : editItem()"
             >
-              <i class="fa fa-save" />
-              Zapisz
+              <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
+              <i v-else class="fa fa-save" />
+              {{ isSaving ? 'Zapisywanie...' : 'Zapisz' }}
             </button>
           </div>
         </div>

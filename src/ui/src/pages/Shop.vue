@@ -2,6 +2,7 @@
 import { getItems } from '@ui/api/endpoints'
 import ShopItem from '@ui/components/ShopItem.vue'
 import CartSidebar from '@ui/components/CartSidebar.vue'
+import ItemDetailsModal from '@ui/components/modals/ItemDetailsModal.vue'
 import useCartStore from '@ui/stores/cart-store'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -11,9 +12,14 @@ const cartStore = useCartStore()
 const data = ref<any[]>([])
 const isLoading = ref(true)
 const searchQuery = ref('')
+const itemModalRef = ref<any>(null)
 
 const categories = ['Wszystko', 'Itemy', 'Klucze', 'Rangi']
 const selectedCategory = ref('Wszystko')
+
+const openItemDetails = (item: any) => {
+  itemModalRef.value?.openModal(item)
+}
 
 const fetchItems = async (): Promise<void> => {
   isLoading.value = true
@@ -117,7 +123,7 @@ onMounted(async () => {
       >
         <h2 class="section-title"><i class="fas fa-fire"></i> Gorące Okazje</h2>
         <div class="occasions-grid">
-          <ShopItem v-for="item in featuredOccasions" :key="'featured-' + item.uuid" :item="item" />
+          <ShopItem v-for="item in featuredOccasions" :key="'featured-' + item.uuid" :item="item" @showDetails="openItemDetails" />
         </div>
         <div class="section-divider"></div>
       </div>
@@ -145,11 +151,13 @@ onMounted(async () => {
             :key="item.uuid"
             :item="item"
             data-aos="fade-up"
+            @showDetails="openItemDetails"
           />
         </div>
       </div>
     </div>
 
+    <ItemDetailsModal ref="itemModalRef" />
     <CartSidebar />
   </div>
 </template>
