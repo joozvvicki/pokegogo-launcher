@@ -282,21 +282,26 @@ const resolutions = [
               <label>{{ t('settings.ram') }}</label>
               <span class="ram-value">{{ generalStore.settings.ram }} GB</span>
             </div>
-            <div class="ram-slider-wrapper">
-              <input
-                id="ramSlider"
-                ref="sliderRef"
-                v-model="generalStore.settings.ram"
-                type="range"
-                :min="MIN_RAM"
-                :max="generalStore.settings.maxRAM"
-                :step="1"
-              />
-              <div class="slider-track" :style="{ width: percent + 'px' }"></div>
-            </div>
-            <div class="ram-markers">
-              <span>{{ MIN_RAM }}GB</span>
-              <span>{{ generalStore.settings.maxRAM }}GB</span>
+            <template v-if="generalStore.settings.maxRAM > 4">
+              <div class="ram-slider-wrapper">
+                <input
+                  id="ramSlider"
+                  ref="sliderRef"
+                  v-model="generalStore.settings.ram"
+                  type="range"
+                  :min="MIN_RAM"
+                  :max="generalStore.settings.maxRAM"
+                  :step="1"
+                />
+                <div class="slider-track" :style="{ width: percent + 'px' }"></div>
+              </div>
+              <div class="ram-markers">
+                <span>{{ MIN_RAM }}GB</span>
+                <span>{{ generalStore.settings.maxRAM }}GB</span>
+              </div>
+            </template>
+            <div v-else class="text-xs text-[var(--text-secondary)] bg-white/5 p-2 rounded-lg border border-white/5">
+              Twój system posiada 4GB lub mniej pamięci RAM. Więcej RAMu nie da się przydzielić.
             </div>
           </div>
         </div>

@@ -20,12 +20,14 @@ export const fetchLogin = async (
 export const fetchRegister = async (
   nickname: string,
   email: string,
-  password: string
+  password: string,
+  machineId?: string
 ): Promise<{ access_token: string; refresh_token: string }> => {
   const res = await api.post('/auth/register', {
     nickname,
     email,
-    password
+    password,
+    machineId
   })
 
   return res.data

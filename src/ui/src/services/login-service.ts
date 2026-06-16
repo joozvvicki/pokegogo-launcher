@@ -8,6 +8,7 @@ import { computed, reactive, watch, type ComputedRef } from 'vue'
 import { email, helpers, maxLength, minLength, required } from '@vuelidate/validators'
 import useVuelidate from '@vuelidate/core'
 import useUserStore from '@ui/stores/user-store'
+import useGeneralStore from '@ui/stores/general-store'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -187,10 +188,12 @@ export const useLoginService = (): {
       const isValid = await login$.value.$validate()
       if (!isValid) return
 
+      const generalStore = useGeneralStore()
       const { access_token, refresh_token } = await fetchRegister(
         formState.nick,
         formState.email,
-        formState.password
+        formState.password,
+        generalStore.settings.machineId
       )
 
       if (access_token && refresh_token) {

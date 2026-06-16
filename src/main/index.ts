@@ -103,6 +103,9 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
+  // Disable hardware acceleration to save GPU resources for the game, especially on integrated GPUs
+  app.disableHardwareAcceleration()
+
   let mainWindow: BrowserWindow | null = null
 
   app.whenReady().then(async () => {

@@ -28,14 +28,37 @@ const props = defineProps<{
   events: any[]
 }>()
 
+const safeParseDate = (dateStr: string | undefined): number => {
+  if (!dateStr) return 0
+  try {
+    const time = parseISO(dateStr).getTime()
+    return isNaN(time) ? 0 : time
+  } catch {
+    return 0
+  }
+}
+
+const safeFormatDate = (dateStr: string | undefined, formatStr: string): string => {
+  if (!dateStr) return ''
+  try {
+    const date = parseISO(dateStr)
+    if (isNaN(date.getTime())) return ''
+    return format(date, formatStr, { locale: dateLocale.value })
+  } catch {
+    return ''
+  }
+}
+
 const normalEvents = computed(() => {
-  return (props.events || [])
-    .filter((event) => event.type === 'normal')
-    ?.sort((a, b) => (parseISO(a.startDate).getTime() < parseISO(b.startDate).getTime() ? 1 : -1))
+  if (!Array.isArray(props.events)) return []
+  return props.events
+    .filter((event) => event?.type === 'normal')
+    ?.sort((a, b) => (safeParseDate(a?.startDate) < safeParseDate(b?.startDate) ? 1 : -1))
 })
 
 const megaEvent = computed(() => {
-  return (props.events || []).find((event) => event?.type === 'mega')
+  if (!Array.isArray(props.events)) return undefined
+  return props.events.find((event) => event?.type === 'mega')
 })
 
 const setServerStatus = async (): Promise<void> => {
@@ -69,7 +92,7 @@ onMounted(async () => {
             v-if="megaEvent"
             :uuid="megaEvent.uuid"
             :src="
-              megaEvent.src.includes('https://') || megaEvent.src.includes('blob')
+              megaEvent?.src?.includes('https://') || megaEvent?.src?.includes('blob')
                 ? megaEvent.src
                 : `${url}/events/image/${megaEvent.uuid}`
             "
@@ -85,12 +108,10 @@ onMounted(async () => {
           </p>
           <div v-if="megaEvent?.startDate" class="hero-meta">
             <i class="far fa-calendar-alt"></i>
-            <span>{{
-              format(parseISO(megaEvent.startDate), 'dd MMM yyyy', { locale: dateLocale })
-            }}</span>
+            <span>{{ safeFormatDate(megaEvent.startDate, 'dd MMM yyyy') }}</span>
             <span v-if="megaEvent?.endDate">
               -
-              {{ format(parseISO(megaEvent.endDate), 'dd MMM yyyy', { locale: dateLocale }) }}</span
+              {{ safeFormatDate(megaEvent.endDate, 'dd MMM yyyy') }}</span
             >
           </div>
         </div>
@@ -110,7 +131,7 @@ onMounted(async () => {
               <CachedImage
                 :uuid="event.uuid"
                 :src="
-                  event.src.includes('https://') || event.src.includes('blob')
+                  event?.src?.includes('https://') || event?.src?.includes('blob')
                     ? event.src
                     : `${url}/events/image/${event.uuid}`
                 "
@@ -118,15 +139,11 @@ onMounted(async () => {
             </div>
             <div class="news-content">
               <span class="news-date">
-                {{
-                  event?.startDate
-                    ? format(parseISO(event.startDate), 'dd MMM', { locale: dateLocale })
-                    : ''
-                }}
+                {{ safeFormatDate(event?.startDate, 'dd MMM') }}
               </span>
               <h3>{{ event.name }}</h3>
               <p>
-                {{ event.desc?.length > 80 ? event.desc.substring(0, 80) + '...' : event.desc }}
+                {{ event?.desc?.length > 80 ? event.desc.substring(0, 80) + '...' : (event?.desc || '') }}
               </p>
             </div>
           </article>

@@ -16,7 +16,7 @@ const useGeneralStore = defineStore('general', () => {
     macAddress: '',
     ipAddress: '',
     resolution: '1366x768',
-    ram: MIN_RAM,
+    ram: 5,
     maxRAM: 16,
     javaVersion: 21,
     displayMode: 'Okno',
@@ -78,6 +78,9 @@ const useGeneralStore = defineStore('general', () => {
 
   const changeMaxRAM = (maxRam: number): void => {
     settings.maxRAM = maxRam
+    if (settings.ram > maxRam) {
+      settings.ram = maxRam
+    }
   }
 
   const setUpdateAvailable = (update: boolean): void => {
@@ -113,7 +116,7 @@ const useGeneralStore = defineStore('general', () => {
   const resetSettings = (): void => {
     settings.showNotifications = true
     settings.hideToTray = true
-    settings.ram = MIN_RAM
+    settings.ram = 5
     settings.javaVersion = 21
     settings.version = 'PokemonGoGo.pl'
     settings.resolution = '1366x768'
