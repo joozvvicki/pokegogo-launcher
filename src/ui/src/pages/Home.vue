@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import LaunchButton from '@ui/components/buttons/LaunchButton.vue'
 import CachedImage from '@ui/components/CachedImage.vue'
 import FlappyPidgeyModal from '@ui/components/modals/FlappyPidgeyModal.vue'
+import VerifyFilesModal from '@ui/components/modals/VerifyFilesModal.vue'
 import EventDetailsModal from '@ui/components/modals/EventDetailsModal.vue'
 import useGeneralStore from '@ui/stores/general-store'
 import { getServerStatus } from '@ui/api/endpoints'
@@ -22,6 +23,7 @@ const time = ref<number>(0)
 const serverStatus = ref<any>(null)
 const serverStatusInterval = ref<any>(null)
 const flappyPidgeyRef = ref()
+const verifyFilesModalRef = ref()
 const eventDetailsRef = ref()
 
 const props = defineProps<{
@@ -162,16 +164,22 @@ onMounted(async () => {
           <div class="dock-divider"></div>
           <div class="dock-stat-item" :title="t('home.ping')">
             <i class="fas fa-signal"></i>
-            <span>{{ time.toFixed(0) }}ms</span>
+            <span>{{ time > 200 ? 200 : time.toFixed(0) }}ms</span>
           </div>
           <div class="dock-divider"></div>
         </div>
 
-        <div class="dock-main-action">
-          <LaunchButton class="dock-launch-btn" />
-        </div>
+        <div class="dock-center-actions">
+          <button
+            class="dock-game-btn"
+            title="Weryfikowanie plików"
+            @click="verifyFilesModalRef?.openModal()"
+          >
+            <i class="fas fa-hammer"></i>
+          </button>
 
-        <div class="dock-game-trigger">
+          <LaunchButton class="dock-launch-btn" />
+
           <button
             class="dock-game-btn"
             :title="t('common.playGame')"
@@ -182,10 +190,12 @@ onMounted(async () => {
         </div>
 
         <div class="dock-stats">
+          <div class="dock-divider"></div>
           <div class="dock-stat-item" :title="t('home.ram')">
             <i class="fas fa-microchip"></i>
             <span>{{ generalStore.settings.ram }}GB</span>
           </div>
+          <div class="dock-divider"></div>
           <div class="dock-stat-item" :title="t('home.uptime')">
             <i class="fas fa-server"></i>
             <span>Online</span>
@@ -195,6 +205,7 @@ onMounted(async () => {
     </Teleport>
 
     <FlappyPidgeyModal ref="flappyPidgeyRef" />
+    <VerifyFilesModal ref="verifyFilesModalRef" />
     <EventDetailsModal ref="eventDetailsRef" />
   </div>
 </template>
@@ -367,8 +378,8 @@ onMounted(async () => {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
   background: rgba(15, 15, 20, 0.7);
   backdrop-filter: blur(24px);
   border-radius: 28px;
@@ -421,14 +432,14 @@ onMounted(async () => {
 }
 
 .dock-launch-btn {
-  width: 220px;
+  width: 200px;
   height: 48px;
 }
 
-.dock-game-trigger {
+.dock-center-actions {
   display: flex;
   align-items: center;
-  margin-left: -0.5rem;
+  gap: 1rem;
 }
 
 .dock-game-btn {

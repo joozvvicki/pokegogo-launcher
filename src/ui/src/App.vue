@@ -7,6 +7,10 @@ import { connectPlayer, disconnectPlayer } from '@ui/api/endpoints'
 import { useSocketService } from '@ui/services/socket-service'
 import { LOGGER } from '@ui/services/logger-service'
 import { showToast } from '@ui/utils'
+import LaunchErrorModal from '@ui/components/modals/LaunchErrorModal.vue'
+import { ref } from 'vue'
+
+const launchErrorModalRef = ref()
 
 const generalStore = useGeneralStore()
 const userStore = useUserStore()
@@ -90,6 +94,14 @@ window.electron?.ipcRenderer?.on('launch:show-log', (_event, data: string, ended
   }
 })
 
+window.electron?.ipcRenderer?.on('launch:error', (_event, errorData: any) => {
+  LOGGER.with('Launch State').err('Received launch:error:', errorData)
+  generalStore.setCurrentState('start')
+  generalStore.setIsOpeningGame(false)
+  generalStore.setCurrentLog('')
+  launchErrorModalRef.value?.openModal(errorData.type, errorData.details)
+})
+
 onMounted(() => {
   generalStore.loadSettings()
 
@@ -103,6 +115,7 @@ onMounted(() => {
 
 <template>
   <RouterView />
+  <LaunchErrorModal ref="launchErrorModalRef" />
 </template>
 
 <style lang="css">

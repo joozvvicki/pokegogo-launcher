@@ -189,6 +189,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
   let childProcess: ChildProcessWithoutNullStreams | null = null
   let monitoringInterval: NodeJS.Timeout | null = null
   let isAborted = false
+  let detectedRamError = false
 
   const start = async (): Promise<void> => {
     // Prevent multiple concurrent launch attempts
@@ -254,6 +255,9 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       if (!window.isDestroyed()) window.webContents.send('launch:show-log', data)
 
       if (typeof data === 'string') {
+        if (data.includes('Could not reserve enough space') || data.includes('OutOfMemoryError')) {
+          detectedRamError = true
+        }
         if (data.includes('[Error]') || data.includes('Exception') || data.includes('FATAL')) {
           discordLogger.sendError('Game Client Error', data, nickname)
         }
@@ -286,8 +290,17 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       if (!window.isDestroyed())
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
 
-      if (code !== 0 && code !== 130 && code !== 143 && mcOpened) {
-        discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
+      if (code !== 0 && code !== 130 && code !== 143 && code !== null) {
+        if (mcOpened) {
+          discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
+        }
+        
+        if (!window.isDestroyed() && !isAborted) {
+          window.webContents.send('launch:error', {
+            type: detectedRamError ? 'RAM_ERROR' : 'GAME_CRASH',
+            details: { code }
+          })
+        }
       }
 
       mcOpened = false
@@ -302,7 +315,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
       '-DCDAGaming.updateCheck=false',
       '-Dunilib.check_updates=false',
       '-Dversioncheck.enable=false',
-      '-XX:+UseZGC'
+      '-XX:+UseG1GC'
     ]
 
     if (settings.gameMode === 'create' && customVersion) {
@@ -344,7 +357,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         },
         memory: {
           max: `${settings.ram}G`,
-          min: `4G`
+          min: `1G`
         },
         customArgs
       })
@@ -430,10 +443,15 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
             )
         }
       }, 5000)
-    } catch (e) {
+    } catch (e: any) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
-      if (!window.isDestroyed())
+      if (!window.isDestroyed() && !isAborted) {
+        window.webContents.send('launch:error', {
+          type: 'JAVA_ERROR',
+          details: { message: e?.message || String(e) }
+        })
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
+      }
       mcOpened = false
     }
   }

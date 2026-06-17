@@ -497,6 +497,25 @@ export async function copyMCFiles(
     Logger.log(`Plan: ${plan.downloads.length} plików do pobrania.`)
 
     if (plan.downloads.length > 0 || plan.deletes.length > 0) {
+      try {
+        const stats = await fs.promises.statfs(localTargetDir)
+        const freeBytes = stats.bavail * stats.bsize
+        const requiredBytes = plan.totalSize + (1024 * 1024 * 1024) // 1GB buffer for extraction
+        if (freeBytes < requiredBytes) {
+          mainWindow.webContents.send('launch:error', {
+            type: 'DISK_SPACE',
+            details: {
+              requiredGB: (requiredBytes / (1024 ** 3)).toFixed(2),
+              freeGB: (freeBytes / (1024 ** 3)).toFixed(2)
+            }
+          })
+          logToUI('', true)
+          return 'stop'
+        }
+      } catch (err) {
+        Logger.warn('Could not check disk space:', err)
+      }
+
       await executeSyncPlan(state, ftpService.connect, plan, logToUI, signal, globalProgress)
     } else {
       logToUI('Pliki są aktualne.')

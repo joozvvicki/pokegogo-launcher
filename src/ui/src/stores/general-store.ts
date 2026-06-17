@@ -1,5 +1,5 @@
 import { themes } from '@ui/assets/theme/themes'
-import { MIN_RAM } from '@ui/utils'
+
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 

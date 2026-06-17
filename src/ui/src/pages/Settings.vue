@@ -282,7 +282,7 @@ const resolutions = [
               <label>{{ t('settings.ram') }}</label>
               <span class="ram-value">{{ generalStore.settings.ram }} GB</span>
             </div>
-            <template v-if="generalStore.settings.maxRAM > 4">
+            <template v-if="generalStore.settings.maxRAM > 5">
               <div class="ram-slider-wrapper">
                 <input
                   id="ramSlider"
@@ -301,7 +301,7 @@ const resolutions = [
               </div>
             </template>
             <div v-else class="text-xs text-[var(--text-secondary)] bg-white/5 p-2 rounded-lg border border-white/5">
-              Twój system posiada 4GB lub mniej pamięci RAM. Więcej RAMu nie da się przydzielić.
+              Twój system posiada 5GB lub mniej pamięci RAM. Więcej RAMu nie da się przydzielić.
             </div>
           </div>
         </div>

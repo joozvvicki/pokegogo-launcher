@@ -28,7 +28,7 @@ export const checkUpdate = async (): Promise<void> => {
   generalStore.setUpdateAvailable(res)
 }
 
-export const MIN_RAM = 4
+export const MIN_RAM = 5
 
 export const createParticles = (element: HTMLElement): void => {
   const rect = element.getBoundingClientRect()
