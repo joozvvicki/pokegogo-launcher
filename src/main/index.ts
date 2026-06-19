@@ -9,7 +9,7 @@ import { electronApp } from '@electron-toolkit/utils'
 import useWindowService from './services/window-service'
 import { useAppUpdater } from './services/app-updater'
 import { createTray } from './services/tray-service'
-import { ensureDir, getPersistentMachineId } from './utils'
+import { ensureDir, getPersistentMachineId, generateStrongHWID } from './utils'
 import { useFTPService } from './services/ftp-service'
 import { useImageCacheService } from './services/image-cache-service'
 import { join } from 'path'
@@ -103,8 +103,23 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
-  // Disable hardware acceleration to save GPU resources for the game, especially on integrated GPUs
-  app.disableHardwareAcceleration()
+  const gpuConfigPath = join(app.getPath('userData'), 'gpu-config.json')
+  let isHardwareAccelerationEnabled = true
+  try {
+    if (existsSync(gpuConfigPath)) {
+      const gpuConfig = JSON.parse(readFileSync(gpuConfigPath, 'utf8'))
+      if (typeof gpuConfig.hardwareAcceleration === 'boolean') {
+        isHardwareAccelerationEnabled = gpuConfig.hardwareAcceleration
+      }
+    }
+  } catch (err) {
+    Logger.warn('Failed to read gpu-config.json:', err)
+  }
+
+  if (!isHardwareAccelerationEnabled) {
+    // Disable hardware acceleration to save GPU resources for the game, especially on integrated GPUs
+    app.disableHardwareAcceleration()
+  }
 
   let mainWindow: BrowserWindow | null = null
 
@@ -183,9 +198,14 @@ if (!gotTheLock) {
       ipcMain.handle('data:machine', async () => {
         let systemId = ''
         try {
-          systemId = await machineId()
+          systemId = await generateStrongHWID()
         } catch (err) {
-          Logger.warn('Failed to get machineId:', err)
+          Logger.warn('Failed to get strong machineId via WMIC, falling back to machineId:', err)
+          try {
+            systemId = await machineId()
+          } catch (machineIdErr) {
+            Logger.warn('Failed to get fallback machineId:', machineIdErr)
+          }
         }
 
         // Priority: Persistent Files > System ID
@@ -228,6 +248,34 @@ if (!gotTheLock) {
           Logger.error('Failed to load cart:', err)
         }
         return []
+      })
+
+    if (!ipcMain.listenerCount('settings:get-gpu'))
+      ipcMain.handle('settings:get-gpu', () => {
+        const gpuConfigPath = join(app.getPath('userData'), 'gpu-config.json')
+        try {
+          if (existsSync(gpuConfigPath)) {
+            const gpuConfig = JSON.parse(readFileSync(gpuConfigPath, 'utf8'))
+            if (typeof gpuConfig.hardwareAcceleration === 'boolean') {
+              return gpuConfig.hardwareAcceleration
+            }
+          }
+        } catch (err) {
+          Logger.warn('Failed to read gpu-config.json:', err)
+        }
+        return true
+      })
+
+    if (!ipcMain.listenerCount('settings:set-gpu'))
+      ipcMain.handle('settings:set-gpu', (_, enabled: boolean) => {
+        const gpuConfigPath = join(app.getPath('userData'), 'gpu-config.json')
+        try {
+          writeFileSync(gpuConfigPath, JSON.stringify({ hardwareAcceleration: enabled }, null, 2), 'utf8')
+          return true
+        } catch (err) {
+          Logger.error('Failed to save gpu config:', err)
+          return false
+        }
       })
 
     if (!ipcMain.listenerCount('window:minimize'))

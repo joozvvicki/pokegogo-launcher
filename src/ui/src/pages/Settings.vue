@@ -83,6 +83,7 @@ watch(
 
 onMounted(async () => {
   generalStore.loadSettings()
+  await generalStore.loadHardwareAcceleration()
   if (sliderRef.value) {
     percent.value = calculateValueFromPercentage(
       generalStore.settings.ram,
@@ -377,6 +378,21 @@ const resolutions = [
                 type="checkbox"
                 :checked="generalStore.settings.hideToTray"
                 @change="generalStore.setHideToTray(!generalStore.settings.hideToTray)"
+              />
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="setting-item row">
+            <div>
+              <label>Akceleracja sprzętowa (GPU)</label>
+              <div class="text-xs text-[var(--text-secondary)] mt-1">Wymaga ponownego uruchomienia launchera.</div>
+            </div>
+            <label class="switch">
+              <input
+                type="checkbox"
+                :checked="generalStore.hardwareAcceleration"
+                @change="generalStore.setHardwareAcceleration(!generalStore.hardwareAcceleration)"
               />
               <span class="slider round"></span>
             </label>

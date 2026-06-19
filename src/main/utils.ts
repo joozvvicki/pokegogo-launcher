@@ -9,8 +9,8 @@ import {
   writeFileSync
 } from 'fs'
 import { join } from 'path'
-import { randomUUID } from 'crypto'
-import { execSync } from 'child_process'
+import { randomUUID, createHash } from 'crypto'
+import { execSync, exec } from 'child_process'
 import https from 'https'
 import http from 'http'
 
@@ -150,4 +150,51 @@ export const getPersistentMachineId = (fallbackId?: string): string => {
   }
 
   return id
+}
+
+function getHardwareId(command: string): Promise<string> {
+  return new Promise((resolve) => {
+    exec(command, (error, stdout) => {
+      if (error) {
+        resolve('')
+        return
+      }
+      const lines = stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+      if (lines.length > 1) {
+        resolve(lines[1])
+      } else {
+        resolve('')
+      }
+    })
+  })
+}
+
+export async function generateStrongHWID(): Promise<string> {
+  try {
+    if (process.platform !== 'win32') {
+      throw new Error('Strong HWID generation is only supported on Windows')
+    }
+
+    const motherboard = await getHardwareId('wmic baseboard get serialnumber')
+    const cpuId = await getHardwareId('wmic cpu get processorid')
+    const smbios = await getHardwareId('wmic csproduct get uuid')
+    const diskSerial = await getHardwareId('wmic diskdrive where index=0 get serialnumber')
+
+    const rawHwidData = `${motherboard}-${cpuId}-${smbios}-${diskSerial}`
+      .toUpperCase()
+      .replace(/\s+/g, '')
+
+    if (rawHwidData === '---') {
+      throw new Error('WMIC returned empty strings for all hardware components')
+    }
+
+    const hwidHash = createHash('sha256').update(rawHwidData).digest('hex')
+    return hwidHash
+  } catch (error) {
+    console.error('Błąd podczas generowania zabezpieczenia sprzętowego:', error)
+    throw error
+  }
 }

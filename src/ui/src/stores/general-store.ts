@@ -8,6 +8,7 @@ const useGeneralStore = defineStore('general', () => {
   const appVersion = ref<string>('dev')
   const isUpdateAvailable = ref<boolean>(false)
   const mcInstance = ref<number | null>(null)
+  const hardwareAcceleration = ref<boolean>(false)
 
   const initialSettings = {
     showNotifications: true,
@@ -89,6 +90,19 @@ const useGeneralStore = defineStore('general', () => {
 
   const setHideToTray = (hide: boolean): void => {
     settings.hideToTray = hide
+  }
+
+  const loadHardwareAcceleration = async (): Promise<void> => {
+    if (window.electron?.ipcRenderer) {
+      hardwareAcceleration.value = await window.electron.ipcRenderer.invoke('settings:get-gpu')
+    }
+  }
+
+  const setHardwareAcceleration = async (enabled: boolean): Promise<void> => {
+    hardwareAcceleration.value = enabled
+    if (window.electron?.ipcRenderer) {
+      await window.electron.ipcRenderer.invoke('settings:set-gpu', enabled)
+    }
   }
 
   const loadSettings = (): void => {
@@ -182,7 +196,10 @@ const useGeneralStore = defineStore('general', () => {
     setTheme,
     setLanguage,
     setGameMode,
-    setCustomTheme
+    setCustomTheme,
+    hardwareAcceleration,
+    loadHardwareAcceleration,
+    setHardwareAcceleration
   }
 })
 
