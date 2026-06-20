@@ -12,7 +12,7 @@ import useGeneralStore from '@ui/stores/general-store'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
-export const useLoginService = (): {
+export const useLoginService = (options?: { onNicknameTaken?: () => void }): {
   useVariables: () => {
     apiURL: string
     formState: {
@@ -305,7 +305,15 @@ export const useLoginService = (): {
         path: '/app/home'
       })
     } catch (error: any) {
-      showToast(error.message ?? 'Wystąpił błąd podczas logowania przez Microsoft.', 'error')
+      if (error.response?.data?.message === 'NICKNAME_TAKEN') {
+        if (options?.onNicknameTaken) {
+          options.onNicknameTaken()
+        } else {
+          showToast('Ktoś ma już taki nick, więc Twój nick w grze nie został zmieniony automatycznie.', 'error')
+        }
+      } else {
+        showToast(error.message ?? 'Wystąpił błąd podczas logowania przez Microsoft.', 'error')
+      }
       appState.loading = false
       appState.loadingMessage = ''
     }

@@ -6,7 +6,14 @@ import { Message } from 'primevue'
 import { useLoginService } from '@ui/services/login-service'
 import { AccountType, ActiveTab } from '@ui/types/app'
 
-const { useMethods, useVariables } = useLoginService()
+import { ref } from 'vue'
+import NicknameTakenModal from '@ui/components/modals/NicknameTakenModal.vue'
+
+const nicknameTakenModalRef = ref<InstanceType<typeof NicknameTakenModal> | null>(null)
+
+const { useMethods, useVariables } = useLoginService({
+  onNicknameTaken: () => nicknameTakenModalRef.value?.openModal()
+})
 
 const { handleLogin, handleChangeTab, removeSavedAccount, handleRegister } = useMethods()
 const { savedAccounts, appState, formState, login$ } = useVariables()
@@ -280,6 +287,8 @@ const { t } = useI18n()
       </div>
     </footer>
   </div>
+
+  <NicknameTakenModal ref="nicknameTakenModalRef" />
 
   <div id="toastContainer" class="toast-container"></div>
   <div v-if="appState.loading" class="loading-overlay">
