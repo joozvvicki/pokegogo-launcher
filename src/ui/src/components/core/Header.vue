@@ -34,6 +34,21 @@ const isTechnician = computed(() => {
 const isAdminMenuOpen = ref(false)
 const toggleAdminMenu = (): void => {
   isAdminMenuOpen.value = !isAdminMenuOpen.value
+  if (isAdminMenuOpen.value) isDiscordMenuOpen.value = false
+}
+
+const isDiscordMenuOpen = ref(false)
+const toggleDiscordMenu = (): void => {
+  isDiscordMenuOpen.value = !isDiscordMenuOpen.value
+  if (isDiscordMenuOpen.value) isAdminMenuOpen.value = false
+}
+
+const linkDiscordAccount = (): void => {
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  const uuid = userStore.user?.uuid
+  if (uuid) {
+    window.open(`${backendUrl}/discord/link?uuid=${uuid}`, '_blank')
+  }
 }
 
 const toggleLocale = (): void => {
@@ -97,6 +112,7 @@ onMounted(async () => {
   updateInterval.value = setInterval(checkUpdate, 1000 * 60)
   window.addEventListener('click', () => {
     isAdminMenuOpen.value = false
+    isDiscordMenuOpen.value = false
   })
 })
 
@@ -104,6 +120,7 @@ onUnmounted(() => {
   clearInterval(updateInterval.value)
   window.removeEventListener('click', () => {
     isAdminMenuOpen.value = false
+    isDiscordMenuOpen.value = false
   })
 })
 </script>
@@ -171,8 +188,26 @@ onUnmounted(() => {
         </Transition>
       </button>
 
-      <button class="icon-btn" title="Discord" @click="openDiscord">
+      <button
+        class="icon-btn admin-btn"
+        :class="{ active: isDiscordMenuOpen }"
+        title="Discord"
+        @click.stop="toggleDiscordMenu"
+      >
         <i class="fab fa-discord" />
+
+        <Transition name="fade-slide">
+          <div v-if="isDiscordMenuOpen" class="admin-dropdown discord-dropdown" style="right: 0;">
+            <button class="dropdown-item" @click.stop="openDiscord">
+              <i class="fab fa-discord"></i>
+              <span>Dołącz na serwer</span>
+            </button>
+            <button class="dropdown-item" @click.stop="linkDiscordAccount">
+              <i class="fas fa-link"></i>
+              <span>Połącz konto</span>
+            </button>
+          </div>
+        </Transition>
       </button>
 
       <button class="icon-btn" title="Report Issue" @click="openDiscordReportModal">
