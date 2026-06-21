@@ -20,19 +20,19 @@ const userStore = useUserStore()
 const isAdmin = computed(() => {
   if (!userStore.user) return false
   const role = userStore.user.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.DEV_EN, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
 })
 
 const isFullAdmin = computed(() => {
   if (!userStore.user) return false
   const role = userStore.user.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.DEV_EN].includes(role as UserRole)
 })
 
 const isTechnician = computed(() => {
   if (!userStore.user) return false
   const role = userStore.user.role?.toLowerCase()
-  return role === UserRole.DEV || role === UserRole.OWNER
+  return (role === UserRole.DEV || role === UserRole.DEV_EN) || role === UserRole.OWNER
 })
 
 const isAdminMenuOpen = ref(false)

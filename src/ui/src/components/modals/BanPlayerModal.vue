@@ -78,52 +78,60 @@ const banUser = async (): Promise<void> => {
     payload.banEndDate = banTime.value
   }
 
-  const res = await banPlayer(payload)
+  try {
+    const res = await banPlayer(payload)
 
-  if (res) {
-    await emits('refreshData')
+    if (res) {
+      await emits('refreshData')
 
-    await discordLogger.sendLog('Player Banned', [
-      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
-      { name: 'Target', value: playerData.value.nickname },
-      { name: 'Type', value: banType.value },
-      {
-        name: 'Duration',
-        value: isPermanentBan.value ? 'Permanent' : banTime.value?.toLocaleString() || 'Unknown'
-      },
-      { name: 'Reason', value: banReasonInput.value.trim() }
-    ])
+      await discordLogger.sendLog('Player Banned', [
+        { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+        { name: 'Target', value: playerData.value.nickname },
+        { name: 'Type', value: banType.value },
+        {
+          name: 'Duration',
+          value: isPermanentBan.value ? 'Permanent' : banTime.value?.toLocaleString() || 'Unknown'
+        },
+        { name: 'Reason', value: banReasonInput.value.trim() }
+      ])
 
-    modalVisible.value = false
-    showToast(
-      isPermanentBan.value
-        ? `${t('modals.banPlayer.successPerm')} ${playerData.value.nickname}`
-        : `${t('modals.banPlayer.successTemp')} ${playerData.value.nickname}`,
-      'error'
-    )
+      modalVisible.value = false
+      showToast(
+        isPermanentBan.value
+          ? `${t('modals.banPlayer.successPerm')} ${playerData.value.nickname}`
+          : `${t('modals.banPlayer.successTemp')} ${playerData.value.nickname}`,
+        'success'
+      )
+    }
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || 'Wystąpił błąd podczas banowania', 'error')
   }
 }
 
 const unbanUser = async (): Promise<void> => {
   if (!playerData.value) return
 
-  const res = await unbanPlayer({
-    nickname: playerData.value.nickname,
-    machineId: playerData.value.machineId,
-    macAddress: playerData.value.macAddress,
-    type: playerData.value.banType
-  })
+  try {
+    const res = await unbanPlayer({
+      nickname: playerData.value.nickname,
+      machineId: playerData.value.machineId,
+      macAddress: playerData.value.macAddress,
+      type: playerData.value.banType
+    })
 
-  if (res) {
-    await emits('refreshData')
+    if (res) {
+      await emits('refreshData')
 
-    await discordLogger.sendLog('Player Unbanned', [
-      { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
-      { name: 'Target', value: playerData.value.nickname }
-    ])
+      await discordLogger.sendLog('Player Unbanned', [
+        { name: 'Moderator', value: userStore.user?.nickname || 'Unknown' },
+        { name: 'Target', value: playerData.value.nickname }
+      ])
 
-    showToast(`${t('modals.banPlayer.successUnban')} ${playerData.value.nickname}`)
-    handleCancel()
+      showToast(`${t('modals.banPlayer.successUnban')} ${playerData.value.nickname}`, 'success')
+      handleCancel()
+    }
+  } catch (error: any) {
+    showToast(error?.response?.data?.message || 'Wystąpił błąd podczas odbanowania', 'error')
   }
 }
 
@@ -178,7 +186,7 @@ defineExpose({
                         [
                           UserRole.OWNER,
                           UserRole.ADMIN,
-                          UserRole.DEV,
+                          UserRole.DEV, UserRole.DEV_EN,
                           UserRole.MODERATOR,
                           UserRole.MOD,
                           UserRole.HELPER,

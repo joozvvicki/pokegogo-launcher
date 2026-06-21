@@ -211,7 +211,7 @@ const handleOpenUserProfile = (player: IUser): void => {
 
 const isMod = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.OWNER, UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV, UserRole.DEV_EN].includes(role as UserRole)
 })
 
 const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
@@ -547,8 +547,8 @@ onUnmounted(() => {
                   v-if="
                     isMod &&
                     (
-                      [UserRole.DEV, UserRole.OWNER].includes(userStore.user?.role?.toLowerCase() as UserRole) ||
-                      ![UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
+                      [UserRole.DEV, UserRole.DEV_EN, UserRole.OWNER].includes(userStore.user?.role?.toLowerCase() as UserRole) ||
+                      ![UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.DEV_EN, UserRole.MODERATOR, UserRole.MOD].includes(
                         player.role?.toLowerCase() as UserRole
                       )
                     )
@@ -583,7 +583,7 @@ onUnmounted(() => {
 
                 <!-- Technical actions (visible even for staff targets) -->
                 <div
-                  v-if="(userStore.user?.role === UserRole.DEV || userStore.user?.role === UserRole.OWNER) && player.isMcOpened"
+                  v-if="((userStore.user?.role === UserRole.DEV || userStore.user?.role === UserRole.DEV_EN) || userStore.user?.role === UserRole.OWNER) && player.isMcOpened"
                   class="action-group tech-actions"
                 >
                   <button

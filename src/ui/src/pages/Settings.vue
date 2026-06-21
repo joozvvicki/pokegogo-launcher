@@ -406,7 +406,7 @@ const resolutions = [
                 UserRole.POMOCNIK,
                 UserRole.MODERATOR,
                 UserRole.MOD,
-                UserRole.DEV,
+                UserRole.DEV, UserRole.DEV_EN,
                 UserRole.ADMIN,
                 UserRole.OWNER
               ].includes((userStore.user?.role as string)?.toLowerCase() as UserRole)

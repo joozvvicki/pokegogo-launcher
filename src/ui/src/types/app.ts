@@ -25,6 +25,7 @@ export enum UserRole {
   MODERATOR = 'moderator',
   MOD = 'mod',
   DEV = 'technik',
+  DEV_EN = 'dev',
   HELPER = 'helper',
   POMOCNIK = 'pomocnik',
   USER = 'gracz'

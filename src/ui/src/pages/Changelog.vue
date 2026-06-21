@@ -36,7 +36,7 @@ const addChangelogModalRef = ref()
 
 const hasAdmin = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.DEV_EN].includes(role as UserRole)
 })
 
 async function fetchChangelog(): Promise<void> {

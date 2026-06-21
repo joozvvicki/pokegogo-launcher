@@ -194,24 +194,24 @@ const getPlayerID = (player: IUser): string => {
 
 const isAdmin = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.DEV_EN, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
 })
 
 const isTechnik = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return role === UserRole.DEV || role === UserRole.OWNER
+  return (role === UserRole.DEV || role === UserRole.DEV_EN) || role === UserRole.OWNER
 })
 
 const onlyForAdmin = (player: IUser): boolean => {
   const myRole = userStore.user?.role?.toLowerCase() as UserRole
-  if (myRole === UserRole.DEV || myRole === UserRole.OWNER) {
+  if ((myRole === UserRole.DEV || myRole === UserRole.DEV_EN) || myRole === UserRole.OWNER) {
     return true
   }
 
   const staffRoles = [
     UserRole.OWNER,
     UserRole.ADMIN,
-    UserRole.DEV,
+    UserRole.DEV, UserRole.DEV_EN,
     UserRole.MODERATOR,
     UserRole.MOD,
     UserRole.HELPER,
