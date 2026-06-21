@@ -176,6 +176,7 @@ defineExpose({
                     <button
                       v-if="
                         [
+                          UserRole.OWNER,
                           UserRole.ADMIN,
                           UserRole.DEV,
                           UserRole.MODERATOR,

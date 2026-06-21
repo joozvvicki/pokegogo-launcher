@@ -71,7 +71,7 @@ const router = useRouter()
 
 onMounted(async () => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  const isAdmin = [UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(
+  const isAdmin = [UserRole.OWNER, UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(
     role as UserRole
   )
 

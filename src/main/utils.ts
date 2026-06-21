@@ -194,7 +194,6 @@ export async function generateStrongHWID(): Promise<string> {
     const hwidHash = createHash('sha256').update(rawHwidData).digest('hex')
     return hwidHash
   } catch (error) {
-    console.error('Błąd podczas generowania zabezpieczenia sprzętowego:', error)
     throw error
   }
 }

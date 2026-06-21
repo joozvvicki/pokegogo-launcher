@@ -18,17 +18,21 @@ const generalStore = useGeneralStore()
 const userStore = useUserStore()
 
 const isAdmin = computed(() => {
-  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
+  if (!userStore.user) return false
+  const role = userStore.user.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
 })
 
 const isFullAdmin = computed(() => {
-  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+  if (!userStore.user) return false
+  const role = userStore.user.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
 })
 
 const isTechnician = computed(() => {
-  return userStore.user?.role?.toLowerCase() === UserRole.DEV
+  if (!userStore.user) return false
+  const role = userStore.user.role?.toLowerCase()
+  return role === UserRole.DEV || role === UserRole.OWNER
 })
 
 const isAdminMenuOpen = ref(false)
@@ -44,7 +48,7 @@ const toggleDiscordMenu = (): void => {
 }
 
 const linkDiscordAccount = (): void => {
-  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+  const backendUrl = import.meta.env.RENDERER_VITE_API_URL || 'https://api.pokemongogo.pl/v1'
   const uuid = userStore.user?.uuid
   if (uuid) {
     window.open(`${backendUrl}/discord/link?uuid=${uuid}`, '_blank')
@@ -202,10 +206,16 @@ onUnmounted(() => {
               <i class="fab fa-discord"></i>
               <span>Dołącz na serwer</span>
             </button>
-            <button class="dropdown-item" @click.stop="linkDiscordAccount">
-              <i class="fas fa-link"></i>
-              <span>Połącz konto</span>
-            </button>
+            <template v-if="userStore.user">
+              <button v-if="!userStore.user?.discordId" class="dropdown-item" @click.stop="linkDiscordAccount">
+                <i class="fas fa-link"></i>
+                <span>Połącz konto</span>
+              </button>
+              <button v-else class="dropdown-item" @click.stop="linkDiscordAccount">
+                <i class="fas fa-sync"></i>
+                <span>Odśwież połączenie</span>
+              </button>
+            </template>
           </div>
         </Transition>
       </button>

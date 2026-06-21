@@ -194,16 +194,17 @@ const getPlayerID = (player: IUser): string => {
 
 const isAdmin = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(role as UserRole)
 })
 
 const isTechnik = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return role === UserRole.DEV
+  return role === UserRole.DEV || role === UserRole.OWNER
 })
 
 const onlyForAdmin = (player: IUser): boolean => {
   const staffRoles = [
+    UserRole.OWNER,
     UserRole.ADMIN,
     UserRole.DEV,
     UserRole.MODERATOR,
@@ -389,7 +390,10 @@ const handleDeleteAccount = (): void => {
           </div>
 
           <div class="user-info">
-            <h1 class="username">{{ player.nickname }}</h1>
+            <h1 class="username" :style="{ fontSize: player.nickname.length > 12 ? '1.1rem' : player.nickname.length > 9 ? '1.3rem' : '1.5rem' }">
+              {{ player.nickname }}
+              <i v-if="player.discordId" class="fab fa-discord text-[#5865F2] ml-1 text-[0.8em]" title="Konto Discord połączone"></i>
+            </h1>
             <div class="badges">
               <span
                 class="role-badge"
@@ -728,7 +732,7 @@ const handleDeleteAccount = (): void => {
 .username {
   font-size: 1.5rem;
   font-weight: 800;
-  max-width: 150px;
+  max-width: 220px;
   overflow: hidden;
   color: var(--text-primary);
   line-height: 1;

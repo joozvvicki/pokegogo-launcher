@@ -72,7 +72,7 @@ const onDrop = (ev: DragEvent): void => {
 
 onMounted(async () => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  const isFullAdmin = [UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+  const isFullAdmin = [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
 
   if (!isFullAdmin) {
     router.push('/app/home')

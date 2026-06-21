@@ -407,7 +407,8 @@ const resolutions = [
                 UserRole.MODERATOR,
                 UserRole.MOD,
                 UserRole.DEV,
-                UserRole.ADMIN
+                UserRole.ADMIN,
+                UserRole.OWNER
               ].includes((userStore.user?.role as string)?.toLowerCase() as UserRole)
             "
             class="setting-item row"

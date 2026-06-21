@@ -40,6 +40,7 @@ export interface IUser {
   friendRequests: string[]
   headUrl?: string
   hwidAccountCount?: number
+  discordId?: string
 }
 
 declare global {

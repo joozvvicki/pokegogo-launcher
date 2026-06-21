@@ -13,7 +13,7 @@ const userStore = useUserStore()
 const router = useRouter()
 
 onMounted(() => {
-  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV) {
+  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV && userStore.user?.role?.toLowerCase() !== UserRole.OWNER) {
     router.push('/app/home')
   }
 })
@@ -22,7 +22,7 @@ const showConfirmModal = ref(false)
 const isProcessing = ref(false)
 
 const handleKillAllGames = (): void => {
-  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV) {
+  if (userStore.user?.role?.toLowerCase() !== UserRole.DEV && userStore.user?.role?.toLowerCase() !== UserRole.OWNER) {
     showToast(t('general.error'), 'error')
     return
   }
@@ -45,6 +45,7 @@ const isProcessingReinstall = ref(false)
 const handleForceReinstallAll = (): void => {
   if (
     userStore.user?.role?.toLowerCase() !== UserRole.DEV &&
+    userStore.user?.role?.toLowerCase() !== UserRole.OWNER &&
     userStore.user?.role?.toLowerCase() !== 'technik'
   ) {
     showToast(t('general.error'), 'error')

@@ -128,7 +128,6 @@ if (!gotTheLock) {
 
     // Suppress Autofill and other browser-internal console noise
     app.commandLine.appendSwitch('log-level', '3')
-    app.commandLine.appendSwitch('disable-features', 'Autofill,AutofillServerCommunication')
 
     // Register local-image protocol
     protocol.handle('local-image', (request) => {
@@ -199,12 +198,12 @@ if (!gotTheLock) {
         let systemId = ''
         try {
           systemId = await generateStrongHWID()
-        } catch (err) {
-          Logger.warn('Failed to get strong machineId via WMIC, falling back to machineId:', err)
+        } catch (err: any) {
+          Logger.log('[HWID] Nie udalo sie pobrac klucza sprzetowego WMIC. Uzywam zapasowego identyfikatora.')
           try {
             systemId = await machineId()
           } catch (machineIdErr) {
-            Logger.warn('Failed to get fallback machineId:', machineIdErr)
+            Logger.warn('[HWID] Nie udalo sie pobrac zapasowego klucza sprzetowego.')
           }
         }
 

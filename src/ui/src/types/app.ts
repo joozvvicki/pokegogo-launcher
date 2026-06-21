@@ -20,6 +20,7 @@ export enum SearchKeyWord {
 }
 
 export enum UserRole {
+  OWNER = 'owner',
   ADMIN = 'admin',
   MODERATOR = 'moderator',
   MOD = 'mod',

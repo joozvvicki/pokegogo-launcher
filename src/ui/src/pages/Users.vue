@@ -211,7 +211,7 @@ const handleOpenUserProfile = (player: IUser): void => {
 
 const isMod = computed(() => {
   const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
-  return [UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(role as UserRole)
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.MODERATOR, UserRole.MOD, UserRole.DEV].includes(role as UserRole)
 })
 
 const isFriend = (player: IUser): boolean => !!userStore.user?.friends?.includes(player.nickname)
@@ -470,7 +470,10 @@ onUnmounted(() => {
               </div>
 
               <div class="player-card-info">
-                <h2 class="player-nickname">{{ player.nickname }}</h2>
+                <h2 class="player-nickname">
+                  {{ player.nickname }}
+                  <i v-if="player.discordId" class="fab fa-discord text-[#5865F2] ml-1 text-sm" title="Konto Discord połączone"></i>
+                </h2>
                 <div class="flex items-center gap-2 justify-center flex-wrap">
                   <span class="player-role-label">{{ player.role }}</span>
                   <span
@@ -543,7 +546,7 @@ onUnmounted(() => {
                 <div
                   v-if="
                     isMod &&
-                    ![UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
+                    ![UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
                       player.role?.toLowerCase() as UserRole
                     )
                   "
@@ -577,7 +580,7 @@ onUnmounted(() => {
 
                 <!-- Technical actions (visible even for staff targets) -->
                 <div
-                  v-if="userStore.user?.role === UserRole.DEV && player.isMcOpened"
+                  v-if="(userStore.user?.role === UserRole.DEV || userStore.user?.role === UserRole.OWNER) && player.isMcOpened"
                   class="action-group tech-actions"
                 >
                   <button
