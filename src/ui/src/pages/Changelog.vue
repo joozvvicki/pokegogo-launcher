@@ -4,6 +4,7 @@ import AddChangelog from '@ui/components/modals/AddChangelog.vue'
 import useUserStore from '@ui/stores/user-store'
 import { showToast } from '@ui/utils'
 import { format, parseISO } from 'date-fns'
+import { UserRole } from '@ui/types/app'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -33,7 +34,10 @@ const filteredChangelog = ref<ChangelogEntry[]>([])
 const searchQuery = ref('')
 const addChangelogModalRef = ref()
 
-const hasAdmin = computed(() => ['admin', 'technik'].includes(userStore.user?.role || 'default'))
+const hasAdmin = computed(() => {
+  const role = userStore.user?.role?.toLowerCase() ?? UserRole.USER
+  return [UserRole.OWNER, UserRole.ADMIN, UserRole.DEV].includes(role as UserRole)
+})
 
 async function fetchChangelog(): Promise<void> {
   isLoading.value = true

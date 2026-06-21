@@ -203,6 +203,11 @@ const isTechnik = computed(() => {
 })
 
 const onlyForAdmin = (player: IUser): boolean => {
+  const myRole = userStore.user?.role?.toLowerCase() as UserRole
+  if (myRole === UserRole.DEV || myRole === UserRole.OWNER) {
+    return true
+  }
+
   const staffRoles = [
     UserRole.OWNER,
     UserRole.ADMIN,

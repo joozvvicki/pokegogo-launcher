@@ -546,8 +546,11 @@ onUnmounted(() => {
                 <div
                   v-if="
                     isMod &&
-                    ![UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
-                      player.role?.toLowerCase() as UserRole
+                    (
+                      [UserRole.DEV, UserRole.OWNER].includes(userStore.user?.role?.toLowerCase() as UserRole) ||
+                      ![UserRole.OWNER, UserRole.ADMIN, UserRole.DEV, UserRole.MODERATOR, UserRole.MOD].includes(
+                        player.role?.toLowerCase() as UserRole
+                      )
                     )
                   "
                   class="action-group mod-actions"
