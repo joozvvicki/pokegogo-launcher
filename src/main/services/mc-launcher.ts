@@ -309,13 +309,30 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
 
     let customArgs: string[] = [
       `-DaccessToken=${accessToken}`,
+      // Wyłączanie sprawdzania aktualizacji modów (aby gra się nie zawieszała podczas ładowania)
       '-Dforge.updateCheckEnable=false',
+      '-Dfabric.updateChecker=false',
       '-Dchecker.update=false',
-      '-DCDAGaming.update_check=false',
-      '-DCDAGaming.updateCheck=false',
       '-Dunilib.check_updates=false',
       '-Dversioncheck.enable=false',
-      '-XX:+UseG1GC'
+      // Aikar's Flags (Client Adaptation)
+      '-XX:+UseG1GC',
+      '-XX:+ParallelRefProcEnabled',
+      '-XX:MaxGCPauseMillis=200',
+      '-XX:+UnlockExperimentalVMOptions',
+      '-XX:+DisableExplicitGC',
+      '-XX:G1NewSizePercent=30',
+      '-XX:G1MaxNewSizePercent=40',
+      '-XX:G1HeapRegionSize=8M',
+      '-XX:G1ReservePercent=20',
+      '-XX:G1HeapWastePercent=5',
+      '-XX:G1MixedGCCountTarget=4',
+      '-XX:InitiatingHeapOccupancyPercent=15',
+      '-XX:G1MixedGCLiveThresholdPercent=90',
+      '-XX:G1RSetUpdatingPauseTimePercent=5',
+      '-XX:SurvivorRatio=32',
+      '-XX:+PerfDisableSharedMem',
+      '-XX:MaxTenuringThreshold=1'
     ]
 
     if (settings.gameMode === 'create' && customVersion) {
@@ -357,7 +374,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         },
         memory: {
           max: `${settings.ram}G`,
-          min: `1G`
+          min: `${settings.ram}G`
         },
         customArgs
       })

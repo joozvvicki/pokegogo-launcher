@@ -473,7 +473,7 @@ const resolutions = [
           </div>
 
           <div class="account-forms">
-            <!-- Email Change -->
+            <!-- Email and Password Change -->
             <div class="form-section">
               <h4>{{ t('settings.changeEmail') }}</h4>
               <div class="input-group">
@@ -489,60 +489,63 @@ const resolutions = [
               <button class="g-btn" @click="handleChangeEmail">
                 {{ t('settings.changeEmail') }}
               </button>
-            </div>
 
-            <!-- Password Change (Backend Only) -->
-            <div
-              v-if="userStore.user?.accountType === AccountType.BACKEND"
-              class="form-section mt-6"
-            >
-              <h4>{{ t('settings.changePassword') }}</h4>
+              <!-- Password Change (Backend Only) -->
+              <template v-if="userStore.user?.accountType !== AccountType.MICROSOFT">
+                <h4 class="mt-6">{{ t('settings.changePassword') }}</h4>
 
-              <div class="input-group">
-                <i class="fas fa-lock"></i>
-                <input
-                  :placeholder="t('settings.oldPassword')"
-                  :class="{ error: v$.old.$error }"
-                  class="glass-input"
-                />
-                <i
-                  class="fas cursor-pointer"
-                  :class="state.showedOld ? 'fa-eye-slash' : 'fa-eye'"
-                  @click="state.showedOld = !state.showedOld"
-                ></i>
-              </div>
+                <div class="input-group">
+                  <i class="fas fa-lock"></i>
+                  <input
+                    v-model="state.old"
+                    :type="state.showedOld ? 'text' : 'password'"
+                    :placeholder="t('settings.oldPassword')"
+                    :class="{ error: v$.old.$error }"
+                    class="glass-input"
+                  />
+                  <i
+                    class="fas cursor-pointer"
+                    :class="state.showedOld ? 'fa-eye-slash' : 'fa-eye'"
+                    @click="state.showedOld = !state.showedOld"
+                  ></i>
+                </div>
 
-              <div class="input-group">
-                <i class="fas fa-key"></i>
-                <input
-                  :placeholder="t('settings.newPassword')"
-                  :class="{ error: v$.new.$error }"
-                  class="glass-input"
-                />
-                <i
-                  class="fas cursor-pointer"
-                  :class="state.showedNew ? 'fa-eye-slash' : 'fa-eye'"
-                  @click="state.showedNew = !state.showedNew"
-                ></i>
-              </div>
+                <div class="input-group">
+                  <i class="fas fa-key"></i>
+                  <input
+                    v-model="state.new"
+                    :type="state.showedNew ? 'text' : 'password'"
+                    :placeholder="t('settings.newPassword')"
+                    :class="{ error: v$.new.$error }"
+                    class="glass-input"
+                  />
+                  <i
+                    class="fas cursor-pointer"
+                    :class="state.showedNew ? 'fa-eye-slash' : 'fa-eye'"
+                    @click="state.showedNew = !state.showedNew"
+                  ></i>
+                </div>
 
-              <div class="input-group">
-                <i class="fas fa-key"></i>
-                <input
-                  :placeholder="t('settings.repeatPassword')"
-                  :class="{ error: v$.repeatNew.$error }"
-                  class="glass-input"
-                />
-                <i
-                  class="fas cursor-pointer"
-                  :class="state.showedRepeatNew ? 'fa-eye-slash' : 'fa-eye'"
-                  @click="state.showedRepeatNew = !state.showedRepeatNew"
-                ></i>
-              </div>
+                <div class="input-group">
+                  <i class="fas fa-key"></i>
+                  <input
+                    v-model="state.repeatNew"
+                    :type="state.showedRepeatNew ? 'text' : 'password'"
+                    :placeholder="t('settings.repeatPassword')"
+                    :class="{ error: v$.repeatNew.$error }"
+                    class="glass-input"
+                  />
+                  <i
+                    class="fas cursor-pointer"
+                    :class="state.showedRepeatNew ? 'fa-eye-slash' : 'fa-eye'"
+                    @click="state.showedRepeatNew = !state.showedRepeatNew"
+                  ></i>
+                </div>
 
-              <button class="g-btn primary" @click="handleChangePassword">
-                {{ t('settings.changePassword') }}
-              </button>
+                <button class="g-btn primary" @click="handleChangePassword">
+                  {{ t('settings.changePassword') }}
+                </button>
+              </template>
             </div>
           </div>
 
