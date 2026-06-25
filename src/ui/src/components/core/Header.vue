@@ -52,6 +52,12 @@ const linkDiscordAccount = (): void => {
   const uuid = userStore.user?.uuid
   if (uuid) {
     window.open(`${backendUrl}/discord/link?uuid=${uuid}`, '_blank')
+
+    const focusHandler = async () => {
+      await userStore.updateProfile()
+      window.removeEventListener('focus', focusHandler)
+    }
+    window.addEventListener('focus', focusHandler)
   }
 }
 

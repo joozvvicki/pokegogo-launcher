@@ -8,12 +8,14 @@ export const createTray = (win: BrowserWindow): void => {
 
   tray.addListener('double-click', () => {
     win.show()
+    win.webContents.send('window:tray-restored')
   })
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Otwórz launcher',
       click: () => {
         win.show()
+        win.webContents.send('window:tray-restored')
       }
     },
     {

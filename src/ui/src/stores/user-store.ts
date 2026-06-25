@@ -51,7 +51,13 @@ const useUserStore = defineStore('user', () => {
   const updateProfile = async (): Promise<void> => {
     const profile = await fetchProfile()
 
-    setUser(profile)
+    // Sync Discord roles in the background
+    if (profile && profile.uuid) {
+      const backendUrl = import.meta.env.RENDERER_VITE_API_URL || 'https://api.pokemongogo.pl/v1'
+      fetch(`${backendUrl}/discord/sync?uuid=${profile.uuid}`).catch(() => {})
+    }
+
+    await setUser(profile)
   }
 
   const updateSelectedProfile = (player: IUser | null): void => {

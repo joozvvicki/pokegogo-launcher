@@ -8,9 +8,13 @@ import { useSocketService } from '@ui/services/socket-service'
 import { LOGGER } from '@ui/services/logger-service'
 import { showToast } from '@ui/utils'
 import LaunchErrorModal from '@ui/components/modals/LaunchErrorModal.vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import banMusicSrc from '@ui/assets/audio/banmusic.mp3'
 
 const launchErrorModalRef = ref()
+
+const banAudio = new Audio(banMusicSrc)
+banAudio.loop = true
 
 const generalStore = useGeneralStore()
 const userStore = useUserStore()
@@ -100,6 +104,25 @@ window.electron?.ipcRenderer?.on('launch:error', (_event, errorData: any) => {
   generalStore.setIsOpeningGame(false)
   generalStore.setCurrentLog('')
   launchErrorModalRef.value?.openModal(errorData.type, errorData.details)
+})
+
+watch(() => userStore.user?.isBanned || userStore.hwidBanned, (isBanned) => {
+  if (isBanned) {
+    banAudio.play().catch(e => console.error('Audio play failed', e))
+  } else {
+    banAudio.pause()
+    banAudio.currentTime = 0
+  }
+}, { immediate: true })
+
+window.electron?.ipcRenderer?.on('window:tray-hidden', () => {
+  banAudio.pause()
+})
+
+window.electron?.ipcRenderer?.on('window:tray-restored', () => {
+  if (userStore.user?.isBanned || userStore.hwidBanned) {
+    banAudio.play().catch(e => console.error('Audio play failed', e))
+  }
 })
 
 onMounted(() => {

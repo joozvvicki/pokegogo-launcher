@@ -347,7 +347,7 @@ export const isMachineIDBanned = async (): Promise<void> => {
 }
 
 export const fallbackHeadUrl = (playerName: string): string =>
-  `https://mineskin.eu/helm/${playerName}/100.png`
+  `https://minotar.net/helm/${playerName}/100.png`
 
 export const loadCustomOrFallbackHead = async (player: IUser): Promise<string> => {
   const customSkinSource = `${apiURL}/skins/image/${player.nickname}`

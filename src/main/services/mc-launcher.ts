@@ -294,7 +294,7 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
         if (mcOpened) {
           discordLogger.sendError('Game Client Crashed', `Exit code: ${code}`, nickname)
         }
-        
+
         if (!window.isDestroyed() && !isAborted) {
           window.webContents.send('launch:error', {
             type: detectedRamError ? 'RAM_ERROR' : 'GAME_CRASH',
@@ -460,12 +460,12 @@ export function createMinecraftInstance(config: MinecraftInstanceConfig): Minecr
             )
         }
       }, 5000)
-    } catch (e: any) {
+    } catch (e: unknown) {
       Logger.error('PokeGoGo Launcher > MC launch THROW:', e)
       if (!window.isDestroyed() && !isAborted) {
         window.webContents.send('launch:error', {
           type: 'JAVA_ERROR',
-          details: { message: e?.message || String(e) }
+          details: { message: e instanceof Error ? e.message : String(e) }
         })
         window.webContents.send('launch:change-state', JSON.stringify('minecraft-closed'))
       }

@@ -111,7 +111,7 @@ export const useLoginService = (options?: { onNicknameTaken?: () => void }): {
   const login$ = useVuelidate(loginRules, formState)
 
   const fallbackHeadUrl = (playerName: string): string =>
-    `https://mineskin.eu/helm/${playerName}/100.png`
+    `https://minotar.net/helm/${playerName}/100.png`
 
   async function loadCustomOrFallbackHead(playerName: string): Promise<void> {
     const customSkinSource = `${apiURL}/skins/image/${playerName}`

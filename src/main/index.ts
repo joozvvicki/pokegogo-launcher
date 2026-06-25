@@ -289,6 +289,7 @@ if (!gotTheLock) {
         if (win) {
           if (isHideToTray && platform() !== 'darwin') {
             Logger.log('PokeGoGo Launcher > Hidden in tray')
+            win.webContents.send('window:tray-hidden')
             win.hide()
             return
           }
