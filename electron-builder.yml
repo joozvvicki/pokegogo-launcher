@@ -20,6 +20,10 @@ asarUnpack:
   - resources/**
 win:
   executableName: pokemongogo-launcher
+appx:
+  identityName: PokemonGoGO.PokeGoGoLauncher
+  publisherDisplayName: PokemonGoGO
+  publisher: CN=1ECFA547-8F18-49E7-87FD-49EC254C02CC
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
